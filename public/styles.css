@@ -1,23 +1,24 @@
 body {
      padding: 20px;
-     background-color: #f8f9fa;
+     background-color: #121212;
      font-family: 'Poppins', sans-serif;
 }
  .container {
-     background-color: #ffffff;
+     background-color: #121212;
      border-radius: 10px;
-     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-     padding: 20px;
+     box-shadow: ;
+     padding: 6px;
      margin-top: 20px;
      margin-bottom: 20px;
 }
  h1 {
-     color: #343a40;
+     color: #fff;
 }
  label {
      color: #495057;
 }
  .centered-textarea {
+ 	 font-size: 15px;
      display: block;
      margin: 0 auto;
      width: 100%;
@@ -41,11 +42,11 @@ body {
      margin-top: 10px;
 }
  .footer {
-     background-color: rgba(255, 255, 255, 0.7);
+     background-color: #121212;
      padding: 10px;
      text-align: center;
      font-size: 16px;
-     color: #555;
+     color: #fff;
      margin-top: 50px;
      border-top: 1px solid #ccc;
      position: fixed;
@@ -69,7 +70,8 @@ body {
  #result {
      padding: 10px;
      margin-top: 20px;
-     border-radius: 5px;
+     border-radius: 2px;
+     font-color: red;
 }
  .center-placeholder::placeholder {
      text-align: center;
@@ -103,13 +105,14 @@ body {
 }
 
 #inputOfPrefix, #inputOfAdmin {
-  padding: 13px;
-  width: 200px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  font-size: 12px;
+  padding: 10px;
+  width: 240px;
+  border: 2px solid #960808;
+  border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease, border-color 0.3s ease; 
-  border-color: #ccc;
+  border-color: #960808;
   background-color: #fff;
 }
 #listOfCommands, #listOfCommandsEvent, #prefixOfCommands, #adminOfCommands {
@@ -119,4 +122,3 @@ body {
 #listOfCommands:not(.modal), #listOfCommandsEvent:not(.modal), #prefixOfCommands:not(.modal), #adminOfCommands:not(.modal) {
   box-shadow: none !important;
 }
-
