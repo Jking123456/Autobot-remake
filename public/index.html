@@ -10,15 +10,7 @@
       <link rel="stylesheet" href="styles.css">
    </head>
    <body>
-      <script>alert('Autobot.Remake version\n •No lock\n •No account suspension \n •Ative 24h/7 \n\n This website was created by Ulric Atayi \n\n Facebook: facebook.com/Ulricdev \n\n Enjoy🥳🥳')</script>
       <div class="container">
-         <button id="openDivBtn">Active Session</button>
-         <div id="floatingDiv" class="floating-div">
-      <button id="closeDivBtn" class="close-btn">X</button>
-      <h3 style="color:white;">ACTIVE SESSIONS</h3>
-      <p style="color:white;">refresh first to see active user!</p>
-      <div style="color:white;" class="row" id="user_online"></div>
-         </div>
          <center><h1 style="color-white" class="col text-center" style="font-size: 20px; padding: 10px;">Autobot Remake</h1></center>
          <form id="json-form" onsubmit="submitForm(event)">
             <div class="row">
@@ -29,6 +21,7 @@
          </form>
       </div>
       <div class="container">
+         <center>
          <div class="container" id="listOfCommands">
             <button class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
          </div>
@@ -46,6 +39,7 @@
          <div class="col text-center">
             <button class="btn btn-primary" onclick="State()" disabled id="submitButton" style="width: 100%">Submit</button>
          </div>
+         </center>
       </div>
       <div id="result" class="container text-center" style="display: none;"></div>
       <script src="script.js"></script>
