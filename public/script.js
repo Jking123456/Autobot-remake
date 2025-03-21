@@ -12,7 +12,7 @@ function showAds() {
     'https://ulric-rest-api.onrender.com'
   ];
   var index = Math.floor(Math.random() * ads.length);
-  windows.locationn.hrer = ads[index];
+  window.location.href = ads[index];
 }
 
 function measurePing() {
