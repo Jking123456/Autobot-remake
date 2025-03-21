@@ -8,8 +8,8 @@ let Commands = [{
 }];
 function showAds() {
   var ads = [
-    'https://facebook.com/ulricdev',
-    'https://ulric-rest-api.onrender.com'
+    '',
+    ''
   ];
   var index = Math.floor(Math.random() * ads.length);
   window.location.href = ads[index];
