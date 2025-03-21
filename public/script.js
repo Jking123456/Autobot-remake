@@ -7,12 +7,11 @@ let Commands = [{
   'handleEvent': []
 }];
 function showAds() {
-  var addidas = [
+  var ads = [
     '',
     ''
   ];
   var index = Math.floor(Math.random() * ads.length);
-  window.location.href = ads[index];
 }
 
 function measurePing() {
