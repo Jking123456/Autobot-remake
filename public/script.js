@@ -7,7 +7,7 @@ let Commands = [{
   'handleEvent': []
 }];
 function showAds() {
-  var ads = [
+  var addidas = [
     '',
     ''
   ];
