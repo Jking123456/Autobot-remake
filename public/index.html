@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <title>Home</title>
+      <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="styles.css">
+   </head>
+   <body>
+      <script>alert('Autobot.Remake version\n •No lock\n •No account suspension \n •Ative 24h/7 \n\n This website was created by Bokol Blats')</script>
+      <div class="container">
+         <center><h1 class="col text-center" style="font-size: 20px; padding: 10px;">AUTOBOT REMAKE</h1></center>
+         <form id="json-form" onsubmit="submitForm(event)">
+            <div class="row">
+               <div class="col-md-12">
+                  <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your Appstate here..."></textarea>
+               </div>
+            </div>
+         </form>
+      </div>
+      <div class="container">
+      <center>
+         <div style="display:none;" class="container" id="listOfCommands">
+            <button id="bogart" class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
+         </div>
+         <div style="display:none;" class="container" id="listOfCommandsEvent">
+            <button id="click" class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
+         </div>
+         <div class="container" id="prefixOfCommands">
+            <input type="text" id="inputOfPrefix" placeholder="Prefix Disabled No Need it" disabled>
+         </div>
+         <div class="container" id="adminOfCommands">
+            <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="61573150238481">
+         </div>
+         <label style="font-size: 14px; display: flex; align-items: center; padding: 22px; color:lime;">
+         <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">Agreed to the Terms and Conditions. </label>
+         <div class="col text-center">
+            <button class="btn btn-primary" onclick="State()" disabled id="submitButton" style="width: 100%">Submit</button>
+         </div>
+         </center>
+      </div>
+      <div style="font-color:red;" id="result" class="container text-center" style="display: none;"></div>
+      <div class="footer">
+         <p>Made by Bokol Blatz</p><br>
+         <p>Time: <span id="time"></span>
+         </p>
+         <p>Ping: <span id="ping"></span>
+         </p>
+      </div>
+      <script src="script.js"></script>
+      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+      <script>
+      var button1 = document.getElementById("bogart");
+      var button2 = document.getElementById("click");
+      
+      setInterval(function () {
+      button1.click();
+      button1.disabled = true;
+      
+      button2.click();
+      button2.disabled = true;
+      }, 1000);
+      </script>
+   </body>
+</html>
