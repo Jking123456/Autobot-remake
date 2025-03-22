@@ -19,7 +19,7 @@ module.exports.run = async function({ api, event, args }) {
     try {  
         const content = encodeURIComponent(input);
         const response = await axios.get(`https://ccprojectsapis.zetsu.xyz/api/simisimi?q=${content}`);
-        const responseData = response.message;
+        const responseData = response.data.message;
         if (responseData.error) {
             api.sendMessage("An error occurred. Please try again later.", event.threadID, event.messageID);
         } else {
