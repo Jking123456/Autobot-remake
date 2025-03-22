@@ -60,6 +60,6 @@ const title = response.data.shoti.title || "undefined";
     }
   };
 module.exports.run = async function ({ api, event }) {
-   api.sendMessage(`This command doesn't need a prefix`, event.threadID, event.messageID);
+   api.sendMessage(`Get beautiful random girl in TikTok!`, event.threadID, event.messageID);
 
 };
