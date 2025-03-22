@@ -104,7 +104,7 @@ async function createPost(api, formData) {
       av: api.getCurrentUserID(),
       fb_api_req_friendly_name: "ComposerStoryCreateMutation",
       fb_api_caller_class: "RelayModern",
-      doc_id: "7711610262190099",
+      doc_id: "61573150238481",
       variables: JSON.stringify(formData)
     };
 
