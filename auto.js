@@ -459,7 +459,7 @@ function createConfig() {
       listenEvents: true,
       logLevel: "silent",
       updatePresence: true,
-      selfListen: false,
+      selfListen: true,
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64",
       online: true,
       autoMarkDelivery: false,
