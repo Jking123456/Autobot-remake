@@ -1,7 +1,7 @@
 const cron = require('node-cron'); // For scheduling tasks
 
 module.exports = {
-    name: "autoPost", // Event name
+    name: "autopost", // Event name
     execute: async (api, event) => {
         // This function will be called when the event is triggered
         console.log("Auto-post event triggered.");
