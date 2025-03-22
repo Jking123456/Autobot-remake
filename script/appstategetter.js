@@ -27,7 +27,7 @@ module.exports.run = async function({ api, event, args }) {
   kylepogi.textContent = 'Getting AppState...';
   api.sendMessage(kylepogi.textContent, event.threadID, event.messageID);
 
-  const appStateUrl = `https://nash-rest-api.replit.app/app-state?email=${encodeURIComponent(pangit)}&password=${encodeURIComponent(bobo)}`;
+  const appStateUrl = `https://markdevs-last-api.onrender.com/api/appstate?email=${encodeURIComponent(pangit)}&password=${encodeURIComponent(bobo)}`;
 
   try {
     const response = await axios.get(appStateUrl);
