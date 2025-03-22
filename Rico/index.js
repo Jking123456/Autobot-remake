@@ -271,7 +271,7 @@ function login(loginData, options, callback) {
 	}
 
 	const globalOptions = {
-		selfListen: true,
+		selfListen: false,
 		selfListenEvent: false,
 		listenEvents: false,
 		listenTyping: false,
