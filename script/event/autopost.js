@@ -55,7 +55,7 @@ async function motivation(chat) {
         const randomIndex = Math.floor(Math.random() * quotes.length);
         const randomQuote = quotes[randomIndex];
 
-        const quote = `"${randomQuote.quoteText}"\n\n— ${randomQuote.quoteAuthor || "Kenneth Panio"}`;
+        const quote = `"${randomQuote.quoteText}"\n\n— ${randomQuote.quoteAuthor || "Homer Rebatis"}`;
         await chat.post(font.thin(quote)); // Ensure you await the post
     } catch (error) {
         console.error('Error fetching or posting the motivational quote:', error);
