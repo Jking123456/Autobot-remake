@@ -18,8 +18,8 @@ module.exports.run = async function({ api, event, args }) {
     }
     try {  
         const content = encodeURIComponent(input);
-        const response = await axios.get(`https://simsimi.fun/api/v2/?mode=talk&lang=ph&message=${content}&filter=false`);
-        const responseData = response.data;
+        const response = await axios.get(`https://ccprojectsapis.zetsu.xyz/api/simisimi?q=${content}`);
+        const responseData = response.message;
         if (responseData.error) {
             api.sendMessage("An error occurred. Please try again later.", event.threadID, event.messageID);
         } else {
