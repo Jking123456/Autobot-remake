@@ -21,7 +21,7 @@ module.exports.run = async ({ api, event, args }) => {
   const path = __dirname + '/cache/' + `${timestamp}_tid.png`;
   if (!query) return api.sendMessage("Please provide your promt.", threadID, messageID);
     api.sendMessage(`Searching for ${query}`, event.threadID, event.messageID);
-  const poli = (await axios.get(`https://image.pollinations.ai/prompt/${query}`, {
+  const poli = (await axios.get(`https://kaiz-apis.gleeze.com/api/poli?prompt=${query}`, {
     responseType: "arraybuffer",
   })).data;
   fs.writeFileSync(path, Buffer.from(poli, "utf-8"));
