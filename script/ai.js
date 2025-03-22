@@ -14,7 +14,7 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
     const question = args.join(' ');
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-3.5?q=${encodeURIComponent(question)}`;
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(question)}&uid=1&webSearch=on`;
 
     if (!question) return api.sendMessage("you don't have a question!", event.threadID, event.messageID);
 
@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event, args }) {
         
 
         const response = await axios.get(apiUrl);
-        const answer = response.data.data;
+        const answer = response.data.response;
 
         api.sendMessage(`•| 𝙷𝙾𝙼𝙴𝚁 𝙰𝚄𝚃𝙾𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${question}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`, event.threadID, event.messageID); // Added the FB link
     } catch (error) {
