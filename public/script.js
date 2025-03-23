@@ -33,7 +33,7 @@ setInterval(measurePing, 1000);
 function updateTime() {
   const now = new Date();
   const options = {
-    timeZone: 'Africa/Porto-Novo',
+    timeZone: 'Asia/Manila',
     hour12: false,
     hour: 'numeric',
     minute: 'numeric',
