@@ -34,7 +34,7 @@ function updateTime() {
   const now = new Date();
   const options = {
     timeZone: 'Asia/Manila',
-    hour12: false,
+    hour12: true,
     hour: 'numeric',
     minute: 'numeric',
     second: 'numeric'
