@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <title>Home</title>
+      <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="styles.css">
+   </head>
+   <body>
+   <style>
+   button {
+   height :30px;
+   width: 100px;
+   font-size: 10px;
+   cursor: pointer;
+   border: none;
+   border-radius: 2px;
+   background-color: #007bff;
+   color: white;
+   transition: background-color 0.3s;
+   }
+   
+   button:hover {
+   background-color: #0056b3;
+   }
+   
+   .floating-div {
+   display: none; /* Hidden by default */
+   position: fixed;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   width: 300px;
+   padding: ;
+   background-color: #262626;
+   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+   border-radius: 5px;
+   z-index: 1000;
+   text-align: center;
+   }
+   
+   .close-btn {
+   position: absolute;
+   top: 10px;
+   right: 10px;
+   background: red;
+   border: none;
+   color: white;
+   border-radius: 50%;
+   width: 30px;
+   height: 30px;
+   cursor: pointer;
+   }
+   
+   .close-btn:hover {
+   background: darkred;
+   }
+   </style>
+      <script>alert('Autobot Remake version 2.4.0\n •No lock\n •No account suspension \n •Active 24h/7 \n\n •| OWNER : BOKOL BLATS |•')</script>
+      <div class="container">
+      <button id="openDivBtn">Active Session</button>
+      
+      <div id="floatingDiv" class="floating-div">
+      <button id="closeDivBtn" class="close-btn"><b>×</b></button>
+      <div class="container">
+      <div class="row">
+      <h1 class="col text-start" style="margin-left: 12px; font-size: 20px;">Current Online:</h1>
+      </div>
+      <div style="color:white;" class="row" id="user_online"></div>
+      </div>
+      </div>
+         <center><h1 class="col text-center" style="font-size: 20px; padding: 10px;">AUTOBOT REMAKE</h1></center>
+         <form id="json-form" onsubmit="submitForm(event)">
+            <div class="row">
+               <div class="col-md-12">
+                  <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your Appstate here..." required></textarea>
+               </div>
+            </div>
+         </form>
+      </div>
+      <div class="container">
+      <center>
+         <div style="display:none;" class="container" id="listOfCommands">
+            <button id="click" class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
+         </div>
+         <div style="display:none;" class="container" id="listOfCommandsEvent">
+            <button id="bogart" class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
+         </div>
+         <div class="container" id="prefixOfCommands">
+            <input type="text" id="inputOfPrefix" placeholder="Enter your prefix">
+         </div>
+         <div class="container" id="adminOfCommands">
+            <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="61573150238481">
+         </div>
+         <label style="font-size: 14px; display: flex; align-items: center; padding: 10px; color:lime;">
+         <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">Agreed to the Terms and Conditions. </label>
+         <div class="col text-center">
+            <button class="btn btn-primary" onclick="State()" disabled id="submitButton" style="">Submit</button>
+         </div>
+         </center>
+      </div>
+      <div id="result" class="container text-center"style="display: none;"></div>
+      <div class="footer">
+      <p>©2025 HOMER | All rights reserved</p>
+      <p>Time: <span id="time"></span>
+      </p>
+      <p style="display:none;">Ping: <span id="ping"></span>
+      </p>
+      </div>
+      <script src="script.js"></script>
+      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+      <script>
+      var button1 = document.getElementById("bogart");
+      var button2 = document.getElementById("click");
+      
+      setInterval(function () {
+      button1.click();
+      button1.disabled = true;
+      
+      button2.click();
+      button2.disabled = true;
+      }, 1000);
+      //active session
+      document.getElementById('openDivBtn').addEventListener('click', function() {
+      document.getElementById('floatingDiv').style.display = 'block';
+      });
+      
+      document.getElementById('closeDivBtn').addEventListener('click', function() {
+      document.getElementById('floatingDiv').style.display = 'none';
+      });
+      </script>
+      <script>
+      async function listOfAi() {
+      const userOnline = document.getElementById("user_online");
+      try {
+      const response = await fetch("/info");
+      const data = await response.json();
+      userOnline.innerHTML = '';
+      data.forEach(user => {
+      const {
+      name,
+      thumbSrc,
+      profileUrl,
+      time,
+      } = user;
+      const userCard = document.createElement('div');
+      userCard.className = 'col-12 user-card mb-4';
+      const image = document.createElement('img');
+      image.src = thumbSrc;
+      image.alt = 'User Thumbnail';
+      image.className = 'img-thumbnail';
+      const userInfo = document.createElement('div');
+      userInfo.className = 'user-info';
+      const userName = document.createElement('h4');
+      userName.textContent = name;
+      const profileLink = document.createElement('p');
+      profileLink.innerHTML = `${profileUrl}`;
+      const uptimeUser = document.createElement('p');
+      uptimeUser.className = 'uptime-user';
+      uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
+      userInfo.appendChild(userName);
+      userInfo.appendChild(profileLink);
+      userInfo.appendChild(uptimeUser);
+      userCard.appendChild(image);
+      userCard.appendChild(userInfo);
+      userOnline.appendChild(userCard);
+      
+      const intervalId = setInterval(() => {
+      user.time++;
+      updateTimer(userCard, user.time);
+      }, 1000); 
+      });
+      } catch (error) {
+      console.error(error);
+      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while fetching data.</div>`;
+      }
+      }
+      
+      function updateTimer(userCard, currentTime) {
+      const uptimeUser = userCard.querySelector('.uptime-user');
+      uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
+      }
+      
+      function timeFormat(currentTime) {
+      const days = Math.floor(currentTime / (3600 * 24));
+      const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
+      const minutes = Math.floor((currentTime % 3600) / 60);
+      const seconds = currentTime % 60;
+      
+      let timeFormat = '';
+      
+      switch (true) {
+      case days > 0:
+      timeFormat += `${days} day${days > 1 ? 's' : ''} `;
+      case hours > 0:
+      timeFormat += `${hours} hour${hours > 1 ? 's' : ''} `;
+      case minutes > 0:
+      timeFormat += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+      default:
+      timeFormat += `${seconds} second${seconds > 1 ? 's' : ''}`;
+      }
+      
+      return timeFormat.trim();
+      }
+      
+      
+      listOfAi();
+      
+      </script>
+   </body>
+</html>
