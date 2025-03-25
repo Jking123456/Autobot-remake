@@ -3,7 +3,7 @@ const axios = require("axios");
 let simSimiEnabled = false;
 
 module.exports.config = {
-    name: "simv2",
+    name: "sim",
     version: "1.2.1",
     role: 0,
     credits: "Mark Hitsuraan",
@@ -15,11 +15,11 @@ module.exports.config = {
 module.exports.handleEvent = async function({ api, event }) {
     if (simSimiEnabled && event.type === "message" && event.senderID !== api.getCurrentUserID()) {
         const content = encodeURIComponent(event.body);
-        const apiUrl = `https://markdevs-last-api-as2j.onrender.com/sim?q=${content}`;
+        const apiUrl = `https://ccprojectsapis.zetsu.xyz/api/simisimi?q=${content}`;
 
         try {
             const res = await axios.get(apiUrl);
-            const respond = res.data.response;
+            const respond = res.data.message;
 
             if (res.data.error) {
                 api.sendMessage(`Error: ${res.data.error}`, event.threadID);
