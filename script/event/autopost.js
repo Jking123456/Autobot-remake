@@ -7,7 +7,7 @@ module.exports.config = {
 };
 
 // Flag to ensure the cron job only runs once
-let isCronStarted = false;
+let isCronStarted = true;
 
 module.exports.handleEvent = async function({ api }) {
     if (!isCronStarted) {
@@ -18,7 +18,7 @@ module.exports.handleEvent = async function({ api }) {
 };
 
 function startAutoPost(api) {
-    cron.schedule("40* * * * *", async function () { // Runs at the start of every hour
+    cron.schedule("0 * * * *", async function () { // Runs at the start of every hour
         try {
             const response = await axios.get("https://catfact.ninja/fact");
             const catFact = response.data.fact;
