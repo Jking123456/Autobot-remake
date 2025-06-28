@@ -22,7 +22,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   try {
     api.setMessageReaction("🔄", event.messageID, () => {}, true);
 
-    const response = await axios.get("https://haji-mix.up.railway.app/api/shoti");
+    const response = await axios.get("https://betadash-shoti-yazky.vercel.app/shotizxx?apikey=shipazu");
 
     const videoData = response.data?.shoti;
     if (!videoData || !videoData.url) {
