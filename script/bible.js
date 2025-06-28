@@ -16,7 +16,7 @@ module.exports.run = async function({ api, event }) {
   api.sendMessage('🙏Fetching a random Bible verse, please wait...', event.threadID, event.messageID);
 
   try {
-    const response = await axios.get('https://zen-api.up.railway.app/api/bible');
+    const response = await axios.get('https://ccprojectsapis.zetsu.xyz/api/randomverse');
     const verse = response.data.verse;
     const reference = response.data.reference;
 
