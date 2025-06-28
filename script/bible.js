@@ -6,32 +6,30 @@ module.exports.config = {
   role: 0,
   hasPrefix: false,
   aliases: ['bible', 'verse'],
-  description: " random Bible verse",
+  description: "Get a random Bible verse",
   usage: "randombibleverse",
   credits: 'chilling',
   cooldown: 3,
 };
 
 module.exports.run = async function({ api, event }) {
-  api.sendMessage('🙏Fetching a random Bible verse, please wait...', event.threadID, event.messageID);
+  api.sendMessage('🙏 Fetching a random Bible verse, please wait...', event.threadID, event.messageID);
 
   try {
     const response = await axios.get('https://ccprojectsapis.zetsu.xyz/api/randomverse');
-    const verse = response.data.verse;
+
+    const verseText = response.data.text?.trim();
     const reference = response.data.reference;
 
-    const message = {
-      body: `📖 Here is a random Bible verse for you:\n\n*${verse}*\n\n— _${reference}_`,
-      mentions: [
-        {
-          tag: `@${event.senderID}`,
-          id: event.senderID
-        }
-      ]
-    };
+    if (!verseText || !reference) {
+      throw new Error("Invalid response structure.");
+    }
 
+    const message = `📖 Here is a random Bible verse for you:\n\n"${verseText}"\n\n— ${reference}`;
+    
     api.sendMessage(message, event.threadID, event.messageID);
   } catch (error) {
-    api.sendMessage('An error occurred while fetching the Bible verse.', event.threadID, event.messageID);
+    console.error("Bible verse fetch error:", error.message || error);
+    api.sendMessage('❌ An error occurred while fetching the Bible verse. Please try again later.', event.threadID, event.messageID);
   }
 };
