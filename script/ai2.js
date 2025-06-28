@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: `ai`,
+  name: `ai2`,
   version: "1.1.0",
   permission: 0,
   credits: "Metoushela",
