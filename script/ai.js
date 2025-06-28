@@ -1,54 +1,35 @@
-const axios = require('axios');
-
 module.exports.config = {
-    name: "ai",
-    version: "1.0.0",
-    hasPermssion: 0,
-    credits: "Jay",
-    description: "EDUCATIONAL",
-    usePrefix: true,
-    commandCategory: "AI",
-    usages: "[question|block <fb user id>]",
-    cooldowns: 10
+  name: `ai`,
+  version: "1.1.0",
+  permission: 0,
+  credits: "Metoushela",
+  description: "",
+  prefix: false,
+  premium: false,
+  category: "without prefix",
+  usage: ``,
+  cooldowns: 3,
+  dependency: {
+    "axios": ""
+  }
 };
 
-module.exports.run = async function ({ api, event, args }) {
-    const command = args[0];
-    const restArgs = args.slice(1);
-    
-    if (!command) {
-        return api.sendMessage("Please provide a command or question!", event.threadID, event.messageID);
-    }
+module.exports.run = async function ({api, event, args}) {
+  try{
+  const axios = require('axios');
+  let ask = args.join(' ');
+  if (!ask) {
+    return api.sendMessage('Homer AI Bot\n━━━━━━━━━━━\n\nplease provide a question.', event.threadID, event.messageID)
+  }
 
-    if (command.toLowerCase() === "block") {
-        const userId = restArgs[0];
-        if (!userId) {
-            return api.sendMessage("Please provide a Facebook user ID to block!", event.threadID, event.messageID);
-        }
-
-        try {
-            await api.blockUser(userId);
-            api.sendMessage(`User with ID ${userId} has been blocked.`, event.threadID, event.messageID);
-        } catch (error) {
-            console.error(error);
-            api.sendMessage("Failed to block the user. Please try again.", event.threadID, event.messageID);
-        }
-    } else {
-        const question = args.join(' ');
-        const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(question)}&uid=1&webSearch=off`;
-
-        if (!question) {
-            return api.sendMessage("You don't have a question!", event.threadID, event.messageID);
-        }
-
-        try {
-            const response = await axios.get(apiUrl);
-            const answer = response.data.response;
-
-            api.sendMessage(`•| 𝙷𝙾𝙼𝙴𝚁 𝙰𝚄𝚃𝙾𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${question}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`, event.threadID, event.messageID);
-        } catch (error) {
-            console.error(error);
-            api.sendMessage("Unexpected error from this Homer AI Bot.", event.threadID, event.messageID);
-        }
-    }
-};
+  const res = await axios.get(`https://kaiz-apis.gleeze.com/api/gpt-4o?q=${ask}&uid=${event.senderID}`);
+  const reply = res.data.response;
+  if (res.error) {
+    return api.sendMessage('having some unexpected error while fetching api.', event.threadID, event.messageID)
+  } else {
+    return api.sendMessage(`✨ 𝗔𝗻𝗼𝘁𝗵𝗲𝗿-𝗠𝗲\n━━━━━━━━━━━\n\n${reply}\n\nby Metoushela Walker and Ulric Atayi`, event.threadID, event.messageID)
+  }
+  } catch (error) {
+    return api.sendMessage('having some unexpected error', event.threadID, event.messageID)
+  }
+}
