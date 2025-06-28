@@ -1,8 +1,8 @@
 module.exports.config = {
   name: "ai2",
-  version: "1.2.0",
+  version: "1.2.3",
   permission: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis (Fixed by ChatGPT)",
   description: "Ask Homer AI with or without image.",
   prefix: false,
   premium: false,
@@ -16,25 +16,37 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const axios = require("axios");
-  const { threadID, messageID, senderID, messageReply } = event;
+  const { threadID, messageID, messageReply } = event;
 
   try {
     let ask = args.join(" ");
-    if (!ask && !(messageReply && messageReply.attachments?.length)) {
-      return api.sendMessage("🧠 Homer AI Bot\n━━━━━━━━━━━\n\n❌ Please provide a question or reply to an image.", threadID, messageID);
+    let baseUrl = `https://apis-rho-nine.vercel.app/gemini`;
+
+    if (!ask && !(messageReply?.attachments?.length)) {
+      return api.sendMessage(
+        "🧠 Homer AI Bot\n━━━━━━━━━━━\n\n❌ Please provide a question or reply to an image.",
+        threadID,
+        messageID
+      );
     }
 
-    let apiUrl = `https://apis-rho-nine.vercel.app/gemini?ask=${encodeURIComponent(ask)}`;
+    const query = {};
 
+    if (ask) query.ask = ask;
+
+    // Corrected key: imagurl
     if (messageReply && messageReply.attachments.length > 0) {
       const attachment = messageReply.attachments[0];
-      if (attachment.type === "photo") {
-        const imagUrl = attachment.url;
-        apiUrl += `&imagUrl=${encodeURIComponent(imagUrl)}`;
+      if (attachment.type === "photo" && attachment.url) {
+        query.imagurl = attachment.url;
+      } else {
+        return api.sendMessage("❌ Please reply to a valid photo.", threadID, messageID);
       }
     }
 
-    const res = await axios.get(apiUrl);
+    const fullUrl = `${baseUrl}?${new URLSearchParams(query).toString()}`;
+
+    const res = await axios.get(fullUrl);
     const description = res?.data?.description;
 
     if (!description) {
@@ -48,7 +60,7 @@ module.exports.run = async function ({ api, event, args }) {
     );
 
   } catch (error) {
-    console.error("❌ AI Error:", error.message || error);
-    return api.sendMessage("❌ An unexpected error occurred while processing your request.", threadID, messageID);
+    console.error("❌ AI Error:", error?.response?.data || error.message || error);
+    return api.sendMessage("❌ Error while processing your request. Please try again later.", threadID, messageID);
   }
 };
