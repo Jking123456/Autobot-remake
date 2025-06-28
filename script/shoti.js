@@ -24,7 +24,7 @@ module.exports.handleEvent = async function ({ api, event }) {
      api.setMessageReaction("🔄", event.messageID, (err) => {}, true);
 
 
-    const response = await axios.get("https://kaiz-apis.gleeze.com/api/shoti");
+    const response = await axios.get("https://haji-mix.up.railway.app/api/shoti");
 
       const file = fs.createWriteStream(__dirname + "/cache/shoti.mp4");
       const userInfo = response.data.shoti.username;
@@ -60,6 +60,6 @@ const title = response.data.shoti.title || "undefined";
     }
   };
 module.exports.run = async function ({ api, event }) {
-   api.sendMessage(`Get beautiful random girl in TikTok!`, event.threadID, event.messageID);
+   api.sendMessage(`Please wait..`, event.threadID, event.messageID);
 
 };
