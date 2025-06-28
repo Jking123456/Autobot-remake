@@ -3,29 +3,54 @@ const axios = require('axios');
 module.exports.config = {
   name: "createfb",
   role: 0,
-  credits: "Neth",
-  description: "Create Fb Acct | Untested!",
+  credits: "Neth (Fixed by ChatGPT)",
+  description: "Create a Facebook account via API",
   hasPrefix: true,
-  cooldown: 10*60*1000,
-  usages: "{p}createacct",
+  cooldown: 10 * 60 * 1000,
+  usages: "{p}createfb",
   aliases: ["fbaccount", "createfb"]
 };
 
-module.exports.run = async function({ api, event, args, prefix }) {
- 
+module.exports.run = async function ({ api, event }) {
   api.setMessageReaction("⏳", event.messageID, () => {}, true);
-  api.sendMessage(`Creating & Generating Facebook Acc...\n⏳ Please wait...`, event.threadID, event.messageID);
+  api.sendMessage(`Creating & Generating Facebook Account...\n⏳ Please wait...`, event.threadID, event.messageID);
 
-    axios.get(`https://haji-mix.up.railway.app/api/fbcreate?amount=1`)
-    .then(dat => { 
-      api.setMessageReaction("✅", event.messageID, () => {}, true);
-    const {birthday,email,first_name,last_name,password,status,token} = dat.data;
-      api.sendMessage(`✨ Facebook Account ✨\n\n✅ Created Info: ${status}\n\nBirthday: ${birthday}\nEmail: ${email}\nName: ${first_name} ${last_name}\nPassword: ${password}\nAccess Token: ${token}`, event.threadID, event.messageID);
-     // res.json(dat.data);
-    })
-    .catch(e => {
-      console.error(e);
-      api.setMessageReaction("🤷", event.messageID, () => {}, true);
-      api.sendMessage("An error occurred. Maybe The Server limited so maybe you'll try again later.", event.threadID, () => {}, event.messageID);
-    });
+  try {
+    const res = await axios.get(`https://haji-mix.up.railway.app/api/fbcreate?amount=1`);
+    const result = res.data;
+
+    if (!result.success || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].success) {
+      throw new Error("Invalid or failed response from API");
+    }
+
+    const acc = result.data[0].account;
+
+    const {
+      email,
+      password,
+      name,
+      birthday,
+      gender,
+      token,
+      id,
+      verified
+    } = acc;
+
+    const genderStr = gender === "M" ? "Male" : gender === "F" ? "Female" : "Unknown";
+    const verifiedStr = verified ? "✅ Verified" : "❌ Not Verified";
+
+    const message = `✨ Facebook Account ✨\n\n` +
+      `📧 Email: ${email}\n🔐 Password: ${password}\n` +
+      `🧍 Name: ${name}\n🎂 Birthday: ${birthday}\n` +
+      `🆔 ID: ${id}\n🚻 Gender: ${genderStr}\n` +
+      `🔑 Token: ${token}\n🔒 Verified: ${verifiedStr}`;
+
+    api.setMessageReaction("✅", event.messageID, () => {}, true);
+    api.sendMessage(message, event.threadID, event.messageID);
+
+  } catch (error) {
+    console.error(error);
+    api.setMessageReaction("❌", event.messageID, () => {}, true);
+    api.sendMessage("❗ An error occurred while creating the account. Please try again later.", event.threadID, event.messageID);
+  }
 };
