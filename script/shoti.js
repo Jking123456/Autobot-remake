@@ -24,22 +24,28 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     const response = await axios.get("https://betadash-shoti-yazky.vercel.app/shotizxx?apikey=shipazu");
 
-    const videoData = response.data?.shoti;
-    if (!videoData || !videoData.url) {
+    let videoUrl, username = "unknown", nickname = "unknown", title = "No title";
+
+    if (response.data.error && response.data.catch_url) {
+      videoUrl = response.data.catch_url;
+      title = "Fallback video due to original error.";
+    } else if (response.data.shoti && response.data.shoti.url) {
+      const videoData = response.data.shoti;
+      videoUrl = videoData.url;
+      username = videoData.username || "unknown";
+      nickname = videoData.nickname || "unknown";
+      title = videoData.title || "No title";
+    } else {
       return api.sendMessage("⚠️ Failed to fetch video.", event.threadID, event.messageID);
     }
 
     const videoPath = path.join(__dirname, "/cache/shoti.mp4");
-
     const file = fs.createWriteStream(videoPath);
-    request(videoData.url).pipe(file);
+
+    request(videoUrl).pipe(file);
 
     file.on("finish", async () => {
       api.setMessageReaction("🟢", event.messageID, () => {}, true);
-
-      const username = videoData.username || "unknown";
-      const nickname = videoData.nickname || "unknown";
-      const title = videoData.title || "No title";
 
       await api.sendMessage(
         {
@@ -47,7 +53,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           attachment: fs.createReadStream(videoPath),
         },
         event.threadID,
-        () => fs.unlinkSync(videoPath), // Clean up after sending
+        () => fs.unlinkSync(videoPath),
         event.messageID
       );
     });
