@@ -30,7 +30,7 @@ module.exports.run = async function ({ api, event, args }) {
       const attachment = messageReply.attachments[0];
       if (attachment.type === "photo") {
         const imageUrl = attachment.url;
-        apiUrl += `&imageUrl=${encodeURIComponent(imageUrl)}`;
+        apiUrl += `&imagUrl=${encodeURIComponent(imagUrl)}`;
       }
     }
 
