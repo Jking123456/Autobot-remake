@@ -34,7 +34,7 @@ const title = response.data.shoti.title || "undefined";
 
 
 
-      const rqs = request(encodeURI(response.data.shoti.videoUrl));
+      const rqs = request(encodeURI(response.data));
       rqs.pipe(file);
 
       file.on("finish", async () => {
