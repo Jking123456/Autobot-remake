@@ -35,7 +35,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     const res = await axios.get(apiUrl);
-    const description = res?.data?.data?.description;
+    const description = res?.data?.description;
 
     if (!description) {
       return api.sendMessage("⚠️ No response received from Homer AI.", threadID, messageID);
