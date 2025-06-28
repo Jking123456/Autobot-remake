@@ -27,7 +27,7 @@ module.exports.run = async function ({ api, args, event }) {
 
     api.setMessageReaction("🕥", event.messageID, (err) => {}, true);
 
-    const response = await axios.get(`https://haji-mix.up.railway.app/api/youtube?search=${encodeURIComponent(searchQuery)}`);
+    const response = await axios.get(`https://haji-mix.up.railway.app/api/youtube?search=${encodeURIComponent(searchQuery)}&limit=1`);
 
     const data = response.data;
     const videoUrl = data.url;
