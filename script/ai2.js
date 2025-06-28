@@ -13,7 +13,7 @@ module.exports = {
             const { threadID } = event;
             let prompt = args.join(" ");
             let imageUrl = null;
-            let apiUrl = `https://ccprojectsapis.zetsu.xyz/api/geminiversion2?ask=${encodeURIComponent(prompt)}`;
+            let apiUrl = `https://apis-rho-nine.vercel.app/gemini?ask=${encodeURIComponent(prompt)}`;
 
             if (event.messageReply && event.messageReply.attachments.length > 0) {
                 const attachment = event.messageReply.attachments[0];
