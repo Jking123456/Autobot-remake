@@ -1,41 +1,54 @@
-const axios = require("axios");
+module.exports.config = {
+  name: "ai",
+  version: "1.2.0",
+  permission: 0,
+  credits: "Homer Rebatis",
+  description: "Ask Homer AI with or without image.",
+  prefix: false,
+  premium: false,
+  category: "without prefix",
+  usage: "ai <your question> | reply to image with ai",
+  cooldowns: 3,
+  dependency: {
+    "axios": ""
+  }
+};
 
-module.exports = {
-    name: "ai",
-    usePrefix: false,
-    usage: "ai <your question> | <reply to an image>",
-    version: "1.2",
-    admin: false,
-    cooldown: 2,
+module.exports.run = async function ({ api, event, args }) {
+  const axios = require("axios");
+  const { threadID, messageID, senderID, messageReply } = event;
 
-    execute: async ({ api, event, args }) => {
-        try {
-            const { threadID } = event;
-            let prompt = args.join(" ");
-            let imageUrl = null;
-            let apiUrl = `https://apis-rho-nine.vercel.app/gemini?ask=${encodeURIComponent(prompt)}`;
-
-            if (event.messageReply && event.messageReply.attachments.length > 0) {
-                const attachment = event.messageReply.attachments[0];
-                if (attachment.type === "photo") {
-                    imageUrl = attachment.url;
-                    apiUrl += `&imagurl=${encodeURIComponent(imageUrl)}`;
-                }
-            }
-
-            const loadingMsg = await api.sendMessage("🧠 Homer AI Bot is thinking...", threadID);
-
-            const response = await axios.get(apiUrl);
-            const description = response?.data?.data?.description;
-
-            if (description) {
-                return api.sendMessage(`•| 𝙷𝙾𝙼𝙴𝚁 𝙰𝙸 𝙱𝙾𝚃 |•\n\n${description}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`, threadID, loadingMsg.messageID);
-            }
-
-            return api.sendMessage("⚠️ No description found in response.", threadID, loadingMsg.messageID);
-        } catch (error) {
-            console.error("❌ Gemini Error:", error);
-            return api.sendMessage("❌ Error while contacting Gemini API.", event.threadID);
-        }
+  try {
+    let ask = args.join(" ");
+    if (!ask && !(messageReply && messageReply.attachments?.length)) {
+      return api.sendMessage("🧠 Homer AI Bot\n━━━━━━━━━━━\n\n❌ Please provide a question or reply to an image.", threadID, messageID);
     }
+
+    let apiUrl = `https://apis-rho-nine.vercel.app/gemini?ask=${encodeURIComponent(ask)}`;
+
+    if (messageReply && messageReply.attachments.length > 0) {
+      const attachment = messageReply.attachments[0];
+      if (attachment.type === "photo") {
+        const imageUrl = attachment.url;
+        apiUrl += `&imageUrl=${encodeURIComponent(imageUrl)}`;
+      }
+    }
+
+    const res = await axios.get(apiUrl);
+    const description = res?.data?.data?.description;
+
+    if (!description) {
+      return api.sendMessage("⚠️ No response received from Homer AI.", threadID, messageID);
+    }
+
+    return api.sendMessage(
+      `•| 𝙷𝙾𝙼𝙴𝚁 𝙰𝙸 𝙱𝙾𝚃 |•\n\n${description}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`,
+      threadID,
+      messageID
+    );
+
+  } catch (error) {
+    console.error("❌ AI Error:", error.message || error);
+    return api.sendMessage("❌ An unexpected error occurred while processing your request.", threadID, messageID);
+  }
 };
