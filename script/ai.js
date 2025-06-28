@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 module.exports = {
-    name: "ai2",
+    name: "ai",
     usePrefix: false,
     usage: "ai <your question> | <reply to an image>",
     version: "1.2",
