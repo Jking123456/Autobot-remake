@@ -2,7 +2,7 @@ module.exports.config = {
   name: "ai",
   version: "1.2.3",
   permission: 0,
-  credits: "Homer Rebatis (Fixed by ChatGPT)",
+  credits: "Homer Rebatis",
   description: "Ask Homer AI with or without image.",
   prefix: false,
   premium: false,
