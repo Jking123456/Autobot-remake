@@ -24,7 +24,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     if (!ask && !(messageReply?.attachments?.length)) {
       return api.sendMessage(
-        "🧠 Homer AI Bot\n━━━━━━━━━━━\n\n❌ Please provide a question or reply to an image.",
+        "🧠 Homer AI Bot\n\n❌ Please provide a question or reply to an image.",
         threadID,
         messageID
       );
