@@ -1,79 +1,79 @@
 const fs = require("fs-extra");
-const { config } = global.GoatBot;
-const { client } = global;
+const path = require("path");
 
-module.exports = {
-	config: {
-		name: "adminonly",
-		aliases: ["adonly", "onlyad", "onlyadmin"],
-		version: "1.5",
-		author: "NTKhang",
-		countDown: 5,
-		role: 2,
-		description: {
-			vi: "bật/tắt chế độ chỉ admin mới có thể sử dụng bot",
-			en: "turn on/off only admin can use bot"
-		},
-		category: "owner",
-		guide: {
-			vi: "   {pn} [on | off]: bật/tắt chế độ chỉ admin mới có thể sử dụng bot"
-				+ "\n   {pn} noti [on | off]: bật/tắt thông báo khi người dùng không phải là admin sử dụng bot",
-			en: "   {pn} [on | off]: turn on/off the mode only admin can use bot"
-				+ "\n   {pn} noti [on | off]: turn on/off the notification when user is not admin use bot"
-		}
-	},
+// Define path to the config file manually (Auto Bot doesn't auto-manage it)
+const configPath = path.join(__dirname, "..", "data", "adminonly-config.json");
 
-	langs: {
-		vi: {
-			turnedOn: "Đã bật chế độ chỉ admin mới có thể sử dụng bot",
-			turnedOff: "Đã tắt chế độ chỉ admin mới có thể sử dụng bot",
-			turnedOnNoti: "Đã bật thông báo khi người dùng không phải là admin sử dụng bot",
-			turnedOffNoti: "Đã tắt thông báo khi người dùng không phải là admin sử dụng bot",
-			invalidArg: "Vui lòng nhập 'on' hoặc 'off'."
-		},
-		en: {
-			turnedOn: "Turned on the mode only admin can use bot",
-			turnedOff: "Turned off the mode only admin can use bot",
-			turnedOnNoti: "Turned on the notification when user is not admin use bot",
-			turnedOffNoti: "Turned off the notification when user is not admin use bot",
-			invalidArg: "Please enter 'on' or 'off'."
-		}
-	},
+// Load or initialize config
+let botConfig = {};
+try {
+  if (fs.existsSync(configPath)) {
+    botConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } else {
+    botConfig = {
+      adminOnly: {
+        enable: false
+      },
+      hideNotiMessage: {
+        adminOnly: false
+      }
+    };
+  }
+} catch (err) {
+  console.error("Failed to load config:", err);
+}
 
-	onStart: function ({ args, message, getLang }) {
-		let isSetNoti = false;
-		let value;
-		let indexGetVal = 0;
+module.exports.config = {
+  name: "adminonly",
+  aliases: ["adonly", "onlyad", "onlyadmin"],
+  version: "1.5",
+  permission: 2,
+  credits: "NTKhang (converted to Auto Bot by ChatGPT)",
+  description: "Turn on/off admin-only usage mode",
+  prefix: true,
+  premium: false,
+  category: "owner",
+  usage: "{pn} [on | off] | noti [on | off]",
+  cooldowns: 3
+};
 
-		// Ensure config properties exist
-		if (!config.adminOnly) config.adminOnly = {};
-		if (!config.hideNotiMessage) config.hideNotiMessage = {};
+module.exports.run = async function ({ api, event, args }) {
+  const send = msg => api.sendMessage(msg, event.threadID, event.messageID);
 
-		// Check if "noti" option is used
-		if (args[0]?.toLowerCase() === "noti") {
-			isSetNoti = true;
-			indexGetVal = 1;
-		}
+  let isSetNoti = false;
+  let value;
+  let indexGetVal = 0;
 
-		// Parse the on/off argument (case-insensitive)
-		const input = args[indexGetVal]?.toLowerCase();
-		if (input === "on")
-			value = true;
-		else if (input === "off")
-			value = false;
-		else
-			return message.SyntaxError?.() || message.reply(getLang("invalidArg"));
+  if (!args.length) return send("❌ Please provide an argument: on/off or noti on/off");
 
-		// Apply setting
-		if (isSetNoti) {
-			config.hideNotiMessage.adminOnly = !value;
-			message.reply(getLang(value ? "turnedOnNoti" : "turnedOffNoti"));
-		} else {
-			config.adminOnly.enable = value;
-			message.reply(getLang(value ? "turnedOn" : "turnedOff"));
-		}
+  // Check if "noti" option is used
+  if (args[0]?.toLowerCase() === "noti") {
+    isSetNoti = true;
+    indexGetVal = 1;
+  }
 
-		// Save changes
-		fs.writeFileSync(client.dirConfig, JSON.stringify(config, null, 2));
-	}
+  const input = args[indexGetVal]?.toLowerCase();
+  if (input === "on") {
+    value = true;
+  } else if (input === "off") {
+    value = false;
+  } else {
+    return send("❌ Invalid argument. Use 'on' or 'off'.");
+  }
+
+  if (isSetNoti) {
+    botConfig.hideNotiMessage.adminOnly = !value;
+    send(value ? "🔔 Notification when non-admins use the bot is ON." : "🔕 Notification is OFF.");
+  } else {
+    botConfig.adminOnly.enable = value;
+    send(value ? "🔒 Admin-only mode is now ENABLED." : "🔓 Admin-only mode is now DISABLED.");
+  }
+
+  // Save updated config
+  try {
+    fs.ensureDirSync(path.dirname(configPath));
+    fs.writeFileSync(configPath, JSON.stringify(botConfig, null, 2));
+  } catch (err) {
+    return send("❌ Failed to save config: " + err.message);
+  }
 };
