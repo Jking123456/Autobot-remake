@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: "ai",
+  name: "homer",
   version: "1.2.3",
   permission: 0,
   credits: "Homer Rebatis",
@@ -7,7 +7,7 @@ module.exports.config = {
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "ai <your question> | reply to image with ai",
+  usage: "homer <your question> | reply to image with ai",
   cooldowns: 3,
   dependency: {
     "axios": ""
