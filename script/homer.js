@@ -1,8 +1,8 @@
 module.exports.config = {
-  name: "homer",
-  version: "1.2.5",
+  name: "ai",
+  version: "1.2.6",
   permission: 0,
-  credits: "Bogart Magalpok",
+  credits: "Homer Rebatis, modified by ChatGPT",
   description: "Ask AI with or without an image using Kaiz Gemini Vision API.",
   prefix: false,
   premium: false,
@@ -20,7 +20,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   const API_ENDPOINT = "https://kaiz-apis.gleeze.com/api/gemini-vision";
   const API_KEY = "12417c89-ac72-4c8e-a174-9ee378771b24";
-  const UID = "1"; // fixed as per your instruction
+  const UID = Math.floor(Math.random() * 1000000).toString(); // Random UID
 
   try {
     const question = args.join(" ");
