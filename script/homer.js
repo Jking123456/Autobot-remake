@@ -2,7 +2,7 @@ module.exports.config = {
   name: "ai",
   version: "1.2.6",
   permission: 0,
-  credits: "Homer Rebatis, modified by ChatGPT",
+  credits: "Homer Rebatis",
   description: "Ask AI with or without an image using Kaiz Gemini Vision API.",
   prefix: false,
   premium: false,
