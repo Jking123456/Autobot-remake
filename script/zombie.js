@@ -1,5 +1,5 @@
 module.exports.config = {
-    name: "zom",
+    name: "zombie",
     version: "1.0.0",
     hasPermssion: 0,
     credits: "Who's Deku (Modified by Homer Rebatis)",
