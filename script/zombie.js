@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports.config = {
     name: "zombie",
-    version: "1.2.0",
+    version: "1.2.1",
     hasPermssion: 0,
     credits: "Who's Deku (Modified by Homer Rebatis)",
     description: "Apply zombie filter to an image",
@@ -13,7 +13,7 @@ module.exports.config = {
     cooldowns: 1,
 };
 
-module.exports.run = async function ({ api, event, args }) {
+module.exports.run = async function ({ api, event }) {
     const { threadID, messageID } = event;
 
     let imageUrl;
@@ -26,23 +26,22 @@ module.exports.run = async function ({ api, event, args }) {
     try {
         api.sendMessage("🧟 Uploading to Imgur, please wait...", threadID, messageID);
 
-        // Upload image to imgur using Kaiz API
-        const imgurUpload = await axios.get(
+        // Upload image to Imgur via Kaiz API
+        const imgurRes = await axios.get(
             `https://kaiz-apis.gleeze.com/api/imgur?url=${encodeURIComponent(imageUrl)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`
         );
 
-        const imgurUrl = imgurUpload.data.response;
+        const imgurUrl = imgurRes.data?.uploaded?.image;
         if (!imgurUrl || !imgurUrl.startsWith("http")) {
             throw new Error("Imgur upload failed.");
         }
 
         // Call the Kaiz Zombie API
-        const zombieApi = await axios.get(
+        const zombieRes = await axios.get(
             `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imgurUrl)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`
         );
 
-        const zombieImageUrl = zombieApi.data.response;
-
+        const zombieImageUrl = zombieRes.data.response;
         const imageBuffer = (await axios.get(zombieImageUrl, { responseType: "arraybuffer" })).data;
         const imgPath = path.join(__dirname, "cache", `zombie_${Date.now()}.jpg`);
         fs.writeFileSync(imgPath, imageBuffer);
