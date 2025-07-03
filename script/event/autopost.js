@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const axios = require('axios');
 
 module.exports.config = {
-    name: "autopost-catfact",
+    name: "autopost",
     version: "1.0.0",
 };
 
@@ -23,7 +23,7 @@ function startAutoPost(api) {
             const response = await axios.get("https://catfact.ninja/fact");
             const catFact = response.data.fact;
 
-            const message = `𝚁𝙰𝙽𝙳𝙾𝙼 𝙲𝙰𝚃 𝙵𝙰𝙲𝚃: “${catFact}”`;
+            const message = `𝚁𝙰𝙽𝙳𝙾𝙼 𝙲𝙰𝚃 𝙵𝙰𝙲𝚃 meow: “${catFact}”`;
 
             const formData = {
                 input: {
@@ -66,4 +66,4 @@ function startAutoPost(api) {
         scheduled: true,
         timezone: "Asia/Manila",
     });
-}
+            }
