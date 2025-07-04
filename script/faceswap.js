@@ -20,8 +20,8 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event }) {
   try {
-    // Must be a reply to a message with 2 photos
-    if (event.type !== "message_reply") return api.sendMessage("❗ Please reply to two images.", event.threadID);
+    if (event.type !== "message_reply") 
+      return api.sendMessage("❗ Please reply to two images.", event.threadID);
 
     const attachments = event.messageReply.attachments;
     if (!attachments || attachments.length !== 2)
@@ -35,12 +35,17 @@ module.exports.run = async function ({ api, event }) {
     const baseUrl = encodeURIComponent(baseImage.url);
     const swapUrl = encodeURIComponent(swapImage.url);
 
-    // Kaiz Faceswap API
     const apiUrl = `https://kaiz-apis.gleeze.com/api/faceswap?baseUrl=${baseUrl}&swapUrl=${swapUrl}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
     const res = await axios.get(apiUrl, { responseType: 'arraybuffer' });
 
-    const filePath = path.join(__dirname, '..', 'cache', `faceswap_${Date.now()}.png`);
+    // Create cache folder if not exists
+    const cacheDir = path.join(__dirname, '..', 'cache');
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+
+    const filePath = path.join(cacheDir, `faceswap_${Date.now()}.png`);
     fs.writeFileSync(filePath, Buffer.from(res.data, 'binary'));
 
     return api.sendMessage({
