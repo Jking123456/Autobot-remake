@@ -7,21 +7,36 @@ const cooldownMap = new Map();
 
 module.exports.config = {
   name: "redroom",
-  version: "1.0.3",
+  version: "1.0.5",
   cooldown: 60,
   role: 0,
   hasPrefix: true,
   aliases: ['porno'],
   description: "Sends a random 18+ video from the API",
-  usage: "{prefix}redroom",
+  usage: "{prefix}redroom homer_bot",
   credits: "Hazeyy, updated by ChatGPT"
 };
 
-module.exports.run = async function({ api, event }) {
+module.exports.run = async function({ api, event, args }) {
   const userId = event.senderID;
   const now = Date.now();
-  const cooldownTime = 20 * 60 * 1000; // 20 minutes in milliseconds
+  const cooldownTime = 20 * 60 * 1000; // 20 minutes
+  const requiredToken = "homer_gwapogi";
 
+  // 🔐 Require access token
+  if (!args[0]) {
+    return api.sendMessage(
+      "🔞 This command is for 18+ users only*.\n\nPlease provide the access token:\n\nExample:\n`redroom homer_bot`",
+      event.threadID,
+      event.messageID
+    );
+  }
+
+  if (args[0] !== requiredToken) {
+    return api.sendMessage("❌ Wrong access token!", event.threadID, event.messageID);
+  }
+
+  // ⏳ Cooldown check
   if (cooldownMap.has(userId)) {
     const lastUsed = cooldownMap.get(userId);
     const remaining = cooldownTime - (now - lastUsed);
@@ -36,7 +51,7 @@ module.exports.run = async function({ api, event }) {
   try {
     api.sendMessage("📀 | Sending video, please wait...", event.threadID, event.messageID);
 
-    const randomPage = Math.floor(1000 + Math.random() * 9000); // 4-digit random page
+    const randomPage = Math.floor(1000 + Math.random() * 9000);
     const apiUrl = `https://kaiz-apis.gleeze.com/api/xvideos?page=${randomPage}&limit=1&apikey=12417c89-ac72-4c8e-a174-9ee378771b24`;
 
     const response = await axios.get(apiUrl);
@@ -59,7 +74,7 @@ module.exports.run = async function({ api, event }) {
     };
 
     api.sendMessage(message, event.threadID, () => {
-      fs.unlinkSync(filePath); // Clean up video file after sending
+      fs.unlinkSync(filePath); // delete file after sending
     });
 
   } catch (error) {
