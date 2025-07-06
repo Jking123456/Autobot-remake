@@ -4,7 +4,7 @@ module.exports.config = {
   name: "fbshare",
   version: "1.0.3",
   role: 0,
-  credits: "Bogart Magalpok",
+  credits: "Homer Rebatis",
   description: "Share a Facebook post using your cookie with share amount",
   usages: "fbshare cookie | postLink | amount",
   cooldowns: 5,
