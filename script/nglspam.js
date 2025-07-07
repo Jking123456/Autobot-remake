@@ -27,8 +27,8 @@ module.exports = {
     const amount = parseInt(args[1]);
     const message = args.slice(2).join(" ");
 
-    if (isNaN(amount) || amount <= 0 || amount > 30) {
-      return api.sendMessage("❌ Invalid amount. Please enter a number between 1 and 100.", threadID, messageID);
+    if (isNaN(amount) || amount <= 0 || amount > 100) {
+      return api.sendMessage("❌ Invalid input. You can only send up to 100 messages.", threadID, messageID);
     }
 
     try {
