@@ -5,7 +5,7 @@ module.exports.config = {
   name: "removebg",
   version: "1.0.0",
   role: 0,
-  credits: "Harith",
+  credits: "Harith (Updated by ChatGPT)",
   aliases: [],
   usages: "< reply image >",
   cooldown: 2,
@@ -17,26 +17,32 @@ module.exports.run = async ({ api, event, args }) => {
 
   // Get the image URL from the reply or from arguments
   var imageUrl = event.messageReply?.attachments[0]?.url || args.join(" ");
+  if (!imageUrl) return api.sendMessage("❌ Please reply to an image or provide a valid image URL.", threadID, messageID);
 
   try {
-    api.sendMessage("⌛ 𝗥𝗲𝗺𝗼𝘃𝗶𝗻𝗴 𝗯𝗮𝗰𝗸𝗴𝗿𝗼𝘂𝗻𝗱 𝗶𝗺𝗮𝗴𝗲 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...", threadID, messageID);
+    api.sendMessage("⌛ Removing background, please wait...", threadID, messageID);
 
-    // Call the remove background API
-    const removeBgUrl = `https://ccprojectsapis.zetsu.xyz/api/removebg?url=${encodeURIComponent(imageUrl)}`;
+    // Step 1: Call the removebg API and get the JSON response
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/removebg?url=${encodeURIComponent(imageUrl)}&stream=false&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
+    const response = await axios.get(apiUrl);
+    const resultImageUrl = response.data.url;
 
-    // Fetch the processed image
-    const img = (await axios.get(removeBgUrl, { responseType: "arraybuffer" })).data;
+    if (!resultImageUrl) throw new Error("No image URL returned from API.");
 
-    // Save the image to the file system
+    // Step 2: Fetch the actual image using the URL from the JSON response
+    const img = (await axios.get(resultImageUrl, { responseType: "arraybuffer" })).data;
+
+    // Step 3: Save the image to file
     fs.writeFileSync(pathie, Buffer.from(img, 'utf-8'));
 
-    // Send the processed image back to the user
+    // Step 4: Send the processed image
     api.sendMessage({
-      body: "🪄| 𝗕𝗮𝗰𝗸𝗴𝗿𝗼𝘂𝗻𝗱 𝗿𝗲𝗺𝗼𝘃𝗲𝗱 𝘀𝘂𝗰𝗰𝗲𝘀𝚜𝚏𝚞𝚕𝚕𝚢",
+      body: "🪄 Background removed successfully!",
       attachment: fs.createReadStream(pathie)
     }, threadID, () => fs.unlinkSync(pathie), messageID);
+
   } catch (error) {
-    api.sendMessage(`❌ 𝗘𝗿𝗿𝗼𝗿: ${error.message}`, threadID, messageID);
+    console.error(error);
+    api.sendMessage(`❌ Error: ${error.message}`, threadID, messageID);
   }
 };
-                     
