@@ -19,8 +19,10 @@
       padding-bottom: 50px;
     }
 
-    h1, h5 {
+    h1 {
       font-weight: 600;
+      font-size: 24px;
+      color: #00d1b2;
     }
 
     .form-control {
@@ -28,24 +30,41 @@
       background-color: #1f1f1f;
       border: 1px solid #444;
       color: #fff;
+      transition: border 0.3s, box-shadow 0.3s;
+    }
+
+    .form-control:focus {
+      border-color: #00d1b2;
+      box-shadow: 0 0 0 0.2rem rgba(0, 209, 178, 0.25);
     }
 
     .form-control::placeholder {
       color: #999;
     }
 
-    button {
-      height: 35px;
-      font-size: 12px;
+    button, .btn {
+      height: 38px;
+      font-size: 13px;
       border: none;
       border-radius: 8px;
-      background-color: #007bff;
+      background-color: #00d1b2;
       color: white;
-      transition: background-color 0.3s;
+      transition: all 0.3s;
+      padding: 0 20px;
     }
 
-    button:hover {
-      background-color: #0056b3;
+    button:hover, .btn:hover {
+      background-color: #00b89c;
+    }
+
+    .btn-outline-light {
+      border: 1px solid #aaa;
+      color: #fff;
+      background: none;
+    }
+
+    .btn-outline-light:hover {
+      background-color: #333;
     }
 
     .floating-div {
@@ -54,12 +73,12 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 340px;
+      width: 350px;
       background-color: #1e1e1e;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
       z-index: 1000;
-      padding: 20px;
+      padding: 25px 20px;
     }
 
     .close-btn {
@@ -70,9 +89,11 @@
       border: none;
       color: white;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       font-size: 18px;
+      line-height: 30px;
+      padding: 0;
     }
 
     .close-btn:hover {
@@ -81,10 +102,10 @@
 
     .card-box {
       background-color: #1e1e1e;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      margin-top: 20px;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      margin-top: 30px;
     }
 
     .footer {
@@ -92,17 +113,8 @@
       color: #aaa;
     }
 
-    .btn-primary {
-      border-radius: 6px;
-      font-weight: 500;
-    }
-
-    .btn-secondary {
-      border-radius: 6px;
-    }
-
     label {
-      color: limegreen;
+      color: #00d1b2;
     }
 
     .modal-content {
@@ -116,13 +128,25 @@
       border-color: #444;
     }
 
+    /* Loading animation */
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.85; }
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Mobile Responsive */
     @media (max-width: 576px) {
       body {
         font-size: 14px;
       }
 
       h1 {
-        font-size: 18px !important;
+        font-size: 16px;
       }
 
       .form-control {
@@ -131,7 +155,7 @@
 
       button, .btn {
         font-size: 11px;
-        height: 32px !important;
+        height: 34px;
       }
 
       label {
@@ -149,7 +173,28 @@
   </style>
 </head>
 <body>
-  <script>alert('Autobot Remake version 2.4.0\n •No lock\n •No account suspension \n •Active 24h/7 \n\n •| OWNER : BOKOL BLATS |•')</script>
+  <!-- Loading Screen -->
+  <div id="loadingOverlay" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #121212;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  ">
+    <img src="https://i.imgur.com/M8bFm8Z.jpeg" alt="Loading..." style="max-width: 200px; animation: pulse 2s infinite; margin-bottom: 20px;">
+    <div style="color: #00d1b2; font-size: 18px; font-weight: 500; animation: fadeInOut 2s infinite;">
+      Loading Autobot Remake...
+    </div>
+    <audio id="loadingMusic" autoplay loop>
+      <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+  </div>
 
   <div class="container text-center mt-4">
     <h1 class="mb-3">🤖 AUTOBOT REMAKE</h1>
@@ -160,7 +205,7 @@
   <div id="floatingDiv" class="floating-div">
     <button id="closeDivBtn" class="close-btn">&times;</button>
     <h5 class="text-left mb-3">🟢 Current Online:</h5>
-    <div id="user_online" style="color:white;"></div>
+    <div id="user_online"></div>
   </div>
 
   <!-- Form Section -->
@@ -222,6 +267,20 @@
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <!-- Fade out loading screen -->
+  <script>
+    window.addEventListener('load', function () {
+      const overlay = document.getElementById('loadingOverlay');
+      const music = document.getElementById('loadingMusic');
+      overlay.style.transition = 'opacity 0.5s ease';
+      overlay.style.opacity = 0;
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        music.pause();
+      }, 500);
+    });
+  </script>
 
   <!-- Load Commands -->
   <script>
