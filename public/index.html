@@ -3,19 +3,42 @@
 <head>
   <title>Home</title>
   <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Fonts and CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+
   <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #121212;
+      color: #fff;
+      padding-bottom: 50px;
+    }
+
+    h1, h5 {
+      font-weight: 600;
+    }
+
+    .form-control {
+      border-radius: 10px;
+      background-color: #1f1f1f;
+      border: 1px solid #444;
+      color: #fff;
+    }
+
+    .form-control::placeholder {
+      color: #999;
+    }
+
     button {
-      height: 30px;
-      width: 100px;
-      font-size: 10px;
-      cursor: pointer;
+      height: 35px;
+      font-size: 12px;
       border: none;
-      border-radius: 2px;
+      border-radius: 8px;
       background-color: #007bff;
       color: white;
       transition: background-color 0.3s;
@@ -31,98 +54,123 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 300px;
-      background-color: #262626;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      border-radius: 5px;
+      width: 340px;
+      background-color: #1e1e1e;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
       z-index: 1000;
-      text-align: center;
+      padding: 20px;
     }
 
     .close-btn {
       position: absolute;
       top: 10px;
       right: 10px;
-      background: red;
+      background: crimson;
       border: none;
       color: white;
       border-radius: 50%;
       width: 30px;
       height: 30px;
-      cursor: pointer;
+      font-size: 18px;
     }
 
     .close-btn:hover {
       background: darkred;
+    }
+
+    .card-box {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      margin-top: 20px;
+    }
+
+    .footer {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .btn-primary {
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .btn-secondary {
+      border-radius: 6px;
+    }
+
+    label {
+      color: limegreen;
+    }
+
+    .modal-content {
+      background-color: #1e1e1e;
+      color: #fff;
+      border-radius: 12px;
+    }
+
+    .list-group-item {
+      background-color: #2a2a2a;
+      border-color: #444;
     }
   </style>
 </head>
 <body>
   <script>alert('Autobot Remake version 2.4.0\n •No lock\n •No account suspension \n •Active 24h/7 \n\n •| OWNER : BOKOL BLATS |•')</script>
 
-  <div class="container">
-    <button id="openDivBtn">Active Session</button>
+  <div class="container text-center mt-4">
+    <h1 class="mb-3">🤖 AUTOBOT REMAKE</h1>
+    <button id="openDivBtn" class="btn btn-outline-light mb-3">Active Session</button>
+  </div>
 
-    <div id="floatingDiv" class="floating-div">
-      <button id="closeDivBtn" class="close-btn"><b>×</b></button>
-      <div class="container">
-        <div class="row">
-          <h1 class="col text-start" style="margin-left: 12px; font-size: 20px;">Current Online:</h1>
-        </div>
-        <div style="color:white;" class="row" id="user_online"></div>
-      </div>
-    </div>
+  <!-- Floating Active Session -->
+  <div id="floatingDiv" class="floating-div">
+    <button id="closeDivBtn" class="close-btn">&times;</button>
+    <h5 class="text-left mb-3">🟢 Current Online:</h5>
+    <div id="user_online" style="color:white;"></div>
+  </div>
 
-    <center><h1 class="col text-center" style="font-size: 20px; padding: 10px;">AUTOBOT REMAKE</h1></center>
-
+  <!-- Form Section -->
+  <div class="container card-box">
     <form id="json-form" onsubmit="submitForm(event)">
-      <div class="row">
-        <div class="col-md-12">
-          <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your Appstate here..." required></textarea>
-        </div>
+      <div class="form-group">
+        <textarea id="json-data" class="form-control" rows="4" placeholder="Paste your Appstate here..." required></textarea>
       </div>
     </form>
+
+    <input type="text" id="inputOfPrefix" placeholder="Enter your prefix" class="form-control mt-3">
+    <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="100044848836284" class="form-control mt-3">
+
+    <label class="d-flex align-items-center mt-3">
+      <input type="checkbox" id="agreeCheckbox" class="mr-2"> Agreed to the Terms and Conditions.
+    </label>
+
+    <div class="text-center mt-3">
+      <button class="btn btn-primary" onclick="State()" disabled id="submitButton">Submit</button>
+    </div>
+
+    <div class="text-center mt-3">
+      <button class="btn btn-primary" data-toggle="modal" data-target="#commandsModal">Show</button>
+      <div>Commands</div>
+    </div>
   </div>
 
-  <div class="container">
-    <center>
-      <div class="container" id="prefixOfCommands">
-        <input type="text" id="inputOfPrefix" placeholder="Enter your prefix" class="form-control mt-3">
-      </div>
-      <div class="container" id="adminOfCommands">
-        <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="100044848836284" class="form-control mt-2">
-      </div>
+  <!-- Result Section -->
+  <div id="result" class="container text-center mt-4" style="display: none;"></div>
 
-      <label style="font-size: 14px; display: flex; align-items: center; padding: 10px; color:lime;">
-        <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">Agreed to the Terms and Conditions.
-      </label>
-
-      <div class="col text-center">
-        <button class="btn btn-primary" onclick="State()" disabled id="submitButton">Submit</button>
-      </div>
-
-      <!-- ✅ Updated Show Commands Button (matching Submit) -->
-      <div class="col text-center mt-3">
-        <button class="btn btn-primary" style="width: 100px; height: 30px;" data-toggle="modal" data-target="#commandsModal">
-          Show
-        </button>
-        <div>Commands</div>
-      </div>
-    </center>
-  </div>
-
-  <div id="result" class="container text-center" style="display: none;"></div>
-
-  <div class="footer text-center mt-4 mb-4">
+  <!-- Footer -->
+  <div class="footer text-center mt-5">
     <p>©2025 HOMER | All rights reserved</p>
     <p>Time: <span id="time"></span></p>
     <p style="display:none;">Ping: <span id="ping"></span></p>
   </div>
 
-  <!-- ✅ Command List Modal -->
+  <!-- Commands Modal -->
   <div class="modal fade" id="commandsModal" tabindex="-1" role="dialog" aria-labelledby="commandsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content" style="background-color: #1a1a1a; color: #fff; border-radius: 12px;">
+      <div class="modal-content">
         <div class="modal-header border-0">
           <h5 class="modal-title" id="commandsModalLabel">📜 Command List</h5>
           <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="background:red; border-radius:50%; width:30px; height:30px;">
@@ -144,9 +192,8 @@
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 
-  <!-- ✅ Load Command List into Modal -->
+  <!-- Load Commands -->
   <script>
     $('#commandsModal').on('shown.bs.modal', async function () {
       const container = document.getElementById('dynamicCommandList');
@@ -155,6 +202,7 @@
       try {
         const response = await fetch('/commands');
         const { commands, aliases } = await response.json();
+
         if (!commands.length) {
           container.innerHTML = '<p>No commands found.</p>';
           return;
@@ -162,11 +210,10 @@
 
         const list = document.createElement('ul');
         list.classList.add('list-group');
-        list.style.background = '#1a1a1a';
 
         commands.forEach((cmd, index) => {
           const li = document.createElement('li');
-          li.className = 'list-group-item bg-dark text-white';
+          li.className = 'list-group-item text-white';
           li.textContent = `${index + 1}. ${cmd}` + (aliases[index] ? ` (alias: ${aliases[index]})` : '');
           list.appendChild(li);
         });
