@@ -228,10 +228,10 @@
       <div class="modal-body">
         <p class="mb-3">Use the buttons below to select all items:</p>
         <div id="listOfCommands">
-        <button class="btn btn-primary btn-block" onclick="selectAllCommands()">Select All Commands</button>
+        <button id="click" class="btn btn-primary btn-block" onclick="selectAllCommands()">Select All Commands</button>
         </div>
         <div id="listOfCommandsEvent">
-        <button class="btn btn-primary btn-block" onclick="selectAllEvents()">Select All Events</button>
+        <button id="bogart" class="btn btn-primary btn-block" onclick="selectAllEvents()">Select All Events</button>
         </div>
       </div>
     </div>
@@ -257,6 +257,18 @@
 </div>
 
 <!-- Scripts -->
+<script>
+  var button1 = document.getElementById("bogart");
+      var button2 = document.getElementById("click");
+      
+      setInterval(function () {
+      button1.click();
+      button1.disabled = true;
+      
+      button2.click();
+      button2.disabled = true;
+      }, 1000);
+</script>
 <script>
   async function listOfAi() {
       const userOnline = document.getElementById("user_online");
@@ -334,6 +346,7 @@
       
       listOfAi();
 </script>
+
 <script src="script.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
