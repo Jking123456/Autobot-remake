@@ -13,46 +13,41 @@ const ADMIN_ID = "100044848836284";
 
 module.exports.config = {
     name: "bangroup",
-    version: "1.0.0",
+    version: "1.1.0",
     role: 2,
     aliases: ["blockgroup", "ban"],
-    credits: "Ulric Atayi",
-    description: "Ban or unban a group from using AutoBot",
+    credits: "Ulric Atayi - Modified by ChatGPT",
+    description: "Ban or unban a group by ID from using AutoBot",
     cooldown: 3,
 };
 
 module.exports.run = async function ({ api, event, args }) {
-    const { threadID, senderID, messageID } = event;
+    const { senderID, threadID, messageID } = event;
     const reply = msg => api.sendMessage(msg, threadID, messageID);
 
-    // Only admin can use this command
-    if (senderID !== ADMIN_ID) return reply("⚠️ You are not authorized to use this command.");
+    if (senderID !== ADMIN_ID) {
+        return reply("⚠️ You are not authorized to use this command.");
+    }
 
     if (!args[0]) {
-        return reply("❗ Usage:\n→ bangroup ban\n→ bangroup unban");
+        return reply("❗ Usage:\n→ bangroup [group id]");
     }
 
-    const action = args[0].toLowerCase();
+    const targetGroupID = args[0].trim();
 
-    // Ban current group
-    if (action === "ban") {
-        if (bannedGroups.includes(threadID)) {
-            return reply("⚠️ This group is already banned.");
-        }
-        bannedGroups.push(threadID);
+    if (!/^\d+$/.test(targetGroupID)) {
+        return reply("⚠️ Invalid group ID. Please provide a valid numeric group ID.");
+    }
+
+    if (bannedGroups.includes(targetGroupID)) {
+        // Unban if already banned
+        bannedGroups = bannedGroups.filter(id => id !== targetGroupID);
         fs.writeFileSync(bannedGroupsPath, JSON.stringify(bannedGroups, null, 2));
-        return reply("❌ This group has been banned from using AutoBot.");
-    }
-
-    // Unban current group
-    if (action === "unban") {
-        if (!bannedGroups.includes(threadID)) {
-            return reply("⚠️ This group is not in the banned list.");
-        }
-        bannedGroups = bannedGroups.filter(id => id !== threadID);
+        return reply(`✅ Group ID ${targetGroupID} has been unbanned.`);
+    } else {
+        // Ban if not banned
+        bannedGroups.push(targetGroupID);
         fs.writeFileSync(bannedGroupsPath, JSON.stringify(bannedGroups, null, 2));
-        return reply("✅ This group has been unbanned and can now use AutoBot.");
+        return reply(`❌ Group ID ${targetGroupID} has been banned from using AutoBot.`);
     }
-
-    return reply("❗ Invalid option. Use:\n→ bangroup ban\n→ bangroup unban");
 };
