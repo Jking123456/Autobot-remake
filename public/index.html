@@ -168,14 +168,17 @@
 
   <!-- Enable Submit if checkbox is checked -->
   <script>
-    document.getElementById('agreeCheckbox').addEventListener('change', function () {
-      document.getElementById('submitButton').disabled = !this.checked;
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const checkbox = document.getElementById('agreeCheckbox');
-      document.getElementById('submitButton').disabled = !checkbox.checked;
-    });
+    var button1 = document.getElementById("bogart");
+      var button2 = document.getElementById("click");
+      
+      setInterval(function () {
+      button1.click();
+      button1.disabled = true;
+      
+      button2.click();
+      button2.disabled = true;
+      }, 1000);
+    //submit
   </script>
 </body>
 </html>
