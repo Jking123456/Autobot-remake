@@ -92,83 +92,36 @@
   </style>
 </head>
 <body>
-
-<script>
-  alert('Autobot.Remake version\n •No lock\n •No account suspension \n •Ative 24h/7 \n\n This website was created by Ulric Atayi \n\n Facebook: facebook.com/Ulricdev \n\n Enjoy🥳🥳')
-</script>
-
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <a class="navbar-brand" href="#">Home</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse justify-content-end" id="navbarNav" style="margin-right: 70px;">
-    <ul class="navbar-nav">
-      <li class="nav-item active">
-        <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" data-toggle="dropdown">
-          Features
-        </a>
-        <div class="dropdown-menu">
-          <a class="dropdown-item" href="#">Cookies Extractor</a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/step_by_step_guide">Step-by-Step Guide</a>
-        </div>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="online_user">Active</a>
-      </li>
-    </ul>
-  </div>
-</nav>
-
 <div class="container">
-  <center><h1 style="padding: 10px;">Autobot.Remake</h1></center>
+  <center><h1 style="padding: 10px;">Autobot Remake</h1></center>
   <form id="json-form" onsubmit="submitForm(event)">
     <div class="section-card">
       <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your cookie here..."></textarea>
-      <p class="text-muted-small">Greetings! Begin by entering your cookie. Scroll down to carefully review our Terms and Privacy.</p>
     </div>
   </form>
-
-  <div class="section-card">
-    <h1>Terms and Conditions and Privacy Policy</h1>
-    <p>Upon deployment or logging in, your chatbot connection remains active unless you personally access the bot's account or modify the password.</p>
-    <p>Refrain from sharing your cookie with third parties. Your cookie contains sensitive account information.</p>
-    <p>We are not responsible for unauthorized access or suspension. Use secure practices to protect your bot.</p>
-    <p>Accessing the bot account may break functionality. Avoid logging into it during use.</p>
-    <p>Use dummy or disposable accounts for extra safety. Malicious use is forbidden and may result in access removal.</p>
-  </div>
-
   <div class="section-card" id="listOfCommands">
     <h1>Select Commands</h1>
-    <p>Please choose your commands by tapping on the respective options.</p>
     <button class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
   </div>
 
   <div class="section-card" id="listOfCommandsEvent">
     <h1>Select Events</h1>
-    <p>Please choose your event commands by tapping on the respective options.</p>
     <button class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
   </div>
 
   <div class="section-card" id="prefixOfCommands">
     <h1>Prefix (Optional)</h1>
-    <p>If you choose not to, entering 'non-prefix' will be considered as your input</p>
     <input type="text" id="inputOfPrefix" placeholder="Enter command prefix">
   </div>
 
   <div class="section-card" id="adminOfCommands">
     <h1>Admin UID (Optional)</h1>
-    <p>If you choose not to, entering 'default' will be considered as your input</p>
     <input type="text" id="inputOfAdmin" placeholder="Enter admin UID">
   </div>
 
   <label style="display: flex; align-items: center; padding: 10px;">
     <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">
-    Checking this box certifies that I have read, understood, and agreed to the Terms and Conditions.
+    Terms and Conditions.
   </label>
 
   <div class="text-center mb-4">
