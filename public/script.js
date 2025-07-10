@@ -50,9 +50,7 @@ setInterval(updateTime, 1000);
 async function State() {
   const jsonInput = document.getElementById('json-data');
   const button = document.getElementById('submitButton');
-  if (!Commands[0].commands.length) {
-    return showResult('Please provide at least one valid command for execution.');
-  }
+
   try {
     button.style.display = 'none';
     const State = JSON.parse(jsonInput.value);
@@ -119,6 +117,9 @@ async function commandList() {
       });
     });
 
+    // ✅ Enable Submit button after commands are loaded
+    document.getElementById("submitButton").disabled = false;
+
   } catch (error) {
     console.log(error);
   }
@@ -131,10 +132,9 @@ function createCommand(element, order, command, type, aliases) {
   const label = document.createElement('span');
   label.classList.add('text-white', 'd-block');
   label.textContent = `${order}. ${command}`;
-
   container.appendChild(label);
 
-  // Auto-add command/event to the array
+  // ✅ Auto-add to the Commands array
   if (type === 'commands' && !Commands[0].commands.includes(command)) {
     Commands[0].commands.push(command);
   } else if (type === 'handleEvent' && !Commands[1].handleEvent.includes(command)) {
@@ -144,5 +144,5 @@ function createCommand(element, order, command, type, aliases) {
   return container;
 }
 
-// Load commands on page load
+// ✅ Load all commands on startup
 commandList();
