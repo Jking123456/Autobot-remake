@@ -4,310 +4,191 @@
   <title>Home</title>
   <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+  
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background-color: #121212;
-      color: #fff;
-      padding-bottom: 50px;
+      background-color: #f9f9f9;
+    }
+
+    .navbar {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+      margin-top: 20px;
     }
 
     h1 {
+      font-size: 20px;
       font-weight: 600;
-      font-size: 24px;
-      color: #00d1b2;
+      color: #333;
     }
 
-    .form-control {
+    p {
+      font-size: 14px;
+      color: #555;
+    }
+
+    textarea.form-control {
+      min-height: 140px;
       border-radius: 10px;
-      background-color: #1f1f1f;
-      border: 1px solid #444;
-      color: #fff;
-      transition: border 0.3s, box-shadow 0.3s;
+      padding: 15px;
+      font-size: 14px;
+      margin-bottom: 15px;
     }
 
-    .form-control:focus {
-      border-color: #00d1b2;
-      box-shadow: 0 0 0 0.2rem rgba(0, 209, 178, 0.25);
-    }
-
-    .form-control::placeholder {
-      color: #999;
-    }
-
-    button, .btn {
-      height: 38px;
-      font-size: 13px;
-      border: none;
+    input[type="text"] {
       border-radius: 8px;
-      background-color: #00d1b2;
-      color: white;
-      transition: all 0.3s;
-      padding: 0 20px;
+      padding: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+      border: 1px solid #ccc;
     }
 
-    button:hover, .btn:hover {
-      background-color: #00b89c;
+    .btn {
+      border-radius: 50px;
+      padding: 10px 20px;
     }
 
-    .btn-outline-light {
-      border: 1px solid #aaa;
-      color: #fff;
-      background: none;
-    }
-
-    .btn-outline-light:hover {
-      background-color: #333;
-    }
-
-    .floating-div {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 350px;
-      background-color: #1e1e1e;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-      border-radius: 12px;
-      z-index: 1000;
-      padding: 25px 20px;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: crimson;
+    .btn-primary {
+      background-color: #007bff;
       border: none;
-      color: white;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      font-size: 18px;
-      line-height: 30px;
-      padding: 0;
     }
 
-    .close-btn:hover {
-      background: darkred;
-    }
-
-    .card-box {
-      background-color: #1e1e1e;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-      margin-top: 30px;
+    .btn-primary:hover {
+      background-color: #0056b3;
     }
 
     .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #f1f1f1;
       font-size: 14px;
-      color: #aaa;
+      border-top: 1px solid #e0e0e0;
     }
 
     label {
-      color: #00d1b2;
+      font-size: 14px;
     }
 
-    .modal-content {
-      background-color: #1e1e1e;
-      color: #fff;
+    .section-card {
+      background: white;
       border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 25px;
     }
 
-    .list-group-item {
-      background-color: #2a2a2a;
-      border-color: #444;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.85; }
-    }
-
-    @keyframes fadeInOut {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    @media (max-width: 576px) {
-      body { font-size: 14px; }
-      h1 { font-size: 16px; }
-      .form-control { font-size: 13px; }
-      button, .btn { font-size: 11px; height: 34px; }
-      label { font-size: 12px; }
-      .modal-title { font-size: 16px; }
-      #commandsModal .list-group-item { font-size: 13px; }
+    .text-muted-small {
+      font-size: 13px;
+      color: #888;
     }
   </style>
 </head>
 <body>
-  <div id="loadingOverlay" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #121212;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    text-align: center;
-  ">
-    <img src="https://i.ibb.co/xty049rm/images.jpg" alt="Loading..." style="max-width: 200px; animation: pulse 2s infinite; margin-bottom: 25px;">
-    <div style="position: relative; width: 100px; height: 100px; margin-bottom: 20px;">
-      <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width: 100px; height: 100px;">
-        <circle cx="50" cy="50" r="45" stroke="#444" stroke-width="10" fill="none"/>
-        <circle id="progressCircle" cx="50" cy="50" r="45" stroke="#00d1b2" stroke-width="10" fill="none" stroke-dasharray="282.6" stroke-dashoffset="282.6"/>
-      </svg>
-      <div id="percentText" style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #00d1b2;
-        font-size: 16px;
-        font-weight: bold;
-      ">0%</div>
-    </div>
-    <div style="color: #aaa; font-size: 16px; font-weight: 500; animation: fadeInOut 2s infinite;">
-      Initializing AI Engine...
-    </div>
-    <audio id="loadingMusic" autoplay loop>
-      <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
-  </div>
 
-  <div class="container text-center mt-4">
-    <h1 class="mb-3">🤖 AUTOBOT REMAKE</h1>
-    <button id="openDivBtn" class="btn btn-outline-light mb-3">Active Session</button>
-  </div>
+<script>
+  alert('Autobot.Remake version\n •No lock\n •No account suspension \n •Ative 24h/7 \n\n This website was created by Ulric Atayi \n\n Facebook: facebook.com/Ulricdev \n\n Enjoy🥳🥳')
+</script>
 
-  <div id="floatingDiv" class="floating-div">
-    <button id="closeDivBtn" class="close-btn">&times;</button>
-    <h5 class="text-left mb-3">🟢 Current Online:</h5>
-    <div id="user_online"></div>
-  </div>
-
-  <div class="container card-box">
-    <form id="json-form" onsubmit="submitForm(event)">
-      <div class="form-group">
-        <textarea id="json-data" class="form-control" rows="4" placeholder="Paste your Appstate here..." required></textarea>
-      </div>
-    </form>
-
-    <input type="text" id="inputOfPrefix" placeholder="Enter your prefix" class="form-control mt-3">
-    <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="100044848836284" class="form-control mt-3">
-
-    <div class="text-center mt-3">
-      <button class="btn btn-primary" onclick="State()" id="submitButton">Submit</button>
-    </div>
-
-    <div class="text-center mt-3">
-      <button class="btn btn-primary" data-toggle="modal" data-target="#commandsModal">Show Commands</button>
-    </div>
-  </div>
-
-  <div id="result" class="container text-center mt-4" style="display: none;"></div>
-
-  <div class="footer text-center mt-5">
-    <p>©2025 HOMER | All rights reserved</p>
-    <p>Time: <span id="time"></span></p>
-    <p style="display:none;">Ping: <span id="ping"></span></p>
-  </div>
-
-  <div class="modal fade" id="commandsModal" tabindex="-1" role="dialog" aria-labelledby="commandsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header border-0">
-          <h5 class="modal-title" id="commandsModalLabel">📜 Command List</h5>
-          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="background:red; border-radius:50%; width:30px; height:30px;">
-            <span aria-hidden="true">&times;</span>
-          </button>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Home</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse justify-content-end" id="navbarNav" style="margin-right: 70px;">
+    <ul class="navbar-nav">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" data-toggle="dropdown">
+          Features
+        </a>
+        <div class="dropdown-menu">
+          <a class="dropdown-item" href="#">Cookies Extractor</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="/step_by_step_guide">Step-by-Step Guide</a>
         </div>
-        <div class="modal-body">
-          <div id="dynamicCommandList">Loading...</div>
-        </div>
-        <div class="modal-footer border-0">
-          <button class="btn btn-secondary" data-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="online_user">Active</a>
+      </li>
+    </ul>
   </div>
-  <script src="script.js"></script>
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const overlay = document.getElementById('loadingOverlay');
-      const percentText = document.getElementById('percentText');
-      const progressCircle = document.getElementById('progressCircle');
-      const music = document.getElementById('loadingMusic');
+</nav>
 
-      let progress = 0;
-      const duration = 3000; // 3 seconds
-      const interval = 30;
-      const step = 100 / (duration / interval);
-      const fullDash = 282.6;
+<div class="container">
+  <center><h1 style="padding: 10px;">Autobot.Remake</h1></center>
+  <form id="json-form" onsubmit="submitForm(event)">
+    <div class="section-card">
+      <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your cookie here..."></textarea>
+      <p class="text-muted-small">Greetings! Begin by entering your cookie. Scroll down to carefully review our Terms and Privacy.</p>
+    </div>
+  </form>
 
-      const loader = setInterval(() => {
-        progress += step;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(loader);
-          overlay.style.transition = 'opacity 0.5s ease';
-          overlay.style.opacity = 0;
-          setTimeout(() => {
-            overlay.style.display = 'none';
-            music.pause();
-          }, 500);
-        }
+  <div class="section-card">
+    <h1>Terms and Conditions and Privacy Policy</h1>
+    <p>Upon deployment or logging in, your chatbot connection remains active unless you personally access the bot's account or modify the password.</p>
+    <p>Refrain from sharing your cookie with third parties. Your cookie contains sensitive account information.</p>
+    <p>We are not responsible for unauthorized access or suspension. Use secure practices to protect your bot.</p>
+    <p>Accessing the bot account may break functionality. Avoid logging into it during use.</p>
+    <p>Use dummy or disposable accounts for extra safety. Malicious use is forbidden and may result in access removal.</p>
+  </div>
 
-        percentText.textContent = `${Math.round(progress)}%`;
-        const offset = fullDash - (progress / 100) * fullDash;
-        progressCircle.setAttribute("stroke-dashoffset", offset);
-      }, interval);
-    });
-  </script>
-  <script>
-    $('#commandsModal').on('shown.bs.modal', async function () {
-      const container = document.getElementById('dynamicCommandList');
-      container.innerHTML = 'Loading...';
+  <div class="section-card" id="listOfCommands">
+    <h1>Select Commands</h1>
+    <p>Please choose your commands by tapping on the respective options.</p>
+    <button class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
+  </div>
 
-      try {
-        const response = await fetch('/commands');
-        const { commands, aliases } = await response.json();
+  <div class="section-card" id="listOfCommandsEvent">
+    <h1>Select Events</h1>
+    <p>Please choose your event commands by tapping on the respective options.</p>
+    <button class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
+  </div>
 
-        if (!commands.length) {
-          container.innerHTML = '<p>No commands found.</p>';
-          return;
-        }
+  <div class="section-card" id="prefixOfCommands">
+    <h1>Prefix (Optional)</h1>
+    <p>If you choose not to, entering 'non-prefix' will be considered as your input</p>
+    <input type="text" id="inputOfPrefix" placeholder="Enter command prefix">
+  </div>
 
-        const list = document.createElement('ul');
-        list.classList.add('list-group');
+  <div class="section-card" id="adminOfCommands">
+    <h1>Admin UID (Optional)</h1>
+    <p>If you choose not to, entering 'default' will be considered as your input</p>
+    <input type="text" id="inputOfAdmin" placeholder="Enter admin UID">
+  </div>
 
-        commands.forEach((cmd, index) => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item text-white';
-          li.textContent = `${index + 1}. ${cmd}` + (aliases[index] ? ` (alias: ${aliases[index]})` : '');
-          list.appendChild(li);
-        });
+  <label style="display: flex; align-items: center; padding: 10px;">
+    <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">
+    Checking this box certifies that I have read, understood, and agreed to the Terms and Conditions.
+  </label>
 
-        container.innerHTML = '';
-        container.appendChild(list);
-      } catch (error) {
-        container.innerHTML = '<p class="text-danger">Error loading commands.</p>';
-      }
-    });
-  </script>
+  <div class="text-center mb-4">
+    <button class="btn btn-primary btn-block" onclick="State()" disabled id="submitButton">Submit</button>
+  </div>
+</div>
+
+<div id="result" class="container text-center" style="display: none;"></div>
+
+<div class="footer">
+  <p>Made with ❤ by Homer Rebatis</p>
+  <p>Time: <span id="time"></span></p>
+  <p>Ping: <span id="ping"></span></p>
+</div>
+
+<script src="script.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+
 </body>
-</html>
+  </html>
