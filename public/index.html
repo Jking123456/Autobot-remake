@@ -20,9 +20,11 @@
       color: white;
       transition: background-color 0.3s;
     }
+
     button:hover {
       background-color: #0056b3;
     }
+
     .floating-div {
       display: none;
       position: fixed;
@@ -36,6 +38,7 @@
       z-index: 1000;
       text-align: center;
     }
+
     .close-btn {
       position: absolute;
       top: 10px;
@@ -48,6 +51,7 @@
       height: 30px;
       cursor: pointer;
     }
+
     .close-btn:hover {
       background: darkred;
     }
@@ -58,6 +62,7 @@
 
   <div class="container">
     <button id="openDivBtn">Active Session</button>
+
     <div id="floatingDiv" class="floating-div">
       <button id="closeDivBtn" class="close-btn"><b>×</b></button>
       <div class="container">
@@ -69,6 +74,7 @@
     </div>
 
     <center><h1 class="col text-center" style="font-size: 20px; padding: 10px;">AUTOBOT REMAKE</h1></center>
+
     <form id="json-form" onsubmit="submitForm(event)">
       <div class="row">
         <div class="col-md-12">
@@ -83,55 +89,59 @@
       <div style="display:none;" class="container" id="listOfCommands">
         <button id="click" class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
       </div>
+
       <div style="display:none;" class="container" id="listOfCommandsEvent">
         <button id="bogart" class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
       </div>
+
       <div class="container" id="prefixOfCommands">
-        <input type="text" id="inputOfPrefix" placeholder="Enter your prefix">
+        <input type="text" id="inputOfPrefix" placeholder="Enter your prefix" class="form-control mt-3">
       </div>
+
       <div class="container" id="adminOfCommands">
-        <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="100044848836284">
+        <input type="text" id="inputOfAdmin" placeholder="Enter Admin UID" value="100044848836284" class="form-control mt-2">
       </div>
+
       <label style="font-size: 14px; display: flex; align-items: center; padding: 10px; color:lime;">
         <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">Agreed to the Terms and Conditions.
       </label>
+
       <div class="col text-center">
         <button class="btn btn-primary" onclick="State()" disabled id="submitButton">Submit</button>
       </div>
 
-      <!-- ✅ Show Commands Button -->
-      <div class="col text-center mt-2">
-        <button class="btn btn-success" data-toggle="modal" data-target="#commandsModal">
-          Show Commands
+      <!-- ✅ Updated Show Commands Button (matching Submit) -->
+      <div class="col text-center mt-3">
+        <button class="btn btn-primary" style="width: 100px; height: 30px;" data-toggle="modal" data-target="#commandsModal">
+          Show
         </button>
+        <div>Commands</div>
       </div>
     </center>
   </div>
 
   <div id="result" class="container text-center" style="display: none;"></div>
 
-  <div class="footer">
+  <div class="footer text-center mt-4 mb-4">
     <p>©2025 HOMER | All rights reserved</p>
     <p>Time: <span id="time"></span></p>
     <p style="display:none;">Ping: <span id="ping"></span></p>
   </div>
 
-  <!-- ✅ Modal -->
+  <!-- ✅ Command List Modal -->
   <div class="modal fade" id="commandsModal" tabindex="-1" role="dialog" aria-labelledby="commandsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div class="modal-content" style="background-color: #1f1f1f; color: white;">
-        <div class="modal-header">
-          <h5 class="modal-title" id="commandsModalLabel">📜 Available Commands</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content" style="background-color: #1a1a1a; color: #fff; border-radius: 12px;">
+        <div class="modal-header border-0">
+          <h5 class="modal-title" id="commandsModalLabel">📜 Command List</h5>
           <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="background:red; border-radius:50%; width:30px; height:30px;">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
         <div class="modal-body">
-          <div id="dynamicCommandList">
-            <p>Loading command list...</p>
-          </div>
+          <div id="dynamicCommandList">Loading...</div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer border-0">
           <button class="btn btn-secondary" data-dismiss="modal">Close</button>
         </div>
       </div>
@@ -147,43 +157,46 @@
 
   <!-- ✅ Load Command List into Modal -->
   <script>
-    $('#commandsModal').on('shown.bs.modal', populateCommandModal);
+    $('#commandsModal').on('shown.bs.modal', async function () {
+      const container = document.getElementById('dynamicCommandList');
+      container.innerHTML = 'Loading...';
 
-    async function populateCommandModal() {
       try {
         const response = await fetch('/commands');
         const { commands, aliases } = await response.json();
-
-        const listContainer = document.getElementById('dynamicCommandList');
-        listContainer.innerHTML = '';
-
         if (!commands.length) {
-          listContainer.innerHTML = '<p>No commands available.</p>';
+          container.innerHTML = '<p>No commands found.</p>';
           return;
         }
 
         const list = document.createElement('ul');
-        list.style.listStyle = 'none';
-        list.style.padding = '0';
+        list.classList.add('list-group');
+        list.style.background = '#1a1a1a';
 
-        commands.forEach((command, index) => {
-          const item = document.createElement('li');
-          item.style.borderBottom = '1px solid #444';
-          item.style.padding = '8px 0';
-          item.innerHTML = `<strong>${index + 1}. ${command}</strong> ${aliases[index] ? `<em>(alias: ${aliases[index]})</em>` : ''}`;
-          list.appendChild(item);
+        commands.forEach((cmd, index) => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item bg-dark text-white';
+          li.textContent = `${index + 1}. ${cmd}` + (aliases[index] ? ` (alias: ${aliases[index]})` : '');
+          list.appendChild(li);
         });
 
-        listContainer.appendChild(list);
-      } catch (err) {
-        document.getElementById('dynamicCommandList').innerHTML = `<p class="text-danger">Error fetching commands.</p>`;
+        container.innerHTML = '';
+        container.appendChild(list);
+      } catch (error) {
+        container.innerHTML = '<p class="text-danger">Error loading commands.</p>';
       }
-    }
+    });
   </script>
 
-  <!-- Your Existing JS (already includes commandList, toggleCheckbox, etc.) -->
+  <!-- Active session popup -->
   <script>
-    // your existing JS functions: State, commandList(), etc...
+    document.getElementById('openDivBtn').addEventListener('click', function () {
+      document.getElementById('floatingDiv').style.display = 'block';
+    });
+
+    document.getElementById('closeDivBtn').addEventListener('click', function () {
+      document.getElementById('floatingDiv').style.display = 'none';
+    });
   </script>
 </body>
 </html>
