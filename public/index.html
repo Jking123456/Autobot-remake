@@ -142,7 +142,7 @@
     <div id="result" style="display: none;" class="mt-4"></div>
   </div>
 
-  <!-- Commands Modal -->
+  <!-- ✅ Commands Modal -->
   <div class="modal fade" id="commandsModal" tabindex="-1" aria-labelledby="commandsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content bg-dark text-light">
@@ -163,7 +163,7 @@
     <p>Time: <span id="time"></span></p>
   </div>
 
-  <!-- Scripts -->
+  <!-- ✅ Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
   <script>
@@ -175,85 +175,41 @@
       document.getElementById('floatingDiv').style.display = 'none';
     });
 
-    // Auto-click select buttons
-    setInterval(() => {
-      const btn1 = document.getElementById("bogart");
-      const btn2 = document.getElementById("click");
-      if (btn1 && btn2) {
-        btn1.click();
-        btn2.click();
-        btn1.disabled = true;
-        btn2.disabled = true;
-      }
-    }, 1000);
-
-    // Fetch and display online users
-    async function listOfAi() {
-      const userOnline = document.getElementById("user_online");
-      try {
-        const res = await fetch("/info");
-        const data = await res.json();
-        userOnline.innerHTML = '';
-        data.forEach(user => {
-          const card = document.createElement('div');
-          card.className = 'user-card';
-
-          const img = document.createElement('img');
-          img.src = user.thumbSrc;
-
-          const info = document.createElement('div');
-          info.className = 'user-info';
-
-          const name = document.createElement('h4');
-          name.textContent = user.name;
-
-          const link = document.createElement('p');
-          link.innerHTML = `<a href="${user.profileUrl}" target="_blank">${user.profileUrl}</a>`;
-
-          const up = document.createElement('p');
-          up.className = 'uptime-user';
-          up.textContent = `Uptime: ${timeFormat(user.time)}`;
-
-          info.append(name, link, up);
-          card.append(img, info);
-          userOnline.appendChild(card);
-
-          setInterval(() => {
-            user.time++;
-            updateTimer(card, user.time);
-          }, 1000);
-        });
-      } catch (err) {
-        userOnline.innerHTML = `<div class="alert alert-danger">Failed to fetch data.</div>`;
-      }
-    }
-    function updateTimer(card, seconds) {
-      const el = card.querySelector('.uptime-user');
-      el.textContent = `Uptime: ${timeFormat(seconds)}`;
-    }
-    function timeFormat(sec) {
-      const d = Math.floor(sec / 86400);
-      const h = Math.floor((sec % 86400) / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      return `${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${s}s`;
-    }
-    listOfAi();
-
-    // Show Commands popup
-    document.getElementById('showCommandsBtn').addEventListener('click', () => {
+    // Updated Show Commands button
+    document.getElementById('showCommandsBtn').addEventListener('click', async () => {
       const listEl = document.getElementById('commandsList');
-      listEl.innerHTML = '';
+      listEl.innerHTML = '<p class="text-muted">Loading commands...</p>';
 
-      if (window.commands?.length) {
-        window.commands.forEach(cmd => {
+      try {
+        const res = await fetch("/commands");
+        const { commands, handleEvent, aliases } = await res.json();
+
+        listEl.innerHTML = '<h6 class="text-info">Commands</h6>';
+        commands.forEach((cmd, i) => {
+          const aliasText = aliases && aliases[i]?.length
+            ? ` <small class="text-warning">(aliases: ${aliases[i].join(', ')})</small>`
+            : '';
           const div = document.createElement('div');
-          div.innerHTML = `<strong>${cmd.name}</strong>: ${cmd.description}`;
+          div.innerHTML = `<strong>${i + 1}. ${cmd}</strong>${aliasText}`;
           div.className = 'mb-2';
           listEl.appendChild(div);
         });
-      } else {
-        listEl.textContent = 'No commands available.';
+
+        const eventTitle = document.createElement('h6');
+        eventTitle.className = 'text-info mt-3';
+        eventTitle.textContent = 'Event Handlers';
+        listEl.appendChild(eventTitle);
+
+        handleEvent.forEach((evt, i) => {
+          const div = document.createElement('div');
+          div.innerHTML = `<strong>${i + 1}. ${evt}</strong>`;
+          div.className = 'mb-2';
+          listEl.appendChild(div);
+        });
+
+      } catch (err) {
+        listEl.innerHTML = '<div class="text-danger">Failed to load commands.</div>';
+        console.error('Error loading commands:', err);
       }
 
       const modal = new bootstrap.Modal(document.getElementById('commandsModal'));
@@ -261,4 +217,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
