@@ -7,12 +7,14 @@
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
 
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background-color: #f9f9f9;
+      background-color: #121212;
+      color: #e0e0e0;
+      font-size: 13px;
     }
 
     .container {
@@ -20,80 +22,121 @@
     }
 
     h1 {
-      font-size: 20px;
-      font-weight: 600;
-      color: #333;
+      font-size: 16px;
+      font-weight: 500;
+      color: #ffffff;
     }
 
     textarea.form-control {
-      min-height: 140px;
+      min-height: 120px;
       border-radius: 10px;
-      padding: 15px;
-      font-size: 14px;
-      margin-bottom: 15px;
+      padding: 12px;
+      font-size: 13px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #333;
     }
 
     input[type="text"] {
       border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #333;
       width: 100%;
-      border: 1px solid #ccc;
     }
 
     .btn {
-      border-radius: 50px;
-      padding: 10px 20px;
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 500;
     }
 
     .btn-primary {
-      background-color: #007bff;
+      background-color: #333;
+      color: #fff;
       border: none;
     }
 
     .btn-primary:hover {
-      background-color: #0056b3;
+      background-color: #555;
+    }
+
+    .section-card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
     }
 
     .footer {
       text-align: center;
       margin-top: 40px;
       padding: 20px;
-      background-color: #f1f1f1;
-      font-size: 14px;
-      border-top: 1px solid #e0e0e0;
+      background-color: #1a1a1a;
+      font-size: 12px;
+      border-top: 1px solid #333;
+      color: #999;
     }
 
-    .section-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      margin-bottom: 25px;
+    label {
+      font-size: 12px;
+      color: #ccc;
     }
 
     .modal-content {
-      border-radius: 15px;
+      background-color: #1f1f1f;
+      color: #fff;
+      border-radius: 10px;
+      border: 1px solid #444;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid #444;
     }
 
     .modal-body .btn {
-      margin: 10px 0;
+      margin-bottom: 10px;
+    }
+
+    .close {
+      color: #fff;
+      opacity: 0.8;
+    }
+
+    .close:hover {
+      opacity: 1;
+    }
+
+    .form-check-input {
+      background-color: #2a2a2a;
+      border-color: #444;
+    }
+
+    .form-check-input:checked {
+      background-color: #007bff;
+      border-color: #007bff;
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <center><h1 style="padding: 10px;">Autobot Remake</h1></center>
+  <center><h1 style="padding: 8px;">Autobot Remake</h1></center>
 
   <form id="json-form" onsubmit="submitForm(event)">
     <div class="section-card">
-      <textarea id="json-data" class="form-control centered-textarea center-placeholder" placeholder="Paste your cookie here..."></textarea>
+      <textarea id="json-data" class="form-control" placeholder="Paste your cookie here..."></textarea>
     </div>
   </form>
 
   <div class="section-card">
     <h1>Command & Event Tools</h1>
-    <button class="btn btn-primary" data-toggle="modal" data-target="#toolsModal">Open Select All Tools</button>
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#toolsModal">
+      Open Select All Tools
+    </button>
   </div>
 
   <div class="section-card" id="prefixOfCommands">
@@ -106,10 +149,10 @@
     <input type="text" id="inputOfAdmin" placeholder="Enter admin UID">
   </div>
 
-  <label style="display: flex; align-items: center; padding: 10px;">
-    <input type="checkbox" id="agreeCheckbox" style="margin-right: 10px;">
-    Terms and Conditions.
-  </label>
+  <div class="form-check my-3">
+    <input type="checkbox" class="form-check-input" id="agreeCheckbox">
+    <label class="form-check-label" for="agreeCheckbox">I agree to the Terms and Conditions.</label>
+  </div>
 
   <div class="text-center mb-4">
     <button class="btn btn-primary btn-block" onclick="State()" disabled id="submitButton">Submit</button>
@@ -120,11 +163,10 @@
 
 <div class="footer">
   <p>Made with ❤ by Homer Rebatis</p>
-  <p>Time: <span id="time"></span></p>
-  <p>Ping: <span id="ping"></span></p>
+  <p>Time: <span id="time"></span> | Ping: <span id="ping"></span></p>
 </div>
 
-<!-- Combined Modal -->
+<!-- Unified Modal -->
 <div class="modal fade" id="toolsModal" tabindex="-1" role="dialog" aria-labelledby="toolsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content text-center">
@@ -135,13 +177,9 @@
         </button>
       </div>
       <div class="modal-body">
-        <p>Use the buttons below to select all items:</p>
-        <div class="container" id="listOfCommands">
-            <button class="btn btn-primary" onclick="selectAllCommands()">Select all commands</button>
-        </div>
-        <div class="container" id="listOfCommandsEvent">
-            <button class="btn btn-primary" onclick="selectAllEvents()">Select all events</button>
-        </div>
+        <p class="mb-3">Use the buttons below to select all items:</p>
+        <button class="btn btn-primary btn-block" onclick="selectAllCommands()">Select All Commands</button>
+        <button class="btn btn-primary btn-block" onclick="selectAllEvents()">Select All Events</button>
       </div>
     </div>
   </div>
