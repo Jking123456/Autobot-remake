@@ -5,6 +5,7 @@
   <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
@@ -98,10 +99,6 @@
       border-bottom: 1px solid #444;
     }
 
-    .modal-body .btn {
-      margin-bottom: 10px;
-    }
-
     .close {
       color: #fff;
       opacity: 0.8;
@@ -120,11 +117,65 @@
       background-color: #007bff;
       border-color: #007bff;
     }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 5px;
+      width: 100%;
+      text-align: center;
+      overflow: auto;
+      animation: glow 3s infinite alternate;
+      background-color: #1a1a1a;
+    }
+
+    @keyframes glow {
+      from { border-color: #222; }
+      to { border-color: #999; }
+    }
+
+    .user-card img {
+      max-width: 60px;
+      border-radius: 10px;
+      margin-right: 10px;
+    }
+
+    .user-info {
+      flex-grow: 1;
+    }
+
+    .user-info h4 {
+      margin-left: 3px;
+      margin-bottom: 3px;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: start;
+    }
+
+    .user-info p {
+      margin: 0;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: start;
+    }
   </style>
 </head>
 <body>
+
 <div class="container">
-  <center><h1 style="padding: 8px;">Autobot Remake</h1></center>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Autobot Remake</h1>
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#activeSessionModal">
+      <i class="fas fa-users"></i> Active Session
+    </button>
+  </div>
 
   <form id="json-form" onsubmit="submitForm(event)">
     <div class="section-card">
@@ -146,7 +197,7 @@
 
   <div class="section-card" id="adminOfCommands">
     <h1>Admin UID (Optional)</h1>
-    <input type="text" id="inputOfAdmin" placeholder="Enter admin UID">
+    <input type="text" id="inputOfAdmin" placeholder="Enter admin UID" value="100044848836284">
   </div>
 
   <div class="form-check my-3">
@@ -166,15 +217,13 @@
   <p>Time: <span id="time"></span> | Ping: <span id="ping"></span></p>
 </div>
 
-<!-- Unified Modal -->
+<!-- Select All Modal -->
 <div class="modal fade" id="toolsModal" tabindex="-1" role="dialog" aria-labelledby="toolsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content text-center">
       <div class="modal-header">
         <h5 class="modal-title">Commands & Events Tools</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span>&times;</span>
-        </button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
       </div>
       <div class="modal-body">
         <p class="mb-3">Use the buttons below to select all items:</p>
@@ -189,9 +238,100 @@
   </div>
 </div>
 
+<!-- Active Session Modal -->
+<div class="modal fade" id="activeSessionModal" tabindex="-1" role="dialog" aria-labelledby="activeSessionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Current Online Users</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-2">
+          <h6 class="col text-muted">Current Online:</h6>
+        </div>
+        <div class="row" id="user_online"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+  async function listOfAi() {
+    const userOnline = document.getElementById("user_online");
+    try {
+      const response = await fetch("/info");
+      const data = await response.json();
+      userOnline.innerHTML = '';
+      data.forEach(user => {
+        const { name, thumbSrc, profileUrl, time } = user;
+
+        const userCard = document.createElement('div');
+        userCard.className = 'col-12 user-card mb-3';
+
+        const image = document.createElement('img');
+        image.src = thumbSrc;
+        image.alt = 'User Thumbnail';
+        image.className = 'img-thumbnail';
+
+        const userInfo = document.createElement('div');
+        userInfo.className = 'user-info';
+
+        const userName = document.createElement('h4');
+        userName.textContent = name;
+
+        const profileLink = document.createElement('p');
+        profileLink.innerHTML = profileUrl;
+
+        const uptimeUser = document.createElement('p');
+        uptimeUser.className = 'uptime-user';
+        uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
+
+        userInfo.appendChild(userName);
+        userInfo.appendChild(profileLink);
+        userInfo.appendChild(uptimeUser);
+
+        userCard.appendChild(image);
+        userCard.appendChild(userInfo);
+        userOnline.appendChild(userCard);
+
+        setInterval(() => {
+          user.time++;
+          updateTimer(userCard, user.time);
+        }, 1000);
+      });
+    } catch (error) {
+      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">Error fetching data.</div>`;
+    }
+  }
+
+  function updateTimer(userCard, currentTime) {
+    const uptimeUser = userCard.querySelector('.uptime-user');
+    uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
+  }
+
+  function timeFormat(currentTime) {
+    const days = Math.floor(currentTime / (3600 * 24));
+    const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
+    const minutes = Math.floor((currentTime % 3600) / 60);
+    const seconds = currentTime % 60;
+    let output = '';
+    if (days) output += `${days} day${days > 1 ? 's' : ''} `;
+    if (hours) output += `${hours} hour${hours > 1 ? 's' : ''} `;
+    if (minutes) output += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+    output += `${seconds} second${seconds > 1 ? 's' : ''}`;
+    return output;
+  }
+
+  $('#activeSessionModal').on('shown.bs.modal', function () {
+    listOfAi();
+  });
+</script>
 <script src="script.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+
 </body>
 </html>
