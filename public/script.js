@@ -1,224 +1,250 @@
-let Commands = [{ commands: [] }, { handleEvent: [] }];
-
-document.addEventListener('DOMContentLoaded', () => {
-  commandList();
-  updateTime();
-  setInterval(updateTime, 1000);
-  setInterval(measurePing, 1000);
-  document.getElementById('submitButton').addEventListener('click', State);
-
-  document.getElementById('openDivBtn').addEventListener('click', () => {
-    document.getElementById('floatingDiv').style.display = 'block';
-    listOfAi();
-  });
-
-  document.getElementById('closeDivBtn').addEventListener('click', () => {
-    document.getElementById('floatingDiv').style.display = 'none';
-  });
+document.getElementById('agreeCheckbox').addEventListener('change', function() {
+  document.getElementById('submitButton').disabled = !this.checked;
 });
-
-function showResult(message) {
-  const resultContainer = document.getElementById('result');
-  resultContainer.innerHTML = `<h5>${message}</h5>`;
-  resultContainer.style.display = 'block';
+let Commands = [{
+  'commands': []
+}, {
+  'handleEvent': []
+}];
+function showAds() {
+  var ads = [
+    'https://facebook.com/ulricdev',
+    'https://ulric-rest-api.onrender.com'
+  ];
+  var index = Math.floor(Math.random() * ads.length);
+  window.location.href = ads[index];
 }
 
 function measurePing() {
-  const xhr = new XMLHttpRequest();
-  let startTime, endTime;
-  xhr.onreadystatechange = () => {
+  var xhr = new XMLHttpRequest();
+  var startTime, endTime;
+  xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
       endTime = Date.now();
-      document.getElementById("ping").textContent = `${endTime - startTime} ms`;
+      var pingTime = endTime - startTime;
+      document.getElementById("ping").textContent = pingTime + " ms";
     }
   };
   xhr.open("GET", location.href + "?t=" + new Date().getTime());
   startTime = Date.now();
   xhr.send();
 }
+setInterval(measurePing, 1000);
 
 function updateTime() {
   const now = new Date();
   const options = {
-    timeZone: 'Asia/Manila',
-    hour12: true,
+    timeZone: 'Africa/Porto-Novo',
+    hour12: false,
     hour: 'numeric',
     minute: 'numeric',
     second: 'numeric'
   };
-  document.getElementById('time').textContent = now.toLocaleString('en-US', options);
+  const formattedTime = now.toLocaleString('en-US', options);
+  document.getElementById('time').textContent = formattedTime;
 }
-
+updateTime();
+setInterval(updateTime, 1000);
 async function State() {
   const jsonInput = document.getElementById('json-data');
   const button = document.getElementById('submitButton');
-
   if (!Commands[0].commands.length) {
     return showResult('Please provide at least one valid command for execution.');
   }
-
   try {
     button.style.display = 'none';
     const State = JSON.parse(jsonInput.value);
-
-    const payload = {
-      state: State,
-      commands: Commands,
-      prefix: document.getElementById('inputOfPrefix').value,
-      admin: document.getElementById('inputOfAdmin').value
-    };
-
-    const response = await fetch('/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
+    if (State && typeof State === 'object') {
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          state: State,
+          commands: Commands,
+          prefix: document.getElementById('inputOfPrefix').value,
+          admin: document.getElementById('inputOfAdmin').value,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        jsonInput.value = '';
+        showResult(data.message);
+        showAds();
+      } else {
+        jsonInput.value = '';
+        showResult(data.message);
+        showAds();
+      }
+    } else {
+      jsonInput.value = '';
+      showResult('Invalid JSON data. Please check your input.');
+      showAds();
+    }
+  } catch (parseError) {
     jsonInput.value = '';
-    showResult(data.message || 'Bot initialized.');
-  } catch (err) {
-    console.error('Login error:', err);
-    showResult('Invalid JSON or login error.');
+    console.error('Error parsing JSON:', parseError);
+    showResult('Error parsing JSON. Please check your input.');
+    showAds();
   } finally {
-    setTimeout(() => { button.style.display = 'block'; }, 4000);
+    setTimeout(() => {
+      button.style.display = 'block';
+    }, 4000);
   }
 }
 
+function showResult(message) {
+  const resultContainer = document.getElementById('result');
+  resultContainer.innerHTML = `<h5>${message}</h5>`;
+  resultContainer.style.display = 'block';
+}
 async function commandList() {
   try {
-    const listOfCommands = document.getElementById('listOfCommands');
-    const listOfCommandsEvent = document.getElementById('listOfCommandsEvent');
+    const [listOfCommands, listOfCommandsEvent] = [document.getElementById('listOfCommands'), document.getElementById('listOfCommandsEvent')];
     const response = await fetch('/commands');
-    const { commands, handleEvent, aliases } = await response.json();
-
-    [commands, handleEvent].forEach((cmdList, i) => {
-      cmdList.forEach((cmd, index) => {
-        const container = createCommand(
-          i === 0 ? listOfCommands : listOfCommandsEvent,
-          index + 1,
-          cmd,
-          i === 0 ? 'commands' : 'handleEvent',
-          aliases[index] || []
-        );
-        (i === 0 ? listOfCommands : listOfCommandsEvent).appendChild(container);
+    const {
+      commands,
+      handleEvent,
+      aliases
+    } = await response.json();
+    [commands, handleEvent].forEach((command, i) => {
+      command.forEach((command, index) => {
+        const container = createCommand(i === 0 ? listOfCommands : listOfCommandsEvent, index + 1, command, i === 0 ? 'commands' : 'handleEvent', aliases[index] || []);
+        i === 0 ? listOfCommands.appendChild(container) : listOfCommandsEvent.appendChild(container);
       });
     });
-
-    document.getElementById('submitButton').disabled = false;
   } catch (error) {
-    console.error('Error loading commands:', error);
+    console.log(error);
   }
 }
 
-function createCommand(container, order, command, type, aliases) {
-  const wrapper = document.createElement('div');
-  wrapper.classList.add('form-check', 'form-switch');
-  wrapper.onclick = toggleCheckbox;
-
-  const input = document.createElement('input');
-  input.className = `form-check-input ${type}`;
-  input.type = 'checkbox';
-  input.id = `command_${order}`;
-
+function createCommand(element, order, command, type, aliases) {
+  const container = document.createElement('div');
+  container.classList.add('form-check', 'form-switch');
+  container.onclick = toggleCheckbox;
+  const checkbox = document.createElement('input');
+  checkbox.classList.add('form-check-input', type === 'handleEvent' ? 'handleEvent' : 'commands');
+  checkbox.type = 'checkbox';
+  checkbox.role = 'switch';
+  checkbox.id = `flexSwitchCheck_${order}`;
   const label = document.createElement('label');
-  label.className = `form-check-label ${type}`;
-  label.htmlFor = input.id;
+  label.classList.add('form-check-label', type === 'handleEvent' ? 'handleEvent' : 'commands');
+  label.for = `flexSwitchCheck_${order}`;
   label.textContent = `${order}. ${command}`;
-
-  wrapper.appendChild(input);
-  wrapper.appendChild(label);
-  container.appendChild(wrapper);
-  return wrapper;
+  container.appendChild(checkbox);
+  container.appendChild(label);
+  /*
+  if (aliases.length > 0 && type !== 'handleEvent') {
+    const aliasText = document.createElement('span');
+    aliasText.classList.add('aliases');
+    aliasText.textContent = ` (${aliases.join(', ')})`;
+    label.appendChild(aliasText);
+  }
+  */
+  return container;
 }
 
 function toggleCheckbox() {
-  const configs = [
-    { input: '.form-check-input.commands', label: '.form-check-label.commands', array: Commands[0].commands },
-    { input: '.form-check-input.handleEvent', label: '.form-check-label.handleEvent', array: Commands[1].handleEvent }
-  ];
-
-  configs.forEach(({ input, label, array }) => {
+  const box = [{
+    input: '.form-check-input.commands',
+    label: '.form-check-label.commands',
+    array: Commands[0].commands
+  }, {
+    input: '.form-check-input.handleEvent',
+    label: '.form-check-label.handleEvent',
+    array: Commands[1].handleEvent
+  }];
+  box.forEach(({
+    input,
+    label,
+    array
+  }) => {
     const checkbox = this.querySelector(input);
     const labelText = this.querySelector(label);
-    if (!checkbox) return;
-
-    checkbox.checked = !checkbox.checked;
-    const cmd = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
-
-    if (checkbox.checked) {
-      labelText.classList.add('disable');
-      if (!array.includes(cmd)) array.push(cmd);
-    } else {
-      labelText.classList.remove('disable');
-      const index = array.indexOf(cmd);
-      if (index !== -1) array.splice(index, 1);
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      if (checkbox.checked) {
+        labelText.classList.add('disable');
+        const command = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        array.push(command);
+      } else {
+        labelText.classList.remove('disable');
+        const command = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        const removeCommand = array.indexOf(command);
+        if (removeCommand !== -1) {
+          array.splice(removeCommand, 1);
+        }
+      }
     }
   });
 }
 
-function listOfAi() {
-  const userOnline = document.getElementById("user_online");
-  fetch("/info")
-    .then(response => response.json())
-    .then(data => {
-      userOnline.innerHTML = '';
-      data.forEach(user => {
-        const { name, thumbSrc, profileUrl, time } = user;
-
-        const card = document.createElement('div');
-        card.className = 'col-12 user-card mb-4';
-
-        const img = document.createElement('img');
-        img.src = thumbSrc;
-        img.className = 'img-thumbnail';
-
-        const info = document.createElement('div');
-        info.className = 'user-info';
-
-        const title = document.createElement('h4');
-        title.textContent = name;
-
-        const link = document.createElement('p');
-        link.innerHTML = profileUrl;
-
-        const uptime = document.createElement('p');
-        uptime.className = 'uptime-user';
-        uptime.innerHTML = `Uptime: ${timeFormat(time)}`;
-
-        info.appendChild(title);
-        info.appendChild(link);
-        info.appendChild(uptime);
-        card.appendChild(img);
-        card.appendChild(info);
-        userOnline.appendChild(card);
-
-        setInterval(() => {
-          user.time++;
-          updateTimer(card, user.time);
-        }, 1000);
-      });
-    })
-    .catch(error => {
-      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">Error fetching session data.</div>`;
-    });
-}
-
-function updateTimer(userCard, currentTime) {
-  const uptimeUser = userCard.querySelector('.uptime-user');
-  uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
-}
-
-function timeFormat(time) {
-  const days = Math.floor(time / 86400);
-  const hours = Math.floor((time % 86400) / 3600);
-  const minutes = Math.floor((time % 3600) / 60);
-  const seconds = time % 60;
-
-  let result = '';
-  if (days > 0) result += `${days} day${days > 1 ? 's' : ''} `;
-  if (hours > 0) result += `${hours} hour${hours > 1 ? 's' : ''} `;
-  if (minutes > 0) result += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-  result += `${seconds} second${seconds !== 1 ? 's' : ''}`;
-  return result.trim();
+function selectAllCommands() {
+  const box = [{
+    input: '.form-check-input.commands',
+    array: Commands[0].commands
+  }];
+  box.forEach(({
+    input,
+    array
+  }) => {
+    const checkboxes = document.querySelectorAll(input);
+    const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    checkboxes.forEach((checkbox) => {
+      if (allChecked) {
+        checkbox.checked = false;
+        const labelText = checkbox.nextElementSibling;
+        labelText.classList.remove('disable');
+        const command = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        const removeCommand = array.indexOf(command);
+        if (removeCommand !== -1) {
+          array.splice(removeCommand, 1);
+        }
+      } else {
+        checkbox.checked = true;
+        const labelText = checkbox.nextElementSibling;
+        labelText.classList.add('disable');
+        const command = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        if (!array.includes(command)) {
+          array.push(command);
+        }
       }
+    });
+  });
+}
+
+function selectAllEvents() {
+  const box = [{
+    input: '.form-check-input.handleEvent',
+    array: Commands[1].handleEvent
+  }];
+  box.forEach(({
+    input,
+    array
+  }) => {
+    const checkboxes = document.querySelectorAll(input);
+    const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    checkboxes.forEach((checkbox) => {
+      if (allChecked) {
+        checkbox.checked = false;
+        const labelText = checkbox.nextElementSibling;
+        labelText.classList.remove('disable');
+        const event = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        const removeEvent = array.indexOf(event);
+        if (removeEvent !== -1) {
+          array.splice(removeEvent, 1);
+        }
+      } else {
+        checkbox.checked = true;
+        const labelText = checkbox.nextElementSibling;
+        labelText.classList.add('disable');
+        const event = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+        if (!array.includes(event)) {
+          array.push(event);
+        }
+      }
+    });
+  });
+}
+commandList();
