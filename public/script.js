@@ -2,17 +2,13 @@ document.getElementById('agreeCheckbox').addEventListener('change', function () 
   document.getElementById('submitButton').disabled = !this.checked;
 });
 
-let Commands = [{
-  'commands': []
-}, {
-  'handleEvent': []
-}];
+let Commands = [
+  { 'commands': [] },
+  { 'handleEvent': [] }
+];
 
 function showAds() {
-  var ads = [
-    '',
-    ''
-  ];
+  var ads = ['',''];
   var index = Math.floor(Math.random() * ads.length);
 }
 
@@ -50,7 +46,6 @@ setInterval(updateTime, 1000);
 async function State() {
   const jsonInput = document.getElementById('json-data');
   const button = document.getElementById('submitButton');
-
   try {
     button.style.display = 'none';
     const State = JSON.parse(jsonInput.value);
@@ -100,7 +95,6 @@ async function commandList() {
       document.getElementById('listOfCommands'),
       document.getElementById('listOfCommandsEvent')
     ];
-
     const response = await fetch('/commands');
     const { commands, handleEvent, aliases } = await response.json();
 
@@ -117,7 +111,7 @@ async function commandList() {
       });
     });
 
-    // ✅ Enable Submit button after commands are loaded
+    // Auto-enable submit after commands loaded
     document.getElementById("submitButton").disabled = false;
 
   } catch (error) {
@@ -134,7 +128,6 @@ function createCommand(element, order, command, type, aliases) {
   label.textContent = `${order}. ${command}`;
   container.appendChild(label);
 
-  // ✅ Auto-add to the Commands array
   if (type === 'commands' && !Commands[0].commands.includes(command)) {
     Commands[0].commands.push(command);
   } else if (type === 'handleEvent' && !Commands[1].handleEvent.includes(command)) {
@@ -144,5 +137,83 @@ function createCommand(element, order, command, type, aliases) {
   return container;
 }
 
-// ✅ Load all commands on startup
+// Load commands on DOM ready
 commandList();
+
+function listOfAi() {
+  const userOnline = document.getElementById("user_online");
+  fetch("/info")
+    .then(response => response.json())
+    .then(data => {
+      userOnline.innerHTML = '';
+      data.forEach(user => {
+        const { name, thumbSrc, profileUrl, time } = user;
+
+        const userCard = document.createElement('div');
+        userCard.className = 'col-12 user-card mb-4';
+
+        const image = document.createElement('img');
+        image.src = thumbSrc;
+        image.alt = 'User Thumbnail';
+        image.className = 'img-thumbnail';
+
+        const userInfo = document.createElement('div');
+        userInfo.className = 'user-info';
+
+        const userName = document.createElement('h4');
+        userName.textContent = name;
+
+        const profileLink = document.createElement('p');
+        profileLink.innerHTML = profileUrl;
+
+        const uptimeUser = document.createElement('p');
+        uptimeUser.className = 'uptime-user';
+        uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
+
+        userInfo.appendChild(userName);
+        userInfo.appendChild(profileLink);
+        userInfo.appendChild(uptimeUser);
+        userCard.appendChild(image);
+        userCard.appendChild(userInfo);
+        userOnline.appendChild(userCard);
+
+        setInterval(() => {
+          user.time++;
+          updateTimer(userCard, user.time);
+        }, 1000);
+      });
+    })
+    .catch(error => {
+      console.error(error);
+      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">Error fetching session data.</div>`;
+    });
+}
+
+function updateTimer(userCard, currentTime) {
+  const uptimeUser = userCard.querySelector('.uptime-user');
+  uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
+}
+
+function timeFormat(currentTime) {
+  const days = Math.floor(currentTime / (3600 * 24));
+  const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
+  const minutes = Math.floor((currentTime % 3600) / 60);
+  const seconds = currentTime % 60;
+
+  let timeFormat = '';
+  if (days > 0) timeFormat += `${days} day${days > 1 ? 's' : ''} `;
+  if (hours > 0) timeFormat += `${hours} hour${hours > 1 ? 's' : ''} `;
+  if (minutes > 0) timeFormat += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+  timeFormat += `${seconds} second${seconds > 1 ? 's' : ''}`;
+  return timeFormat.trim();
+}
+
+// Show/hide active session modal
+document.getElementById('openDivBtn').addEventListener('click', function () {
+  document.getElementById('floatingDiv').style.display = 'block';
+  listOfAi(); // Load online users when opened
+});
+
+document.getElementById('closeDivBtn').addEventListener('click', function () {
+  document.getElementById('floatingDiv').style.display = 'none';
+});
