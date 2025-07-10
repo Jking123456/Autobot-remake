@@ -1,32 +1,41 @@
-document.getElementById('agreeCheckbox').addEventListener('change', function () {
-  document.getElementById('submitButton').disabled = !this.checked;
+let Commands = [{ commands: [] }, { handleEvent: [] }];
+
+document.addEventListener('DOMContentLoaded', () => {
+  commandList();
+  updateTime();
+  setInterval(updateTime, 1000);
+  setInterval(measurePing, 1000);
+  document.getElementById('submitButton').addEventListener('click', State);
+
+  document.getElementById('openDivBtn').addEventListener('click', () => {
+    document.getElementById('floatingDiv').style.display = 'block';
+    listOfAi();
+  });
+
+  document.getElementById('closeDivBtn').addEventListener('click', () => {
+    document.getElementById('floatingDiv').style.display = 'none';
+  });
 });
 
-let Commands = [
-  { 'commands': [] },
-  { 'handleEvent': [] }
-];
-
-function showAds() {
-  var ads = ['',''];
-  var index = Math.floor(Math.random() * ads.length);
+function showResult(message) {
+  const resultContainer = document.getElementById('result');
+  resultContainer.innerHTML = `<h5>${message}</h5>`;
+  resultContainer.style.display = 'block';
 }
 
 function measurePing() {
-  var xhr = new XMLHttpRequest();
-  var startTime, endTime;
-  xhr.onreadystatechange = function () {
+  const xhr = new XMLHttpRequest();
+  let startTime, endTime;
+  xhr.onreadystatechange = () => {
     if (xhr.readyState === 4) {
       endTime = Date.now();
-      var pingTime = endTime - startTime;
-      document.getElementById("ping").textContent = pingTime + " ms";
+      document.getElementById("ping").textContent = `${endTime - startTime} ms`;
     }
   };
   xhr.open("GET", location.href + "?t=" + new Date().getTime());
   startTime = Date.now();
   xhr.send();
 }
-setInterval(measurePing, 1000);
 
 function updateTime() {
   const now = new Date();
@@ -37,73 +46,58 @@ function updateTime() {
     minute: 'numeric',
     second: 'numeric'
   };
-  const formattedTime = now.toLocaleString('en-US', options);
-  document.getElementById('time').textContent = formattedTime;
+  document.getElementById('time').textContent = now.toLocaleString('en-US', options);
 }
-updateTime();
-setInterval(updateTime, 1000);
 
 async function State() {
   const jsonInput = document.getElementById('json-data');
   const button = document.getElementById('submitButton');
+
+  if (!Commands[0].commands.length) {
+    return showResult('Please provide at least one valid command for execution.');
+  }
+
   try {
     button.style.display = 'none';
     const State = JSON.parse(jsonInput.value);
-    if (State && typeof State === 'object') {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          state: State,
-          commands: Commands,
-          prefix: document.getElementById('inputOfPrefix').value,
-          admin: document.getElementById('inputOfAdmin').value,
-        }),
-      });
-      const data = await response.json();
-      jsonInput.value = '';
-      showResult(data.message);
-      showAds();
-    } else {
-      jsonInput.value = '';
-      showResult('Invalid JSON data. Please check your input.');
-      showAds();
-    }
-  } catch (parseError) {
-    jsonInput.value = '';
-    console.error('Error parsing JSON:', parseError);
-    showResult('Error parsing JSON. Please check your input.');
-    showAds();
-  } finally {
-    setTimeout(() => {
-      button.style.display = 'block';
-    }, 4000);
-  }
-}
 
-function showResult(message) {
-  const resultContainer = document.getElementById('result');
-  resultContainer.innerHTML = `<h5>${message}</h5>`;
-  resultContainer.style.display = 'block';
+    const payload = {
+      state: State,
+      commands: Commands,
+      prefix: document.getElementById('inputOfPrefix').value,
+      admin: document.getElementById('inputOfAdmin').value
+    };
+
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    jsonInput.value = '';
+    showResult(data.message || 'Bot initialized.');
+  } catch (err) {
+    console.error('Login error:', err);
+    showResult('Invalid JSON or login error.');
+  } finally {
+    setTimeout(() => { button.style.display = 'block'; }, 4000);
+  }
 }
 
 async function commandList() {
   try {
-    const [listOfCommands, listOfCommandsEvent] = [
-      document.getElementById('listOfCommands'),
-      document.getElementById('listOfCommandsEvent')
-    ];
+    const listOfCommands = document.getElementById('listOfCommands');
+    const listOfCommandsEvent = document.getElementById('listOfCommandsEvent');
     const response = await fetch('/commands');
     const { commands, handleEvent, aliases } = await response.json();
 
-    [commands, handleEvent].forEach((commandList, i) => {
-      commandList.forEach((command, index) => {
+    [commands, handleEvent].forEach((cmdList, i) => {
+      cmdList.forEach((cmd, index) => {
         const container = createCommand(
           i === 0 ? listOfCommands : listOfCommandsEvent,
           index + 1,
-          command,
+          cmd,
           i === 0 ? 'commands' : 'handleEvent',
           aliases[index] || []
         );
@@ -111,34 +105,57 @@ async function commandList() {
       });
     });
 
-    // Auto-enable submit after commands loaded
-    document.getElementById("submitButton").disabled = false;
-
+    document.getElementById('submitButton').disabled = false;
   } catch (error) {
-    console.log(error);
+    console.error('Error loading commands:', error);
   }
 }
 
-function createCommand(element, order, command, type, aliases) {
-  const container = document.createElement('div');
-  container.classList.add('py-1');
+function createCommand(container, order, command, type, aliases) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('form-check', 'form-switch');
+  wrapper.onclick = toggleCheckbox;
 
-  const label = document.createElement('span');
-  label.classList.add('text-white', 'd-block');
+  const input = document.createElement('input');
+  input.className = `form-check-input ${type}`;
+  input.type = 'checkbox';
+  input.id = `command_${order}`;
+
+  const label = document.createElement('label');
+  label.className = `form-check-label ${type}`;
+  label.htmlFor = input.id;
   label.textContent = `${order}. ${command}`;
-  container.appendChild(label);
 
-  if (type === 'commands' && !Commands[0].commands.includes(command)) {
-    Commands[0].commands.push(command);
-  } else if (type === 'handleEvent' && !Commands[1].handleEvent.includes(command)) {
-    Commands[1].handleEvent.push(command);
-  }
-
-  return container;
+  wrapper.appendChild(input);
+  wrapper.appendChild(label);
+  container.appendChild(wrapper);
+  return wrapper;
 }
 
-// Load commands on DOM ready
-commandList();
+function toggleCheckbox() {
+  const configs = [
+    { input: '.form-check-input.commands', label: '.form-check-label.commands', array: Commands[0].commands },
+    { input: '.form-check-input.handleEvent', label: '.form-check-label.handleEvent', array: Commands[1].handleEvent }
+  ];
+
+  configs.forEach(({ input, label, array }) => {
+    const checkbox = this.querySelector(input);
+    const labelText = this.querySelector(label);
+    if (!checkbox) return;
+
+    checkbox.checked = !checkbox.checked;
+    const cmd = labelText.textContent.replace(/^\d+\.\s/, '').split(" ")[0];
+
+    if (checkbox.checked) {
+      labelText.classList.add('disable');
+      if (!array.includes(cmd)) array.push(cmd);
+    } else {
+      labelText.classList.remove('disable');
+      const index = array.indexOf(cmd);
+      if (index !== -1) array.splice(index, 1);
+    }
+  });
+}
 
 function listOfAi() {
   const userOnline = document.getElementById("user_online");
@@ -149,42 +166,40 @@ function listOfAi() {
       data.forEach(user => {
         const { name, thumbSrc, profileUrl, time } = user;
 
-        const userCard = document.createElement('div');
-        userCard.className = 'col-12 user-card mb-4';
+        const card = document.createElement('div');
+        card.className = 'col-12 user-card mb-4';
 
-        const image = document.createElement('img');
-        image.src = thumbSrc;
-        image.alt = 'User Thumbnail';
-        image.className = 'img-thumbnail';
+        const img = document.createElement('img');
+        img.src = thumbSrc;
+        img.className = 'img-thumbnail';
 
-        const userInfo = document.createElement('div');
-        userInfo.className = 'user-info';
+        const info = document.createElement('div');
+        info.className = 'user-info';
 
-        const userName = document.createElement('h4');
-        userName.textContent = name;
+        const title = document.createElement('h4');
+        title.textContent = name;
 
-        const profileLink = document.createElement('p');
-        profileLink.innerHTML = profileUrl;
+        const link = document.createElement('p');
+        link.innerHTML = profileUrl;
 
-        const uptimeUser = document.createElement('p');
-        uptimeUser.className = 'uptime-user';
-        uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
+        const uptime = document.createElement('p');
+        uptime.className = 'uptime-user';
+        uptime.innerHTML = `Uptime: ${timeFormat(time)}`;
 
-        userInfo.appendChild(userName);
-        userInfo.appendChild(profileLink);
-        userInfo.appendChild(uptimeUser);
-        userCard.appendChild(image);
-        userCard.appendChild(userInfo);
-        userOnline.appendChild(userCard);
+        info.appendChild(title);
+        info.appendChild(link);
+        info.appendChild(uptime);
+        card.appendChild(img);
+        card.appendChild(info);
+        userOnline.appendChild(card);
 
         setInterval(() => {
           user.time++;
-          updateTimer(userCard, user.time);
+          updateTimer(card, user.time);
         }, 1000);
       });
     })
     .catch(error => {
-      console.error(error);
       userOnline.innerHTML = `<div class="alert alert-danger" role="alert">Error fetching session data.</div>`;
     });
 }
@@ -194,26 +209,16 @@ function updateTimer(userCard, currentTime) {
   uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
 }
 
-function timeFormat(currentTime) {
-  const days = Math.floor(currentTime / (3600 * 24));
-  const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
-  const minutes = Math.floor((currentTime % 3600) / 60);
-  const seconds = currentTime % 60;
+function timeFormat(time) {
+  const days = Math.floor(time / 86400);
+  const hours = Math.floor((time % 86400) / 3600);
+  const minutes = Math.floor((time % 3600) / 60);
+  const seconds = time % 60;
 
-  let timeFormat = '';
-  if (days > 0) timeFormat += `${days} day${days > 1 ? 's' : ''} `;
-  if (hours > 0) timeFormat += `${hours} hour${hours > 1 ? 's' : ''} `;
-  if (minutes > 0) timeFormat += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-  timeFormat += `${seconds} second${seconds > 1 ? 's' : ''}`;
-  return timeFormat.trim();
-}
-
-// Show/hide active session modal
-document.getElementById('openDivBtn').addEventListener('click', function () {
-  document.getElementById('floatingDiv').style.display = 'block';
-  listOfAi(); // Load online users when opened
-});
-
-document.getElementById('closeDivBtn').addEventListener('click', function () {
-  document.getElementById('floatingDiv').style.display = 'none';
-});
+  let result = '';
+  if (days > 0) result += `${days} day${days > 1 ? 's' : ''} `;
+  if (hours > 0) result += `${hours} hour${hours > 1 ? 's' : ''} `;
+  if (minutes > 0) result += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+  result += `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  return result.trim();
+      }
