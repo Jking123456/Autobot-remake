@@ -16,49 +16,36 @@
       background-color: #121212;
       color: #e0e0e0;
       font-size: 13px;
-      line-height: 1.6;
+    }
+
+    .container {
+      margin-top: 20px;
     }
 
     h1 {
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 500;
       color: #ffffff;
-      margin-bottom: 12px;
     }
 
-    .container {
-      margin-top: 30px;
-      max-width: 800px;
-    }
-
-    .section-card {
-      background: #1c1c1c;
-      border-radius: 12px;
-      padding: 20px 25px;
-      box-shadow: 0 0 0 1px #2a2a2a;
-      margin-bottom: 25px;
-      transition: box-shadow 0.3s ease;
-    }
-
-    .section-card:hover {
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
-    }
-
-    textarea.form-control,
-    input[type="text"] {
+    textarea.form-control {
+      min-height: 120px;
       border-radius: 10px;
-      padding: 10px 14px;
+      padding: 12px;
       font-size: 13px;
       background-color: #1e1e1e;
       color: #e0e0e0;
-      border: 1px solid #2a2a2a;
-      transition: border 0.3s ease;
+      border: 1px solid #333;
     }
 
-    textarea.form-control:focus,
-    input[type="text"]:focus {
-      border-color: #007bff;
-      outline: none;
+    input[type="text"] {
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      width: 100%;
     }
 
     .btn {
@@ -66,7 +53,6 @@
       padding: 6px 16px;
       font-size: 12px;
       font-weight: 500;
-      transition: background-color 0.2s ease;
     }
 
     .btn-primary {
@@ -79,66 +65,27 @@
       background-color: #555;
     }
 
-    .form-check-label {
-      font-size: 12px;
-      color: #ccc;
-    }
-
-    .form-check-input {
-      background-color: #2a2a2a;
-      border-color: #444;
-    }
-
-    .form-check-input:checked {
-      background-color: #007bff;
-      border-color: #007bff;
+    .section-card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
     }
 
     .footer {
       text-align: center;
-      margin-top: 60px;
+      margin-top: 40px;
       padding: 20px;
       background-color: #1a1a1a;
       font-size: 12px;
-      border-top: 1px solid #2a2a2a;
+      border-top: 1px solid #333;
       color: #999;
     }
 
-    .user-card {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      border: 1px solid #333;
-      border-radius: 10px;
-      padding: 10px;
-      background-color: #181818;
-      box-shadow: 0 0 5px rgba(255, 255, 255, 0.03);
-    }
-
-    .user-card img {
-      max-width: 60px;
-      border-radius: 10px;
-      margin-right: 12px;
-    }
-
-    .user-info {
-      flex-grow: 1;
-    }
-
-    .user-info h4 {
-      font-size: 14px;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .user-info p {
+    label {
       font-size: 12px;
-      margin-bottom: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: #ccc;
     }
 
     .modal-content {
@@ -152,11 +99,6 @@
       border-bottom: 1px solid #444;
     }
 
-    .modal-title {
-      font-size: 15px;
-      font-weight: 500;
-    }
-
     .close {
       color: #fff;
       opacity: 0.8;
@@ -166,106 +108,153 @@
       opacity: 1;
     }
 
-    .btn-block + .btn-block {
-      margin-top: 10px;
+    .form-check-input {
+      background-color: #2a2a2a;
+      border-color: #444;
     }
 
-    .text-center .btn {
+    .form-check-input:checked {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 5px;
       width: 100%;
-      max-width: 240px;
+      text-align: center;
+      overflow: auto;
+      animation: glow 3s infinite alternate;
+      background-color: #1a1a1a;
     }
 
-    /* Loading screen styles */
-    #loadingScreen {
+    @keyframes glow {
+      from { border-color: #222; }
+      to { border-color: #999; }
+    }
+
+    .user-card img {
+      max-width: 60px;
+      border-radius: 10px;
+      margin-right: 10px;
+    }
+
+    .user-info {
+      flex-grow: 1;
+    }
+
+    .user-info h4 {
+      margin-left: 3px;
+      margin-bottom: 3px;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: start;
+    }
+
+    .user-info p {
+      margin: 0;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: start;
+    }
+
+    /* LOADER STYLES */
+    #loaderWrapper {
       position: fixed;
+      z-index: 9999;
+      background-color: #121212;
+      width: 100%;
+      height: 100%;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100vh;
-      background-color: #121212;
-      z-index: 9999;
-      text-align: center;
-      color: #fff;
-      transition: opacity 0.6s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s ease;
     }
 
-    .loading-circle {
+    .loader-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 30px;
+    }
+
+    .progress-circle {
+      position: relative;
       width: 100px;
       height: 100px;
+      background: conic-gradient(#00aaff 0%, #333 0%);
       border-radius: 50%;
-      border: 6px solid #2a2a2a;
-      border-top: 6px solid #007bff;
-      animation: spin 1s linear infinite;
-      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    .percentage {
+    .progress-circle span {
       position: absolute;
+      color: #fff;
+      font-weight: 600;
       font-size: 16px;
-      font-weight: 500;
     }
 
     .loading-text {
-      font-size: 13px;
       color: #ccc;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      font-size: 14px;
+      margin-top: 15px;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
 
-<!-- Loading Screen -->
-<div id="loadingScreen" class="d-flex flex-column justify-content-center align-items-center">
-  <img src="https://i.ibb.co/xty049rm/images.jpg" alt="Logo" style="width: 80px; margin-bottom: 20px;">
-  <div class="loading-circle">
-    <div class="percentage" id="loadingPercent">0%</div>
+<!-- LOADER -->
+<div id="loaderWrapper">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" alt="Logo" class="loader-logo">
+  <div class="progress-circle" id="progressCircle">
+    <span id="percentage">0%</span>
   </div>
-  <p class="loading-text mt-3">Initializing AI Engine...</p>
+  <div class="loading-text">Initializing AI Engine...</div>
 </div>
 
-<div class="container" style="display: none;" id="mainContent">
+<div class="container">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Autobot Remake</h1>
     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#activeSessionModal">
       <i class="fas fa-users"></i> Active Session
     </button>
   </div>
-
   <form id="json-form" onsubmit="submitForm(event)">
     <div class="section-card">
       <textarea id="json-data" class="form-control" placeholder="Paste your cookie here..."></textarea>
     </div>
   </form>
-
   <div class="section-card">
     <h1>Command & Event Tools</h1>
     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#toolsModal">
       Open Select All Tools
     </button>
   </div>
-
   <div class="section-card" id="prefixOfCommands">
     <h1>Prefix (Optional)</h1>
     <input type="text" id="inputOfPrefix" placeholder="Enter command prefix">
   </div>
-
   <div class="section-card" id="adminOfCommands">
     <h1>Admin UID (Optional)</h1>
     <input type="text" id="inputOfAdmin" placeholder="Enter admin UID" value="100044848836284">
   </div>
-
   <div class="form-check my-3">
     <input type="checkbox" class="form-check-input" id="agreeCheckbox">
     <label class="form-check-label" for="agreeCheckbox">I agree to the Terms and Conditions.</label>
   </div>
-
   <div class="text-center mb-4">
     <button class="btn btn-primary btn-block" onclick="State()" disabled id="submitButton">Submit</button>
   </div>
@@ -278,13 +267,13 @@
   <p>Time: <span id="time"></span> | Ping: <span id="ping"></span></p>
 </div>
 
-<!-- Tools Modal -->
-<div class="modal fade" id="toolsModal" tabindex="-1" role="dialog">
+<!-- Select All Modal -->
+<div class="modal fade" id="toolsModal" tabindex="-1" role="dialog" aria-labelledby="toolsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content text-center">
       <div class="modal-header">
         <h5 class="modal-title">Commands & Events Tools</h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
       </div>
       <div class="modal-body">
         <p class="mb-3">Use the buttons below to select all items:</p>
@@ -300,12 +289,12 @@
 </div>
 
 <!-- Active Session Modal -->
-<div class="modal fade" id="activeSessionModal" tabindex="-1" role="dialog">
+<div class="modal fade" id="activeSessionModal" tabindex="-1" role="dialog" aria-labelledby="activeSessionModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header border-0">
         <h5 class="modal-title">Current Online Users</h5>
-        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
       </div>
       <div class="modal-body">
         <div class="row mb-2">
@@ -319,34 +308,13 @@
 
 <!-- Scripts -->
 <script>
-  document.body.style.overflow = 'hidden';
-  let percent = 0;
-  const loadingPercent = document.getElementById('loadingPercent');
-  const loadingScreen = document.getElementById('loadingScreen');
-  const mainContent = document.getElementById('mainContent');
-
-  const interval = setInterval(() => {
-    percent++;
-    loadingPercent.textContent = percent + '%';
-    if (percent >= 100) {
-      clearInterval(interval);
-      loadingScreen.style.opacity = '0';
-      setTimeout(() => {
-        loadingScreen.style.display = 'none';
-        mainContent.style.display = 'block';
-        document.body.style.overflow = 'auto';
-      }, 600);
-    }
-  }, 30);
-</script>
-
-<script>
   var button1 = document.getElementById("bogart");
   var button2 = document.getElementById("click");
 
   setInterval(function () {
     button1.click();
     button1.disabled = true;
+
     button2.click();
     button2.disabled = true;
   }, 1000);
@@ -390,7 +358,7 @@
       });
     } catch (error) {
       console.error(error);
-      userOnline.innerHTML = `<div class="alert alert-danger">An error occurred while fetching data.</div>`;
+      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while fetching data.</div>`;
     }
   }
 
@@ -404,21 +372,52 @@
     const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
     const minutes = Math.floor((currentTime % 3600) / 60);
     const seconds = currentTime % 60;
+
     let timeFormat = '';
-    if (days > 0) timeFormat += `${days}d `;
-    if (hours > 0) timeFormat += `${hours}h `;
-    if (minutes > 0) timeFormat += `${minutes}m `;
-    timeFormat += `${seconds}s`;
+
+    switch (true) {
+      case days > 0:
+        timeFormat += `${days} day${days > 1 ? 's' : ''} `;
+      case hours > 0:
+        timeFormat += `${hours} hour${hours > 1 ? 's' : ''} `;
+      case minutes > 0:
+        timeFormat += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+      default:
+        timeFormat += `${seconds} second${seconds > 1 ? 's' : ''}`;
+    }
+
     return timeFormat.trim();
   }
 
   listOfAi();
 </script>
 
+<script>
+  let progress = 0;
+  const percentageText = document.getElementById("percentage");
+  const progressCircle = document.getElementById("progressCircle");
+
+  const interval = setInterval(() => {
+    progress += 1;
+    percentageText.innerText = progress + "%";
+    progressCircle.style.background = `conic-gradient(#00aaff ${progress * 3.6}deg, #333 ${progress * 3.6}deg)`;
+    if (progress >= 100) {
+      clearInterval(interval);
+    }
+  }, 30); // ~3 seconds
+
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      const loader = document.getElementById('loaderWrapper');
+      loader.style.opacity = '0';
+      setTimeout(() => loader.style.display = 'none', 500);
+    }, 3000);
+  });
+</script>
+
 <script src="script.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-
 </body>
-  </html>
+</html>
