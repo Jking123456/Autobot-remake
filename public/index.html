@@ -128,7 +128,6 @@
       border-color: #444;
     }
 
-    /* Loading animation */
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.05); opacity: 0.85; }
@@ -139,41 +138,19 @@
       50% { opacity: 0.4; }
     }
 
-    /* Mobile Responsive */
     @media (max-width: 576px) {
-      body {
-        font-size: 14px;
-      }
-
-      h1 {
-        font-size: 16px;
-      }
-
-      .form-control {
-        font-size: 13px;
-      }
-
-      button, .btn {
-        font-size: 11px;
-        height: 34px;
-      }
-
-      label {
-        font-size: 12px;
-      }
-
-      .modal-title {
-        font-size: 16px;
-      }
-
-      #commandsModal .list-group-item {
-        font-size: 13px;
-      }
+      body { font-size: 14px; }
+      h1 { font-size: 16px; }
+      .form-control { font-size: 13px; }
+      button, .btn { font-size: 11px; height: 34px; }
+      label { font-size: 12px; }
+      .modal-title { font-size: 16px; }
+      #commandsModal .list-group-item { font-size: 13px; }
     }
   </style>
 </head>
 <body>
-  <!-- Loading Screen -->
+  <!-- Loading Screen with Circular Progress -->
   <div id="loadingOverlay" style="
     position: fixed;
     top: 0;
@@ -186,10 +163,26 @@
     align-items: center;
     justify-content: center;
     z-index: 9999;
+    text-align: center;
   ">
-    <img src="https://i.imgur.com/M8bFm8Z.jpeg" alt="Loading..." style="max-width: 200px; animation: pulse 2s infinite; margin-bottom: 20px;">
-    <div style="color: #00d1b2; font-size: 18px; font-weight: 500; animation: fadeInOut 2s infinite;">
-      Loading Autobot Remake...
+    <img src="https://i.imgur.com/M8bFm8Z.jpeg" alt="Loading..." style="max-width: 200px; animation: pulse 2s infinite; margin-bottom: 25px;">
+    <div style="position: relative; width: 100px; height: 100px; margin-bottom: 20px;">
+      <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width: 100px; height: 100px;">
+        <circle cx="50" cy="50" r="45" stroke="#444" stroke-width="10" fill="none"/>
+        <circle id="progressCircle" cx="50" cy="50" r="45" stroke="#00d1b2" stroke-width="10" fill="none" stroke-dasharray="282.6" stroke-dashoffset="282.6"/>
+      </svg>
+      <div id="percentText" style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #00d1b2;
+        font-size: 16px;
+        font-weight: bold;
+      ">0%</div>
+    </div>
+    <div style="color: #aaa; font-size: 16px; font-weight: 500; animation: fadeInOut 2s infinite;">
+      Initializing AI Engine...
     </div>
     <audio id="loadingMusic" autoplay loop>
       <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
@@ -201,14 +194,12 @@
     <button id="openDivBtn" class="btn btn-outline-light mb-3">Active Session</button>
   </div>
 
-  <!-- Floating Active Session -->
   <div id="floatingDiv" class="floating-div">
     <button id="closeDivBtn" class="close-btn">&times;</button>
     <h5 class="text-left mb-3">🟢 Current Online:</h5>
     <div id="user_online"></div>
   </div>
 
-  <!-- Form Section -->
   <div class="container card-box">
     <form id="json-form" onsubmit="submitForm(event)">
       <div class="form-group">
@@ -232,17 +223,14 @@
     </div>
   </div>
 
-  <!-- Result Section -->
   <div id="result" class="container text-center mt-4" style="display: none;"></div>
 
-  <!-- Footer -->
   <div class="footer text-center mt-5">
     <p>©2025 HOMER | All rights reserved</p>
     <p>Time: <span id="time"></span></p>
     <p style="display:none;">Ping: <span id="ping"></span></p>
   </div>
 
-  <!-- Commands Modal -->
   <div class="modal fade" id="commandsModal" tabindex="-1" role="dialog" aria-labelledby="commandsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
       <div class="modal-content">
@@ -268,17 +256,37 @@
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-  <!-- Fade out loading screen -->
+  <!-- Loading Logic -->
   <script>
-    window.addEventListener('load', function () {
+    document.addEventListener("DOMContentLoaded", function () {
       const overlay = document.getElementById('loadingOverlay');
+      const percentText = document.getElementById('percentText');
+      const progressCircle = document.getElementById('progressCircle');
       const music = document.getElementById('loadingMusic');
-      overlay.style.transition = 'opacity 0.5s ease';
-      overlay.style.opacity = 0;
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        music.pause();
-      }, 500);
+
+      let progress = 0;
+      const duration = 3000; // 3 seconds
+      const interval = 30;
+      const step = 100 / (duration / interval);
+      const fullDash = 282.6;
+
+      const loader = setInterval(() => {
+        progress += step;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(loader);
+          overlay.style.transition = 'opacity 0.5s ease';
+          overlay.style.opacity = 0;
+          setTimeout(() => {
+            overlay.style.display = 'none';
+            music.pause();
+          }, 500);
+        }
+
+        percentText.textContent = `${Math.round(progress)}%`;
+        const offset = fullDash - (progress / 100) * fullDash;
+        progressCircle.setAttribute("stroke-dashoffset", offset);
+      }, interval);
     });
   </script>
 
