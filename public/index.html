@@ -16,36 +16,49 @@
       background-color: #121212;
       color: #e0e0e0;
       font-size: 13px;
-    }
-
-    .container {
-      margin-top: 20px;
+      line-height: 1.6;
     }
 
     h1 {
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 600;
       color: #ffffff;
+      margin-bottom: 12px;
     }
 
-    textarea.form-control {
-      min-height: 120px;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 13px;
-      background-color: #1e1e1e;
-      color: #e0e0e0;
-      border: 1px solid #333;
+    .container {
+      margin-top: 30px;
+      max-width: 800px;
     }
 
+    .section-card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 20px 25px;
+      box-shadow: 0 0 0 1px #2a2a2a;
+      margin-bottom: 25px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .section-card:hover {
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
+    }
+
+    textarea.form-control,
     input[type="text"] {
-      border-radius: 8px;
-      padding: 8px 10px;
+      border-radius: 10px;
+      padding: 10px 14px;
       font-size: 13px;
       background-color: #1e1e1e;
       color: #e0e0e0;
-      border: 1px solid #333;
-      width: 100%;
+      border: 1px solid #2a2a2a;
+      transition: border 0.3s ease;
+    }
+
+    textarea.form-control:focus,
+    input[type="text"]:focus {
+      border-color: #007bff;
+      outline: none;
     }
 
     .btn {
@@ -53,6 +66,7 @@
       padding: 6px 16px;
       font-size: 12px;
       font-weight: 500;
+      transition: background-color 0.2s ease;
     }
 
     .btn-primary {
@@ -65,27 +79,66 @@
       background-color: #555;
     }
 
-    .section-card {
-      background: #1c1c1c;
-      border-radius: 12px;
-      padding: 18px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      margin-bottom: 20px;
+    .form-check-label {
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .form-check-input {
+      background-color: #2a2a2a;
+      border-color: #444;
+    }
+
+    .form-check-input:checked {
+      background-color: #007bff;
+      border-color: #007bff;
     }
 
     .footer {
       text-align: center;
-      margin-top: 40px;
+      margin-top: 60px;
       padding: 20px;
       background-color: #1a1a1a;
       font-size: 12px;
-      border-top: 1px solid #333;
+      border-top: 1px solid #2a2a2a;
       color: #999;
     }
 
-    label {
+    .user-card {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      background-color: #181818;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.03);
+    }
+
+    .user-card img {
+      max-width: 60px;
+      border-radius: 10px;
+      margin-right: 12px;
+    }
+
+    .user-info {
+      flex-grow: 1;
+    }
+
+    .user-info h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-info p {
       font-size: 12px;
-      color: #ccc;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .modal-content {
@@ -99,6 +152,11 @@
       border-bottom: 1px solid #444;
     }
 
+    .modal-title {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
     .close {
       color: #fff;
       opacity: 0.8;
@@ -108,68 +166,71 @@
       opacity: 1;
     }
 
-    .form-check-input {
-      background-color: #2a2a2a;
-      border-color: #444;
+    .btn-block + .btn-block {
+      margin-top: 10px;
     }
 
-    .form-check-input:checked {
-      background-color: #007bff;
-      border-color: #007bff;
-    }
-
-    .user-card {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-      border: 1px solid #444;
-      border-radius: 10px;
-      padding: 5px;
+    .text-center .btn {
       width: 100%;
+      max-width: 240px;
+    }
+
+    /* Loading screen styles */
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background-color: #121212;
+      z-index: 9999;
       text-align: center;
-      overflow: auto;
-      animation: glow 3s infinite alternate;
-      background-color: #1a1a1a;
+      color: #fff;
+      transition: opacity 0.6s ease;
     }
 
-    @keyframes glow {
-      from { border-color: #222; }
-      to { border-color: #999; }
+    .loading-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 6px solid #2a2a2a;
+      border-top: 6px solid #007bff;
+      animation: spin 1s linear infinite;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .user-card img {
-      max-width: 60px;
-      border-radius: 10px;
-      margin-right: 10px;
+    .percentage {
+      position: absolute;
+      font-size: 16px;
+      font-weight: 500;
     }
 
-    .user-info {
-      flex-grow: 1;
+    .loading-text {
+      font-size: 13px;
+      color: #ccc;
     }
 
-    .user-info h4 {
-      margin-left: 3px;
-      margin-bottom: 3px;
-      font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: start;
-    }
-
-    .user-info p {
-      margin: 0;
-      font-size: 12px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: start;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+<!-- Loading Screen -->
+<div id="loadingScreen" class="d-flex flex-column justify-content-center align-items-center">
+  <img src="your-logo.png" alt="Logo" style="width: 80px; margin-bottom: 20px;">
+  <div class="loading-circle">
+    <div class="percentage" id="loadingPercent">0%</div>
+  </div>
+  <p class="loading-text mt-3">Initializing AI Engine...</p>
+</div>
+
+<div class="container" style="display: none;" id="mainContent">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Autobot Remake</h1>
     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#activeSessionModal">
@@ -217,21 +278,21 @@
   <p>Time: <span id="time"></span> | Ping: <span id="ping"></span></p>
 </div>
 
-<!-- Select All Modal -->
-<div class="modal fade" id="toolsModal" tabindex="-1" role="dialog" aria-labelledby="toolsModalLabel" aria-hidden="true">
+<!-- Tools Modal -->
+<div class="modal fade" id="toolsModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content text-center">
       <div class="modal-header">
         <h5 class="modal-title">Commands & Events Tools</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
       </div>
       <div class="modal-body">
         <p class="mb-3">Use the buttons below to select all items:</p>
         <div id="listOfCommands">
-        <button id="click" class="btn btn-primary btn-block" onclick="selectAllCommands()">Select All Commands</button>
+          <button id="click" class="btn btn-primary btn-block" onclick="selectAllCommands()">Select All Commands</button>
         </div>
         <div id="listOfCommandsEvent">
-        <button id="bogart" class="btn btn-primary btn-block" onclick="selectAllEvents()">Select All Events</button>
+          <button id="bogart" class="btn btn-primary btn-block" onclick="selectAllEvents()">Select All Events</button>
         </div>
       </div>
     </div>
@@ -239,12 +300,12 @@
 </div>
 
 <!-- Active Session Modal -->
-<div class="modal fade" id="activeSessionModal" tabindex="-1" role="dialog" aria-labelledby="activeSessionModalLabel" aria-hidden="true">
+<div class="modal fade" id="activeSessionModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header border-0">
         <h5 class="modal-title">Current Online Users</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
       </div>
       <div class="modal-body">
         <div class="row mb-2">
@@ -258,93 +319,100 @@
 
 <!-- Scripts -->
 <script>
-  var button1 = document.getElementById("bogart");
-      var button2 = document.getElementById("click");
-      
-      setInterval(function () {
-      button1.click();
-      button1.disabled = true;
-      
-      button2.click();
-      button2.disabled = true;
-      }, 1000);
+  document.body.style.overflow = 'hidden';
+  let percent = 0;
+  const loadingPercent = document.getElementById('loadingPercent');
+  const loadingScreen = document.getElementById('loadingScreen');
+  const mainContent = document.getElementById('mainContent');
+
+  const interval = setInterval(() => {
+    percent++;
+    loadingPercent.textContent = percent + '%';
+    if (percent >= 100) {
+      clearInterval(interval);
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        mainContent.style.display = 'block';
+        document.body.style.overflow = 'auto';
+      }, 600);
+    }
+  }, 30);
 </script>
+
+<script>
+  var button1 = document.getElementById("bogart");
+  var button2 = document.getElementById("click");
+
+  setInterval(function () {
+    button1.click();
+    button1.disabled = true;
+    button2.click();
+    button2.disabled = true;
+  }, 1000);
+</script>
+
 <script>
   async function listOfAi() {
-      const userOnline = document.getElementById("user_online");
-      try {
+    const userOnline = document.getElementById("user_online");
+    try {
       const response = await fetch("/info");
       const data = await response.json();
       userOnline.innerHTML = '';
       data.forEach(user => {
-      const {
-      name,
-      thumbSrc,
-      profileUrl,
-      time,
-      } = user;
-      const userCard = document.createElement('div');
-      userCard.className = 'col-12 user-card mb-4';
-      const image = document.createElement('img');
-      image.src = thumbSrc;
-      image.alt = 'User Thumbnail';
-      image.className = 'img-thumbnail';
-      const userInfo = document.createElement('div');
-      userInfo.className = 'user-info';
-      const userName = document.createElement('h4');
-      userName.textContent = name;
-      const profileLink = document.createElement('p');
-      profileLink.innerHTML = `${profileUrl}`;
-      const uptimeUser = document.createElement('p');
-      uptimeUser.className = 'uptime-user';
-      uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
-      userInfo.appendChild(userName);
-      userInfo.appendChild(profileLink);
-      userInfo.appendChild(uptimeUser);
-      userCard.appendChild(image);
-      userCard.appendChild(userInfo);
-      userOnline.appendChild(userCard);
-      
-      const intervalId = setInterval(() => {
-      user.time++;
-      updateTimer(userCard, user.time);
-      }, 1000); 
+        const { name, thumbSrc, profileUrl, time } = user;
+        const userCard = document.createElement('div');
+        userCard.className = 'col-12 user-card mb-4';
+        const image = document.createElement('img');
+        image.src = thumbSrc;
+        image.alt = 'User Thumbnail';
+        image.className = 'img-thumbnail';
+        const userInfo = document.createElement('div');
+        userInfo.className = 'user-info';
+        const userName = document.createElement('h4');
+        userName.textContent = name;
+        const profileLink = document.createElement('p');
+        profileLink.innerHTML = `${profileUrl}`;
+        const uptimeUser = document.createElement('p');
+        uptimeUser.className = 'uptime-user';
+        uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
+        userInfo.appendChild(userName);
+        userInfo.appendChild(profileLink);
+        userInfo.appendChild(uptimeUser);
+        userCard.appendChild(image);
+        userCard.appendChild(userInfo);
+        userOnline.appendChild(userCard);
+
+        const intervalId = setInterval(() => {
+          user.time++;
+          updateTimer(userCard, user.time);
+        }, 1000);
       });
-      } catch (error) {
+    } catch (error) {
       console.error(error);
-      userOnline.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while fetching data.</div>`;
-      }
-      }
-      
-      function updateTimer(userCard, currentTime) {
-      const uptimeUser = userCard.querySelector('.uptime-user');
-      uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
-      }
-      
-      function timeFormat(currentTime) {
-      const days = Math.floor(currentTime / (3600 * 24));
-      const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
-      const minutes = Math.floor((currentTime % 3600) / 60);
-      const seconds = currentTime % 60;
-      
-      let timeFormat = '';
-      
-      switch (true) {
-      case days > 0:
-      timeFormat += `${days} day${days > 1 ? 's' : ''} `;
-      case hours > 0:
-      timeFormat += `${hours} hour${hours > 1 ? 's' : ''} `;
-      case minutes > 0:
-      timeFormat += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-      default:
-      timeFormat += `${seconds} second${seconds > 1 ? 's' : ''}`;
-      }
-      
-      return timeFormat.trim();
-      }
-      
-      
-      listOfAi();
+      userOnline.innerHTML = `<div class="alert alert-danger">An error occurred while fetching data.</div>`;
+    }
+  }
+
+  function updateTimer(userCard, currentTime) {
+    const uptimeUser = userCard.querySelector('.uptime-user');
+    uptimeUser.textContent = `Uptime: ${timeFormat(currentTime)}`;
+  }
+
+  function timeFormat(currentTime) {
+    const days = Math.floor(currentTime / (3600 * 24));
+    const hours = Math.floor((currentTime % (3600 * 24)) / 3600);
+    const minutes = Math.floor((currentTime % 3600) / 60);
+    const seconds = currentTime % 60;
+    let timeFormat = '';
+    if (days > 0) timeFormat += `${days}d `;
+    if (hours > 0) timeFormat += `${hours}h `;
+    if (minutes > 0) timeFormat += `${minutes}m `;
+    timeFormat += `${seconds}s`;
+    return timeFormat.trim();
+  }
+
+  listOfAi();
 </script>
 
 <script src="script.js"></script>
@@ -353,4 +421,4 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 
 </body>
-</html>
+  </html>
