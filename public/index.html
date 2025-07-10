@@ -4,8 +4,6 @@
   <title>Home</title>
   <meta name="description" content="Simple messenger bot hosting service created by Ulric Atayi">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Fonts and CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -150,7 +148,6 @@
   </style>
 </head>
 <body>
-  <!-- Loading Screen with Circular Progress -->
   <div id="loadingOverlay" style="
     position: fixed;
     top: 0;
@@ -249,14 +246,10 @@
       </div>
     </div>
   </div>
-
-  <!-- Scripts -->
   <script src="script.js"></script>
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-  <!-- Loading Logic -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const overlay = document.getElementById('loadingOverlay');
@@ -289,8 +282,6 @@
       }, interval);
     });
   </script>
-
-  <!-- Load Commands -->
   <script>
     $('#commandsModal').on('shown.bs.modal', async function () {
       const container = document.getElementById('dynamicCommandList');
