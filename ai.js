@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: "homer",
+  name: "ai",
   version: "1.2.6",
   permission: 0,
   credits: "Homer Rebatis",
