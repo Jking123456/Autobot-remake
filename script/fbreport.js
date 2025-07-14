@@ -17,15 +17,13 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, senderID } = event;
-
-  // Cooldown key is per user only
   const cooldownKey = `${senderID}`;
 
-  // Check cooldown
+  // Cooldown check
   if (cooldowns.has(cooldownKey)) {
     const lastUsed = cooldowns.get(cooldownKey);
     const now = Date.now();
-    const remaining = 60 * 1000 - (now - lastUsed); // 1 minute
+    const remaining = 60 * 1000 - (now - lastUsed);
 
     if (remaining > 0) {
       const secs = Math.floor(remaining / 1000);
@@ -33,7 +31,7 @@ module.exports.run = async ({ api, event, args }) => {
     }
   }
 
-  // Validate arguments
+  // Argument check
   if (args.length !== 3) {
     return api.sendMessage('❌ Invalid format.\nUsage: report [token or cookie] [user_id] [amount]', threadID);
   }
@@ -49,29 +47,37 @@ module.exports.run = async ({ api, event, args }) => {
     return api.sendMessage('⚠️ Maximum allowed reports is 100.', threadID);
   }
 
+  // Start reporting
+  cooldowns.set(cooldownKey, Date.now());
+
+  api.sendMessage(`📨 Sending ${reportAmount} reports to user ID ${userId}...`, threadID);
+
   const apiVersion = 'v12.0';
   const intervalMs = 1500;
   let count = 0;
 
-  // Set cooldown for the user
-  cooldowns.set(cooldownKey, Date.now());
-
   const reportLoop = setInterval(async () => {
     try {
-      await axios.post(`https://graph.facebook.com/${apiVersion}/${userId}/reports`, {
+      const res = await axios.post(`https://graph.facebook.com/${apiVersion}/${userId}/reports`, {
         access_token: accessToken,
         report_type: 'fake_account'
       });
 
       count++;
-      console.log(`[${count}/${reportAmount}] Report sent for user ${userId}`);
+      console.log(`[${count}/${reportAmount}] Report sent:`, res.data);
 
       if (count >= reportAmount) {
         clearInterval(reportLoop);
-        api.sendMessage('✅ DONE REPORTING.', threadID);
+        api.sendMessage(`✅ Done sending ${count} reports to ${userId}.`, threadID);
       }
+
     } catch (err) {
       console.error('❌ Report error:', err.response?.data || err.message);
+
+      // Send error to user
+      api.sendMessage(`❌ Failed to report:\n${JSON.stringify(err.response?.data || err.message)}`, threadID);
+      
+      clearInterval(reportLoop);
     }
   }, intervalMs);
 
