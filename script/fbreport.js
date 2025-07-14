@@ -12,25 +12,24 @@ module.exports.config = {
   credits: "cliff (improved by Bogart)",
   description: "Report a Facebook account",
   usage: "report [token or cookie] [user_id] [amount]",
-  cooldown: 1200 // for reference only (20 mins = 1200s)
+  cooldown: 60 // 1 minute
 };
 
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, senderID } = event;
 
-  // Unique cooldown key per user per thread
-  const cooldownKey = `${threadID}-${senderID}`;
+  // Cooldown key is per user only
+  const cooldownKey = `${senderID}`;
 
   // Check cooldown
   if (cooldowns.has(cooldownKey)) {
     const lastUsed = cooldowns.get(cooldownKey);
     const now = Date.now();
-    const remaining = 20 * 60 * 1000 - (now - lastUsed);
+    const remaining = 60 * 1000 - (now - lastUsed); // 1 minute
 
     if (remaining > 0) {
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      return api.sendMessage(`⏳ Please wait ${mins}m ${secs}s before using this command again.`, threadID);
+      const secs = Math.floor(remaining / 1000);
+      return api.sendMessage(`⏳ Please wait ${secs}s before using this command again.`, threadID);
     }
   }
 
@@ -54,7 +53,7 @@ module.exports.run = async ({ api, event, args }) => {
   const intervalMs = 1500;
   let count = 0;
 
-  // Start cooldown
+  // Set cooldown for the user
   cooldowns.set(cooldownKey, Date.now());
 
   const reportLoop = setInterval(async () => {
@@ -76,6 +75,6 @@ module.exports.run = async ({ api, event, args }) => {
     }
   }, intervalMs);
 
-  // Safety: stop after expected time
+  // Safety timeout
   setTimeout(() => clearInterval(reportLoop), reportAmount * intervalMs + 1000);
 };
