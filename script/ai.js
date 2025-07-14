@@ -3,11 +3,11 @@ module.exports.config = {
   version: "1.2.6",
   permission: 0,
   credits: "Homer Rebatis",
-  description: "Ask AI with or without an image using Kaiz Gemini Vision API.",
+  description: "Ask AI using Kaiz API (text-only).",
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "ai <question> | reply to image with or without a question",
+  usage: "ai <question>",
   cooldowns: 3,
   dependency: {
     "axios": ""
@@ -16,37 +16,26 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const axios = require("axios");
-  const { threadID, messageID, messageReply } = event;
+  const { threadID, messageID } = event;
 
-  const API_ENDPOINT = "https://kaiz-apis.gleeze.com/api/gemini-vision";
-  const API_KEY = "12417c89-ac72-4c8e-a174-9ee378771b24";
-  const UID = Math.floor(Math.random() * 1000000).toString(); // Random UID
+  const API_ENDPOINT = "https://kaiz-apis.gleeze.com/api/kaiz-ai";
+  const API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
+  const UID = Math.floor(Math.random() * 1000000).toString();
 
   try {
-    const question = args.join(" ");
-    let imageUrl = null;
+    const question = args.join(" ").trim();
 
-    if (messageReply && messageReply.attachments.length > 0) {
-      const attachment = messageReply.attachments[0];
-      if (attachment.type === "photo" && attachment.url) {
-        imageUrl = attachment.url;
-      } else {
-        return api.sendMessage("❌ Please reply to a valid photo.", threadID, messageID);
-      }
-    }
-
-    if (!question && !imageUrl) {
+    if (!question) {
       return api.sendMessage(
-        "🧠 Homer AI Bot\n\n❌ Please provide a question or reply to an image.",
+        "🧠 Homer AI Bot\n\n❌ Please enter a question to ask the AI.",
         threadID,
         messageID
       );
     }
 
     const queryParams = new URLSearchParams({
-      q: question || "",
+      ask: question,
       uid: UID,
-      imageUrl: imageUrl || "",
       apikey: API_KEY
     });
 
