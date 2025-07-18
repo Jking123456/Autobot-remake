@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 module.exports.config = {
-  name: "artist",
+  name: "Homer Rebatis",
   version: "1.0.0",
   hasPrefix: true,
   permission: 0,
