@@ -2,10 +2,10 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "art",
-  version: "1.0.0",
+  version: "1.0.1",
   hasPrefix: true,
   permission: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + ChatGPT",
   description: "Fetch AI-generated art based on a user ID.",
   commandCategory: "art",
   usages: "art [userid]",
@@ -24,26 +24,35 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   try {
-    const response = await axios.get(`https://api-canvass.vercel.app/art-expert?userid=${encodeURIComponent(userId)}`);
+    const res = await axios.get(`https://api-canvass.vercel.app/art-expert?userid=${encodeURIComponent(userId)}`);
+    const data = res.data;
 
-    const { image, caption } = response.data || {};
-
-    if (!image) {
-      return api.sendMessage("❌ No art found or invalid response from the API.", event.threadID, event.messageID);
+    // ✅ Check if API returned error or invalid structure
+    if (!data || !data.image || typeof data.image !== "string") {
+      return api.sendMessage(
+        "❌ No art found or invalid response from the API.",
+        event.threadID,
+        event.messageID
+      );
     }
 
-    const imgStream = await axios.get(image, { responseType: "stream" });
+    // 🖼 Fetch the image stream
+    const imgRes = await axios.get(data.image, { responseType: "stream" });
 
     return api.sendMessage(
       {
-        body: caption || "🖼️ Here's the AI-generated art:",
-        attachment: imgStream.data,
+        body: data.caption || "🖼️ Here's the AI-generated art:",
+        attachment: imgRes.data,
       },
       event.threadID,
       event.messageID
     );
-  } catch (error) {
-    console.error("[ART ERROR]", error.message);
-    return api.sendMessage("⚠️ An error occurred while fetching art. Please try again later.", event.threadID, event.messageID);
+  } catch (err) {
+    console.error("[ART COMMAND ERROR]", err);
+    return api.sendMessage(
+      "⚠️ Failed to fetch art. The API may be offline or the user ID is invalid.",
+      event.threadID,
+      event.messageID
+    );
   }
 };
