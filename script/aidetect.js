@@ -31,14 +31,12 @@ module.exports.run = async function ({ api, event, args }) {
       textWords,
       fakePercentage,
       feedback,
-      originalParagraph,
       additional_feedback
     } = result.data;
 
     const message = 
 `🧠 AI Detection Result:
 
-📄 Text: ${originalParagraph}
 ✅ Confidence it's Human: ${isHuman}%
 🔠 Total Words: ${textWords}
 🤖 AI Words Detected: ${aiWords}
