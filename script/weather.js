@@ -5,7 +5,7 @@ module.exports = {
     name: "weather",
     aliases: ["forecast", "weather"],
     version: "1.0",
-    author: "YourName",
+    author: "Homer Rebatis",
     countDown: 5,
     role: 0,
     shortDescription: {
