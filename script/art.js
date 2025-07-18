@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "art",
-  version: "1.0.1",
+  version: "1.0.2",
   hasPrefix: true,
   permission: 0,
   credits: "Homer Rebatis + ChatGPT",
@@ -25,10 +25,10 @@ module.exports.run = async function ({ api, event, args }) {
 
   try {
     const res = await axios.get(`https://api-canvass.vercel.app/art-expert?userid=${encodeURIComponent(userId)}`);
-    const data = res.data;
+    const imageUrl = res.data?.trim();
 
-    // ✅ Check if API returned error or invalid structure
-    if (!data || !data.image || typeof data.image !== "string") {
+    // Check if it looks like a valid image URL
+    if (!imageUrl || !imageUrl.startsWith("http")) {
       return api.sendMessage(
         "❌ No art found or invalid response from the API.",
         event.threadID,
@@ -36,19 +36,18 @@ module.exports.run = async function ({ api, event, args }) {
       );
     }
 
-    // 🖼 Fetch the image stream
-    const imgRes = await axios.get(data.image, { responseType: "stream" });
+    const imgRes = await axios.get(imageUrl, { responseType: "stream" });
 
     return api.sendMessage(
       {
-        body: data.caption || "🖼️ Here's the AI-generated art:",
+        body: "🖼️ Here's the AI-generated art:",
         attachment: imgRes.data,
       },
       event.threadID,
       event.messageID
     );
   } catch (err) {
-    console.error("[ART COMMAND ERROR]", err);
+    console.error("[ART COMMAND ERROR]", err.message || err);
     return api.sendMessage(
       "⚠️ Failed to fetch art. The API may be offline or the user ID is invalid.",
       event.threadID,
