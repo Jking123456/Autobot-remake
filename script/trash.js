@@ -2,11 +2,11 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "trash",
-  version: "1.0.0",
+  version: "1.0.1",
   hasPrefix: true,
   permission: 0,
-  credits: "Homer Rebati",
-  description: "Get a fun trash-style image using a userid.",
+  credits: "Homer Rebati + ChatGPT",
+  description: "Generates a trash-style meme image using the given user ID.",
   commandCategory: "fun",
   usages: "trash [userid]",
   cooldowns: 3,
@@ -14,26 +14,45 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const userId = args.join(" ").trim();
-  if (!userId)
-    return api.sendMessage("🗑️ Please provide a user ID.\n\nUsage: trash [userid]", event.threadID, event.messageID);
+
+  if (!userId) {
+    return api.sendMessage(
+      "🗑️ | Please provide a Facebook User ID.\n\nUsage: trash [userid]",
+      event.threadID,
+      event.messageID
+    );
+  }
+
+  const apiUrl = `https://api-canvass.vercel.app/trash?userid=${encodeURIComponent(userId)}`;
 
   try {
-    const res = await axios.get(`https://api-canvass.vercel.app/trash?userid=${encodeURIComponent(userId)}`);
-    const data = res.data;
+    const response = await axios.get(apiUrl);
+    const { image } = response.data;
 
-    if (!data || !data.image || res.status !== 200) {
-      return api.sendMessage("❌ Failed to generate trash image or invalid response.", event.threadID, event.messageID);
+    if (!image) {
+      return api.sendMessage(
+        "❌ | API returned an invalid image URL.",
+        event.threadID,
+        event.messageID
+      );
     }
 
-    const img = await axios.get(data.image, { responseType: "stream" });
+    const imgStream = await axios.get(image, { responseType: "stream" });
 
-    return api.sendMessage({
-      body: `🗑️ Trash Rendered for: ${userId}`,
-      attachment: img.data
-    }, event.threadID, event.messageID);
-
-  } catch (err) {
-    console.error(err);
-    return api.sendMessage("⚠️ Error generating trash image. Try again later.", event.threadID, event.messageID);
+    return api.sendMessage(
+      {
+        body: `🗑️ | Here's the trash meme for user ID: ${userId}`,
+        attachment: imgStream.data,
+      },
+      event.threadID,
+      event.messageID
+    );
+  } catch (error) {
+    console.error("Trash command error:", error.message || error);
+    return api.sendMessage(
+      "⚠️ | Error generating image. The API may be down or the user ID is invalid.",
+      event.threadID,
+      event.messageID
+    );
   }
 };
