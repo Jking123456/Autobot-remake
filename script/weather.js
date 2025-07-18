@@ -3,16 +3,16 @@ const axios = require('axios');
 module.exports = {
   config: {
     name: "weather",
-    aliases: ["forecast", "weather"],
+    aliases: ["forecast", "temp"],
     version: "1.0",
     author: "Homer Rebatis",
     countDown: 5,
     role: 0,
     shortDescription: {
-      en: "Get current weather info"
+      en: "Check current weather"
     },
     longDescription: {
-      en: "Fetches and displays the current weather and forecast for a given location"
+      en: "Get current weather and a 5-day forecast for any location"
     },
     category: "utilities",
     guide: {
@@ -23,18 +23,18 @@ module.exports = {
   onStart: async function ({ message, args }) {
     const location = args.join(" ");
     if (!location) {
-      return message.reply("❌ Please provide a location.\nExample: `weather Mandaluyong`");
+      return message.reply("❌ Please enter a location.\nExample: `weather Manila`");
     }
 
     const apiKey = "25644cdb-f51e-43f1-894a-ec718918e649";
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/weather?q=${encodeURIComponent(location)}&apikey=${apiKey}`;
+    const url = `https://kaiz-apis.gleeze.com/api/weather?q=${encodeURIComponent(location)}&apikey=${apiKey}`;
 
     try {
-      const res = await axios.get(apiUrl);
+      const res = await axios.get(url);
       const data = res.data["0"];
 
       if (!data || !data.current) {
-        return message.reply("❌ Couldn't retrieve weather information. Please try a different location.");
+        return message.reply("❌ Couldn't get weather data. Try a different location.");
       }
 
       const { location: loc, current, forecast } = data;
@@ -42,26 +42,26 @@ module.exports = {
       const msg = 
 `📍 Weather in ${loc.name}
 🌤️ Condition: ${current.skytext}
-🌡️ Temperature: ${current.temperature}°C (Feels like ${current.feelslike}°C)
+🌡️ Temp: ${current.temperature}°C (Feels like ${current.feelslike}°C)
 💧 Humidity: ${current.humidity}%
 🌬️ Wind: ${current.winddisplay}
 📅 Date: ${current.date}
 🕒 Time: ${current.observationtime}
 
 📆 5-Day Forecast:
-${forecast.map(day => 
+${forecast.map(day =>
   `• ${day.day} (${day.date}): ${day.skytextday}, 🌡️ ${day.low}°C - ${day.high}°C, ☔ ${day.precip}%`
 ).join("\n")}
 `;
 
-      message.reply({
+      return message.reply({
         body: msg,
         attachment: await global.utils.getStreamFromURL(current.imageUrl)
       });
 
-    } catch (error) {
-      console.error(error);
-      message.reply("⚠️ An error occurred while fetching the weather.");
+    } catch (err) {
+      console.error(err);
+      return message.reply("⚠️ Error fetching weather info. Please try again later.");
     }
   }
 };
