@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
-name: "sendnoti",
+name: "noti",
 version: "1.1.0",
 role: 1,
 description: "Sends a message to all groups and can only be done by the admin.",
