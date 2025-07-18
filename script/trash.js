@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "trash",
-  version: "1.0.1",
+  version: "1.0.2",
   hasPrefix: true,
   permission: 0,
   credits: "Homer Rebati + ChatGPT",
@@ -27,11 +27,13 @@ module.exports.run = async function ({ api, event, args }) {
 
   try {
     const response = await axios.get(apiUrl);
-    const { image } = response.data;
+    console.log("API Response:", response.data); // Debug log
 
-    if (!image) {
+    const image = response.data?.image;
+
+    if (!image || typeof image !== "string" || !image.startsWith("http")) {
       return api.sendMessage(
-        "❌ | API returned an invalid image URL.",
+        "❌ | API returned an invalid or missing image URL.",
         event.threadID,
         event.messageID
       );
