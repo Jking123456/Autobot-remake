@@ -1,0 +1,53 @@
+const axios = require("axios");
+
+module.exports.config = {
+  name: "artist",
+  version: "1.0.0",
+  hasPrefix: true,
+  permission: 0,
+  credits: "ChatGPT",
+  description: "Fetch artist profile or artwork using userid.",
+  commandCategory: "art",
+  usages: "artist [userid]",
+  cooldowns: 3,
+};
+
+module.exports.run = async function ({ api, event, args }) {
+  const userId = args.join(" ").trim();
+  if (!userId)
+    return api.sendMessage("🎭 Please provide a user ID.\n\nUsage: artist [userid]", event.threadID, event.messageID);
+
+  try {
+    const res = await axios.get(`https://api-canvass.vercel.app/artist?userid=${encodeURIComponent(userId)}`);
+    const data = res.data;
+
+    if (!data || !data.image || res.status !== 200) {
+      return api.sendMessage("❌ No artist data found or invalid API response.", event.threadID, event.messageID);
+    }
+
+    const {
+      name,
+      bio,
+      image,
+      caption
+    } = data;
+
+    const info =
+`🎨 Artist Profile:
+
+👤 Name: ${name || "Unknown"}
+📝 Bio: ${bio || "No biography available."}
+🖼️ ${caption || "Artwork Preview Below:"}`;
+
+    const img = await axios.get(image, { responseType: "stream" });
+
+    return api.sendMessage({
+      body: info,
+      attachment: img.data
+    }, event.threadID, event.messageID);
+
+  } catch (err) {
+    console.error(err);
+    return api.sendMessage("⚠️ Failed to fetch artist info. Please try again later.", event.threadID, event.messageID);
+  }
+};
