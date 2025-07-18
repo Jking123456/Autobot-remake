@@ -1,48 +1,40 @@
-const axios = require('axios');
+const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "weather",
-    aliases: ["forecast", "temp"],
-    version: "1.0",
-    author: "Homer Rebatis",
-    countDown: 5,
-    role: 0,
-    shortDescription: {
-      en: "Check current weather"
-    },
-    longDescription: {
-      en: "Get current weather and a 5-day forecast for any location"
-    },
-    category: "utilities",
-    guide: {
-      en: "{pn} <location>"
+module.exports.config = {
+  name: "weather",
+  version: "1.0.0",
+  hasPrefix: true,
+  permission: 0,
+  credits: "YourName",
+  description: "Get current weather and 5-day forecast.",
+  commandCategory: "utilities",
+  usages: "weather <location>",
+  cooldowns: 3,
+};
+
+module.exports.run = async function ({ api, event, args }) {
+  const location = args.join(" ");
+  if (!location) {
+    return api.sendMessage("❗ Please provide a location.\n\nUsage: weather <location>", event.threadID, event.messageID);
+  }
+
+  const apiKey = "25644cdb-f51e-43f1-894a-ec718918e649";
+  const url = `https://kaiz-apis.gleeze.com/api/weather?q=${encodeURIComponent(location)}&apikey=${apiKey}`;
+
+  try {
+    const res = await axios.get(url);
+    const data = res.data["0"];
+
+    if (!data || !data.current) {
+      return api.sendMessage("❌ Couldn't find weather data for that location.", event.threadID, event.messageID);
     }
-  },
 
-  onStart: async function ({ message, args }) {
-    const location = args.join(" ");
-    if (!location) {
-      return message.reply("❌ Please enter a location.\nExample: `weather Manila`");
-    }
+    const { location: loc, current, forecast } = data;
 
-    const apiKey = "25644cdb-f51e-43f1-894a-ec718918e649";
-    const url = `https://kaiz-apis.gleeze.com/api/weather?q=${encodeURIComponent(location)}&apikey=${apiKey}`;
-
-    try {
-      const res = await axios.get(url);
-      const data = res.data["0"];
-
-      if (!data || !data.current) {
-        return message.reply("❌ Couldn't get weather data. Try a different location.");
-      }
-
-      const { location: loc, current, forecast } = data;
-
-      const msg = 
+    const message = 
 `📍 Weather in ${loc.name}
 🌤️ Condition: ${current.skytext}
-🌡️ Temp: ${current.temperature}°C (Feels like ${current.feelslike}°C)
+🌡️ Temperature: ${current.temperature}°C (Feels like ${current.feelslike}°C)
 💧 Humidity: ${current.humidity}%
 🌬️ Wind: ${current.winddisplay}
 📅 Date: ${current.date}
@@ -54,14 +46,12 @@ ${forecast.map(day =>
 ).join("\n")}
 `;
 
-      return message.reply({
-        body: msg,
-        attachment: await global.utils.getStreamFromURL(current.imageUrl)
-      });
+    const imageStream = await global.utils.getStreamFromURL(current.imageUrl);
 
-    } catch (err) {
-      console.error(err);
-      return message.reply("⚠️ Error fetching weather info. Please try again later.");
-    }
+    return api.sendMessage({ body: message, attachment: imageStream }, event.threadID, event.messageID);
+
+  } catch (error) {
+    console.error(error);
+    return api.sendMessage("⚠️ Error fetching weather data. Try again later.", event.threadID, event.messageID);
   }
 };
