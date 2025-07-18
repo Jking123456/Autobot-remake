@@ -5,7 +5,7 @@ module.exports.config = {
   version: "1.2.3",
   role: 1,
   description: "Sends a formatted message to all group threads (Admin only). Supports \\n for line breaks.",
-  hasPrefix: false,
+  hasPrefix: true,
   aliases: ["noti"],
   usages: "[Text]",
   cooldown: 0,
