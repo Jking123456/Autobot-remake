@@ -1,11 +1,11 @@
 const axios = require("axios");
 
 module.exports.config = {
-  name: "Homer Rebatis",
+  name: "artist",
   version: "1.0.0",
   hasPrefix: true,
   permission: 0,
-  credits: "ChatGPT",
+  credits: "Homer Rebatis",
   description: "Fetch artist profile or artwork using userid.",
   commandCategory: "art",
   usages: "artist [userid]",
