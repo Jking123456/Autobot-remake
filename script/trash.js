@@ -2,10 +2,10 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "trash",
-  version: "1.0.2",
+  version: "1.0.3",
   hasPrefix: true,
   permission: 0,
-  credits: "Homer Rebati + ChatGPT",
+  credits: "Homer Rebatis + ChatGPT",
   description: "Generates a trash-style meme image using the given user ID.",
   commandCategory: "fun",
   usages: "trash [userid]",
@@ -26,12 +26,13 @@ module.exports.run = async function ({ api, event, args }) {
   const apiUrl = `https://api-canvass.vercel.app/trash?userid=${encodeURIComponent(userId)}`;
 
   try {
-    const response = await axios.get(apiUrl);
-    console.log("API Response:", response.data); // Debug log
+    // Fetch raw response as text (probably a direct image URL)
+    const response = await axios.get(apiUrl, { responseType: "text" });
+    const imageUrl = response.data?.trim();
 
-    const image = response.data?.image;
+    console.log("API Response:", imageUrl); // Debug log
 
-    if (!image || typeof image !== "string" || !image.startsWith("http")) {
+    if (!imageUrl || !imageUrl.startsWith("http")) {
       return api.sendMessage(
         "❌ | API returned an invalid or missing image URL.",
         event.threadID,
@@ -39,7 +40,7 @@ module.exports.run = async function ({ api, event, args }) {
       );
     }
 
-    const imgStream = await axios.get(image, { responseType: "stream" });
+    const imgStream = await axios.get(imageUrl, { responseType: "stream" });
 
     return api.sendMessage(
       {
