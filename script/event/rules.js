@@ -1,4 +1,47 @@
-module.exports.config = {
+const fs = require("fs-extra");
+
+module.exports = {
+  config: {
+    name: "rules",
+    version: "1.0.0",
+    credits: "Aminulsordar",
+    description: "Notify group of rules when new members are added",
+    dependencies: {
+      "fs-extra": ""
+    },
+    eventType: ["log:subscribe"],
+    type: "event"
+  },
+
+  handleEvent: async function ({ api, event }) {
+    const { threadID } = event;
+
+    if (event.logMessageData.addedParticipants.some((i) => i.userFbId === api.getCurrentUserID())) {
+      return api.sendMessage("✅ Welcome to the group! Please read the rules carefully and abide by them.", threadID);
+    }
+
+    const rules = `📜 𝗚𝗿𝗼𝘂𝗽 𝗥𝘂𝗹𝗲𝘀
+
+1. ❌ No spamming.
+2. ❤️ Be respectful.
+3. 🚫 No illegal content.
+4. 📌 Follow pinned rules.
+5. 🕒 Stay active.
+6. 👑 Respect admins & members.
+7. 👁️ No "seen-er" behavior.
+8. 🎭 No overacting or role-play.
+9. 🤝 Support each other.
+
+⚠️ Breaking rules may result in warning or removal. Enjoy your stay!`;
+
+    for (const participant of event.logMessageData.addedParticipants) {
+      const userID = participant.userFbId;
+      if (userID !== api.getCurrentUserID()) {
+        api.sendMessage(rules, threadID);
+      }
+    }
+  }
+};module.exports.config = {
 	name: "rulesNoti",
 	eventType: ["log:subscribe"],
 	version: "1.0.0",
