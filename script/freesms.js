@@ -1,74 +1,50 @@
-const axios = require("axios");
+const twilio = require('twilio');
 
-module.exports.config = {
-  name: "freesms",
-  version: "1.2.0",
-  role: 0,
-  credits: "ChatGPT + You",
-  description: "Send free SMS to PH numbers via LibreText (after manual CAPTCHA)",
-  usages: "freesms 09xxxxxxxxx | your message",
-  cooldowns: 10,
-  hasPrefix: true
-};
+// Your Twilio credentials
+const accountSid = 'AC01d8044aed6fa12c336f94418df17df3';
+const authToken = 'f1bc6917e4a3f75a1c0519926600cf78';
+const fromNumber = '+17473000907'; // e.g., +15017122661 or 'MYBIZPH'
+const client = twilio(accountSid, authToken);
 
-module.exports.run = async ({ api, event, args }) => {
-  try {
-    const input = args.join(" ").split("|").map(item => item.trim());
+module.exports = {
+  config: {
+    name: "freesms",
+    version: "1.0",
+    author: "Homer Rebatis",
+    role: 2, // 0 = anyone, 1 = group admin, 2 = bot admin
+    shortDescription: "Send free SMS using Twilio",
+    longDescription: "Send SMS to Philippine numbers using Twilio API",
+    category: "tools",
+    guide: "{pn} [09xxxxxxxxx] | [message]"
+  },
+
+  onStart: async function ({ args, message }) {
+    const input = args.join(" ").split("|").map(i => i.trim());
 
     if (input.length < 2) {
-      return api.sendMessage(
-        "❌ Incorrect usage.\n\n📌 Example:\nfreesms 09123456789 | Hello world!",
-        event.threadID,
-        event.messageID
-      );
+      return message.reply("❌ Usage: freesms 09xxxxxxxxx | Your message here");
     }
 
-    const [phone, message] = input;
+    const phone = input[0];
+    const msg = input.slice(1).join(" ");
 
-    // Validate phone number
     if (!/^09\d{9}$/.test(phone)) {
-      return api.sendMessage("❌ Invalid phone number. Must start with 09 and be 11 digits.", event.threadID, event.messageID);
+      return message.reply("❌ Invalid PH number. Use format: 09xxxxxxxxx");
     }
 
-    // Validate message length
-    if (message.length < 5 || message.length > 70) {
-      return api.sendMessage("❌ Message must be between 5 and 70 characters.", event.threadID, event.messageID);
+    const formattedPhone = phone.replace(/^0/, "+63");
+
+    try {
+      const sent = await client.messages.create({
+        body: msg,
+        from: fromNumber,
+        to: formattedPhone
+      });
+
+      message.reply(`✅ SMS sent to ${formattedPhone}\nSID: ${sent.sid}`);
+    } catch (error) {
+      console.error(error);
+      message.reply(`❌ Failed to send SMS:\n${error.message}`);
     }
-
-    // Prepare form data (no CAPTCHA token included)
-    const formData = new URLSearchParams();
-    formData.append("phnumber", phone);
-    formData.append("text", message);
-    formData.append("cf-turnstile-response", ""); // Empty; assumes it's stored server-side
-
-    // Inform user that it's attempting to send
-    await api.sendMessage("⏳ Attempting to send your SMS... Please wait.", event.threadID);
-
-    // Attempt to send SMS
-    const res = await axios.post("https://kenlie.top/libretext/freesmsph.php", formData.toString(), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      timeout: 15000
-    });
-
-    const { status, response } = res.data;
-
-    if (status) {
-      return api.sendMessage(
-        `✅ SMS sent successfully!\n\n📱 To: ${phone}\n✉️ Message: ${message}`,
-        event.threadID,
-        event.messageID
-      );
-    } else {
-      return api.sendMessage(
-        `❌ Failed to send SMS.\n\n🔒 Make sure you visited this link and passed CAPTCHA recently:\n👉 https://kenlie.top/\n\n🛑 Reason: ${response}`,
-        event.threadID,
-        event.messageID
-      );
-    }
-
-  } catch (err) {
-    return api.sendMessage(`❌ An error occurred:\n${err.message}`, event.threadID, event.messageID);
   }
 };
