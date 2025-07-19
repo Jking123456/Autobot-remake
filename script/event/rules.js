@@ -1,8 +1,8 @@
 module.exports.config = {
-	name: "rules",
+	name: "rulesNoti",
 	eventType: ["log:subscribe"],
 	version: "1.0.0",
-	credits: "Aminulsordar",
+	credits: "CliffS",
 	description: "Notify group of rules when new members are added",
 	dependencies: {
 		"fs-extra": "",
