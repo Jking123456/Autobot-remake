@@ -1,7 +1,7 @@
 const twilio = require("twilio");
 
 const accountSid = "AC01d8044aed6fa12c336f94418df17df3"; // Replace with your real SID
-const authToken = "f1bc6917e4a3f75a1c0519926600cf78"; // Replace with your real token
+const authToken = "61f999db6aa75fddc4c65f5a13c8427b"; // Replace with your real token
 const fromNumber = "+17473000907"; // Your Twilio number or registered sender ID
 
 const client = twilio(accountSid, authToken);
