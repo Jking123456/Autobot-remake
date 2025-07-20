@@ -21,7 +21,7 @@ module.exports.run = async function ({ api, event, args }) {
   const TEXT_API = "https://kaiz-apis.gleeze.com/api/kaiz-ai";
   const IMAGE_API = "https://kaiz-apis.gleeze.com/api/gemini-vision";
   const TEXT_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
-  const IMAGE_API_KEY = "12417c89-ac72-4c8e-a174-9ee378771b24";
+  const IMAGE_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
   const UID = Math.floor(Math.random() * 1000000).toString();
 
   try {
