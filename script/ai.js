@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "ai",
-  version: "1.2.7",
+  version: "1.2.8",
   permission: 0,
   credits: "Homer Rebatis + ChatGPT",
   description: "Ask AI via Kaiz Gemini Vision (image) or Kaiz-AI (text only).",
@@ -18,9 +18,8 @@ module.exports.run = async function ({ api, event, args }) {
   const axios = require("axios");
   const { threadID, messageID, messageReply } = event;
 
-  const TEXT_API = "https://kaiz-apis.gleeze.com/api/kaiz-ai";
+  const TEXT_API = "https://betadash-api-swordslush.vercel.app/gpt4";
   const IMAGE_API = "https://kaiz-apis.gleeze.com/api/gemini-vision";
-  const TEXT_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
   const IMAGE_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
   const UID = Math.floor(Math.random() * 1000000).toString();
 
@@ -64,18 +63,12 @@ module.exports.run = async function ({ api, event, args }) {
 
     // Text-only AI Request
     if (!question) {
-      return api.sendMessage("🧠 Please enter a question or reply to an image.", threadID, messageID);
+      return api.sendMessage("🧠 Please enter a question or reply to an image. Example: ai what is matter?", threadID, messageID);
     }
 
-    const textParams = new URLSearchParams({
-      ask: question,
-      uid: UID,
-      apikey: TEXT_API_KEY
-    });
-
-    const fullUrl = `${TEXT_API}?${textParams.toString()}`;
+    const fullUrl = `${TEXT_API}?ask=${encodeURIComponent(question)}`;
     const res = await axios.get(fullUrl);
-    const result = res?.data?.response;
+    const result = res?.data?.content;
 
     if (!result) {
       return api.sendMessage("⚠️ No response received from the text AI API.", threadID, messageID);
