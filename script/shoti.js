@@ -19,15 +19,11 @@ module.exports.run = async function ({ api, event }) {
         // Inform user about the fetching process
         api.sendMessage("🎬 𝗙𝗲𝘁𝗰𝗵𝗶𝗻𝗴 𝗮 𝗿𝗮𝗻𝗱𝗼𝗺 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...", event.threadID, event.messageID);
 
-        // API call
-        const response = await axios.get('https://shoti.fbbot.org/api/get-shoti?type=video', {
-            headers: {
-                apikey: '$shoti-54c9a5966a',
-            },
-        });
+        // API call with new endpoint
+        const response = await axios.get('https://kaiz-apis.gleeze.com/api/shoti?apikey=25644cdb-f51e-43f1-894a-ec718918e649');
 
-        const data = response.data?.result;
-        if (!data || !data.content) {
+        const data = response.data?.shoti;
+        if (!data || !data.videoUrl) {
             return api.sendMessage('❌ 𝗙𝗮𝗶𝗹𝗲𝗱 𝘁𝗼 𝗳𝗲𝘁𝗰𝗵 𝗮 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼. 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.', event.threadID, event.messageID);
         }
 
@@ -36,7 +32,7 @@ module.exports.run = async function ({ api, event }) {
 
         const downloadResponse = await axios({
             method: 'GET',
-            url: data.content,
+            url: data.videoUrl,
             responseType: 'stream',
         });
 
@@ -45,7 +41,7 @@ module.exports.run = async function ({ api, event }) {
 
         writer.on('finish', async () => {
             api.sendMessage({
-                body: '🎥 𝗛𝗲𝗿𝗲’𝘀 𝘆𝗼𝘂𝗿 𝗿𝗮𝗻𝗱𝗼𝗺 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼!',
+                body: `🎥 𝗛𝗲𝗿𝗲’𝘀 𝘆𝗼𝘂𝗿 𝗿𝗮𝗻𝗱𝗼𝗺 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼!\n\n📌 𝗧𝗶𝘁𝗹𝗲: ${data.title}\n👤 𝗨𝘀𝗲𝗿: @${data.username}`,
                 attachment: fs.createReadStream(filePath)
             }, event.threadID, () => {
                 fs.unlinkSync(filePath); // Cleanup
