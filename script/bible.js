@@ -10,7 +10,7 @@ module.exports.config = {
   aliases: ['bible', 'verse'],
   description: "Get a random Bible verse",
   usage: "randombibleverse",
-  credits: 'chilling',
+  credits: 'Homer Rebatis',
   cooldown: 3,
 };
 
