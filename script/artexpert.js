@@ -7,7 +7,7 @@ module.exports.config = {
   name: "artexpert",
   version: "1.0.3",
   role: 0,
-  credits: "ChatGPT",
+  credits: "Homer Rebatis",
   aliases: [],
   usages: "< Facebook UID >",
   cooldown: 2, // general system cooldown (optional)
