@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event, args }) {
   // Check cooldown
   if (cooldowns.has(cooldownKey)) {
     const lastUsed = cooldowns.get(cooldownKey);
-    const timePassed = (now - lastUsed) / 1000;
+    const timePassed = (now - lastUsed) / 3000;
     const remaining = 60 - timePassed;
 
     if (remaining > 0) {
