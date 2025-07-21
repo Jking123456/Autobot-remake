@@ -19,7 +19,7 @@ module.exports.config = {
   name: "stalk",
   version: "2.0.0",
   permission: 0,
-  credits: "Deku & Eugene Aguilar (Improved by ChatGPT)",
+  credits: "Deku & Eugene Aguilar (Improved by Homer Rebatis)",
   description: "Facebook stalker using UID, mention, or reply",
   prefix: false,
   premium: false,
