@@ -27,7 +27,7 @@ module.exports.run = async function ({ api, event }) {
   const now = Date.now();
   if (cooldowns.has(senderID)) {
     const timePassed = now - cooldowns.get(senderID);
-    const cooldownTime = 60 * 1000;
+    const cooldownTime = 60 * 3000;
 
     if (timePassed < cooldownTime) {
       return api.sendMessage(`⏳ Please wait 1 minute before using the "faceswap" command again.`, event.threadID);
