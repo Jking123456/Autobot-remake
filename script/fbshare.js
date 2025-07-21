@@ -1,10 +1,13 @@
 const axios = require("axios");
 
+const cooldowns = {}; // Stores cooldowns per senderID
+const COOLDOWN_DURATION = 20 * 60 * 1000; // 20 minutes in milliseconds
+
 module.exports.config = {
   name: "fbshare",
   version: "1.0.3",
   role: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + ChatGPT",
   description: "Share a Facebook post using your cookie with share amount",
   usages: "fbshare cookie | postLink | amount",
   cooldowns: 5,
@@ -12,6 +15,14 @@ module.exports.config = {
 };
 
 module.exports.run = async ({ api, event, args }) => {
+  const senderID = event.senderID;
+
+  // Check cooldown
+  if (cooldowns[senderID] && Date.now() - cooldowns[senderID] < COOLDOWN_DURATION) {
+    const remaining = ((COOLDOWN_DURATION - (Date.now() - cooldowns[senderID])) / 60000).toFixed(1);
+    return api.sendMessage(`⏳ Please wait ${remaining} minutes before using the "fbshare" command again.`, event.threadID, event.messageID);
+  }
+
   try {
     const input = args.join(" ").split("|").map(item => item.trim());
 
@@ -39,7 +50,6 @@ module.exports.run = async ({ api, event, args }) => {
       "cookie": cookie
     };
 
-    // Get EAAG token
     const tokenRes = await axios.get("https://business.facebook.com/content_management", {
       headers,
       timeout: 20000
@@ -51,7 +61,6 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     const fbtoken = tokenMatch[0];
-
     let success = 0;
     let fail = 0;
 
@@ -75,11 +84,13 @@ module.exports.run = async ({ api, event, args }) => {
         fail++;
       }
 
-      // Optional: Send progress every 1000 shares
       if (i % 1000 === 0) {
         api.sendMessage(`📢 Progress: ${i}/${amount}\n✅ Success: ${success} | ❌ Failed: ${fail}`, event.threadID);
       }
     }
+
+    // Set cooldown after completion
+    cooldowns[senderID] = Date.now();
 
     return api.sendMessage(
       `✅ Sharing complete!\nTotal: ${amount}\nSuccess: ${success}\nFailed: ${fail}`,
