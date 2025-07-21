@@ -3,6 +3,8 @@ const fs = require('fs-extra');
 const axios = require('axios');
 const request = require('request');
 
+const cooldowns = new Map(); // Store cooldowns per senderID
+
 module.exports.config = {
   name: "music",
   version: "1.0.1",
@@ -16,6 +18,22 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event, args }) {
+  const senderID = event.senderID;
+
+  // Cooldown check
+  const now = Date.now();
+  const cooldownTime = 60 * 1000; // 1 minute in milliseconds
+
+  if (cooldowns.has(senderID)) {
+    const expiration = cooldowns.get(senderID);
+    if (now < expiration) {
+      const remaining = ((expiration - now) / 1000).toFixed(0);
+      return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "music" command again.`, event.threadID, event.messageID);
+    }
+  }
+
+  cooldowns.set(senderID, now + cooldownTime);
+
   const query = args.join(' ');
   if (!query) {
     return api.sendMessage(`Please enter a song name.\nExample: music Shape of You`, event.threadID, event.messageID);
