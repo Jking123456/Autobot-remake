@@ -77,7 +77,7 @@ module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID } = event;
 
   // 🔒 Cooldown check (1 minute)
-  const cooldownTime = 60 * 1000;
+  const cooldownTime = 60 * 3000;
   const now = Date.now();
   const lastUsed = cooldowns.get(senderID);
 
