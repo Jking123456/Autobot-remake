@@ -23,7 +23,7 @@ module.exports.run = async ({ api, event, args }) => {
   if (cooldowns.has(senderID)) {
     const timePassed = now - cooldowns.get(senderID);
     if (timePassed < 60 * 1000) {
-      const remaining = Math.ceil((60 * 1000 - timePassed) / 1000);
+      const remaining = Math.ceil((60 * 3000 - timePassed) / 1000);
       return api.sendMessage(`⏳ Please wait ${remaining} second(s) before using this command again.`, threadID, messageID);
     }
   }
