@@ -1,7 +1,7 @@
 module.exports.config = {
 	name: "uid",
 	role: 0,
-	credits: "Mirai Team",
+	credits: "Homer Rebatis",
 	description: "Get the user's Facebook UID.",
 	hasPrefix: false,
 	usages: "{p}uid {p}uid @mention",
