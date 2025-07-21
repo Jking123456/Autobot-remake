@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   // Cooldown check
   const now = Date.now();
-  const cooldownTime = 60 * 1000; // 1 minute in milliseconds
+  const cooldownTime = 60 * 3000; // 1 minute in milliseconds
 
   if (cooldowns.has(senderID)) {
     const expiration = cooldowns.get(senderID);
