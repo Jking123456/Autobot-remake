@@ -23,13 +23,14 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const senderID = event.senderID;
 
-  // Cooldown logic
+  // Fixed 1-minute cooldown check
   const now = Date.now();
   if (cooldowns.has(senderID)) {
     const timePassed = now - cooldowns.get(senderID);
-    if (timePassed < 60 * 1000) {
-      const remaining = Math.ceil((60 * 1000 - timePassed) / 1000);
-      return api.sendMessage(`⏳ Please wait ${remaining} second(s) before using this command again.`, event.threadID);
+    const cooldownTime = 60 * 1000;
+
+    if (timePassed < cooldownTime) {
+      return api.sendMessage(`⏳ Please wait 1 minute before using the "faceswap" command again.`, event.threadID);
     }
   }
 
