@@ -5,7 +5,7 @@ module.exports.config = {
   name: "trump",
   version: "1.0.0",
   role: 0,
-  credits: "ChatGPT",
+  credits: "Homer Rebatis",
   aliases: [],
   usages: "< Facebook UID > < text >\nExample: trump 100044848836284 bakla",
   cooldown: 2,
