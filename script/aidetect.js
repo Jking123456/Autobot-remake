@@ -17,7 +17,7 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const { senderID, threadID, messageID } = event;
-  const cooldownTime = 60 * 1000; // 1 minute in milliseconds
+  const cooldownTime = 60 * 3000; // 1 minute in milliseconds
   const now = Date.now();
 
   if (cooldowns.has(senderID) && now - cooldowns.get(senderID) < cooldownTime) {
