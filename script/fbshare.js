@@ -17,10 +17,19 @@ module.exports.config = {
 module.exports.run = async ({ api, event, args }) => {
   const senderID = event.senderID;
 
-  // Check cooldown
-  if (cooldowns[senderID] && Date.now() - cooldowns[senderID] < COOLDOWN_DURATION) {
-    const remaining = ((COOLDOWN_DURATION - (Date.now() - cooldowns[senderID])) / 60000).toFixed(1);
-    return api.sendMessage(`⏳ Please wait ${remaining} minutes before using the "fbshare" command again.`, event.threadID, event.messageID);
+  // Cooldown check
+  if (cooldowns[senderID]) {
+    const remainingTime = COOLDOWN_DURATION - (Date.now() - cooldowns[senderID]);
+
+    if (remainingTime > 0) {
+      const minutes = Math.floor(remainingTime / 60000);
+      const seconds = Math.floor((remainingTime % 60000) / 1000);
+      return api.sendMessage(
+        `⏳ Please wait ${minutes} minute(s) and ${seconds} second(s) before using the "fbshare" command again.`,
+        event.threadID,
+        event.messageID
+      );
+    }
   }
 
   try {
@@ -50,6 +59,7 @@ module.exports.run = async ({ api, event, args }) => {
       "cookie": cookie
     };
 
+    // Get EAAG token
     const tokenRes = await axios.get("https://business.facebook.com/content_management", {
       headers,
       timeout: 20000
@@ -61,6 +71,7 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     const fbtoken = tokenMatch[0];
+
     let success = 0;
     let fail = 0;
 
@@ -89,7 +100,7 @@ module.exports.run = async ({ api, event, args }) => {
       }
     }
 
-    // Set cooldown after completion
+    // Set cooldown after execution
     cooldowns[senderID] = Date.now();
 
     return api.sendMessage(
