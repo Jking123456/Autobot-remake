@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: "ai",
+  name: "",
   version: "1.2.8",
   permission: 0,
   credits: "Homer Rebatis + ChatGPT",
