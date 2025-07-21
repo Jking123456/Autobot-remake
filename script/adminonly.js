@@ -28,7 +28,7 @@ module.exports.config = {
   aliases: ["adonly", "onlyad", "onlyadmin"],
   version: "1.5",
   permission: 2,
-  credits: "NTKhang (converted to Auto Bot by ChatGPT)",
+  credits: "NTKhang (converted to Auto Bot by Homer Rebatis)",
   description: "Turn on/off admin-only usage mode",
   prefix: true,
   premium: false,
