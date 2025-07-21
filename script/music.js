@@ -13,7 +13,7 @@ module.exports.config = {
   aliases: ['play'],
   usage: 'music [song name]',
   description: 'Search and download music from Spotify using API',
-  credits: 'Ulric dev (Fixed by ChatGPT)',
+  credits: 'Homer Rebatis',
   cooldown: 5
 };
 
