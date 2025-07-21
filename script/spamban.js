@@ -8,7 +8,7 @@ module.exports.config = {
   name: "spamban",
   version: "2.0.1",
   hasPermission: 0,
-  credits: "NTKhang (Fixed by D-Jukie & ChatGPT)",
+  credits: "NTKhang (Fixed by Homer Rebatis",
   description: `Automatically bans users who spam ${SPAM_LIMIT} times within ${TIME_WINDOW} seconds`,
   commandCategory: "System",
   usages: "x",
