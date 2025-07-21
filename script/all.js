@@ -2,7 +2,7 @@ module.exports.config = {
   name: "all",
   version: "1.0.4",
   hasPermission: 1, // fixed typo
-  credits: "Mirai Team",
+  credits: "Homer Rebatis",
   description: "Tag all members",
   commandCategory: "system",
   usages: "[Text]",
