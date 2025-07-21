@@ -8,7 +8,7 @@ module.exports.config = {
   premium: false,
   category: "without prefix",
   usage: "ai <question> | reply to image",
-  cooldowns: 3,
+  cooldowns: 60,
   dependency: {
     "axios": ""
   }
