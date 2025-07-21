@@ -4,6 +4,8 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
+const cooldowns = new Map(); // Cooldown tracker per senderID
+
 module.exports.config = {
   name: "faceswap",
   hasPrefix: false,
@@ -19,6 +21,18 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event }) {
+  const senderID = event.senderID;
+
+  // Cooldown logic
+  const now = Date.now();
+  if (cooldowns.has(senderID)) {
+    const timePassed = now - cooldowns.get(senderID);
+    if (timePassed < 60 * 1000) {
+      const remaining = Math.ceil((60 * 1000 - timePassed) / 1000);
+      return api.sendMessage(`⏳ Please wait ${remaining} second(s) before using this command again.`, event.threadID);
+    }
+  }
+
   try {
     if (event.type !== "message_reply") 
       return api.sendMessage("❗ Please reply to two images.", event.threadID);
@@ -47,6 +61,9 @@ module.exports.run = async function ({ api, event }) {
 
     const filePath = path.join(cacheDir, `faceswap_${Date.now()}.png`);
     fs.writeFileSync(filePath, Buffer.from(res.data, 'binary'));
+
+    // Set cooldown
+    cooldowns.set(senderID, now);
 
     return api.sendMessage({
       body: "✅ Face swap complete!",
