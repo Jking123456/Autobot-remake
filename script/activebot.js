@@ -22,7 +22,7 @@ module.exports.config = {
 	version: '1.4.0',
 	role: 2,
 	cooldown: 0,
-	credits: "cliff",
+	credits: "Homer Rebatis",
 	hasPrefix: true,
 	usage: "active-session",
 	dependencies: {
