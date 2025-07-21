@@ -8,7 +8,7 @@ module.exports.config = {
   hasPrefix: false,
   description: "Count all members in the group chat",
   usages: "countmember",
-  credits: "chilli",
+  credits: "Homer Rebatis",
   cooldowns: 0
 };
 
