@@ -5,7 +5,7 @@ module.exports.config = {
 		name: "monitor",
 		version: "1.0.2",
 		role: 0,
-		credits: "GeoDevz69",
+		credits: "Homer Rebatis",
 		description: "uptime",
 		hasPrefix: true,
 		cooldowns: 20,
