@@ -17,7 +17,7 @@ module.exports.config = {
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
   const search = args.join(" ");
-  const cooldownTime = 60 * 1000; // 1 minute in milliseconds
+  const cooldownTime = 60 * 3000; // 1 minute in milliseconds
   const now = Date.now();
 
   // Cooldown logic
