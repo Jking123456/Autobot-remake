@@ -1,5 +1,7 @@
 const axios = require("axios");
 
+const cooldowns = new Map(); // Cooldown map per senderID
+
 module.exports = {
   config: {
     name: "nglspam",
@@ -13,7 +15,21 @@ module.exports = {
   },
 
   run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
+    const { threadID, messageID, senderID } = event;
+
+    // Cooldown check
+    const now = Date.now();
+    const cooldownTime = 60 * 3000; // 1 minute in milliseconds
+
+    if (cooldowns.has(senderID)) {
+      const expiration = cooldowns.get(senderID);
+      if (now < expiration) {
+        const remaining = ((expiration - now) / 3000).toFixed(0);
+        return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "nglspam" command again.`, threadID, messageID);
+      }
+    }
+
+    cooldowns.set(senderID, now + cooldownTime);
 
     if (!args[0] || !args[1] || !args.slice(2).join(" ")) {
       return api.sendMessage(
