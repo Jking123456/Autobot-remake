@@ -6,6 +6,8 @@ const MAX_FILE_SIZE_MB = 25;
 const MAX_COUNT = 10;
 let NSFW = true;
 
+const cooldowns = new Map(); // Cooldown tracker
+
 module.exports.config = {
   name: '4chan',
   aliases: ['civitai', 'civit.ai', 'random-nsfw'],
@@ -13,7 +15,7 @@ module.exports.config = {
   role: 0,
   credits: 'Kenneth Panio',
   description: 'Get random uploaded content from civit.ai',
-	hasPrefix: false,
+  hasPrefix: false,
   usage: '[count] or nsfw',
   cooldowns: 0,
 };
@@ -72,15 +74,28 @@ const getRandomCombinations = () => {
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
+  const { threadID, messageID, senderID } = event;
+
+  // 🔒 Cooldown check (1 minute)
+  const cooldownTime = 60 * 1000;
+  const now = Date.now();
+  const lastUsed = cooldowns.get(senderID);
+
+  if (lastUsed && now - lastUsed < cooldownTime) {
+    const timeLeft = Math.ceil((cooldownTime - (now - lastUsed)) / 1000);
+    return api.sendMessage(`⏳ Please wait ${timeLeft} seconds before using "4chan" again.`, threadID, messageID);
+  }
+
+  cooldowns.set(senderID, now); // Set cooldown
 
   if (args[0] && args[0].toLowerCase() === 'nsfw') {
     NSFW = !NSFW;
     const statusMsg = NSFW ? 'NSFW mode is now ON.' : 'NSFW mode is now OFF.';
     api.sendMessage(statusMsg, threadID, messageID);
     return;
-  } else { api.sendMessage('🕜 | Finding Delicious Images!...', threadID, messageID);
-}
+  } else {
+    api.sendMessage('🕜 | Finding Delicious Images!...', threadID, messageID);
+  }
 
   const cnt = parseInt(args[0]) || 4;
 
@@ -132,12 +147,9 @@ module.exports.run = async function ({ api, event, args }) {
               if (downloadedMedia) {
                 Media.push(downloadedMedia);
               }
-            } else {
-           //   api.sendMessage(`No Data Found From Civit.AI`, threadID, messageID);
             }
           } catch (error) {
             console.error("Error fetching data from Civit.AI:", error);
-           // api.sendMessage(`Error fetching data from Civit.AI. Please try again.`, threadID, messageID);
           }
         }
       }
@@ -187,7 +199,7 @@ module.exports.run = async function ({ api, event, args }) {
           videoAttachments.forEach(item => fs.unlinkSync(item.path));
         }
 
-        // Delete all files in the cache directory
+        // Clean cache
         const filesInCache = fs.readdirSync(cacheDir);
         filesInCache.forEach(file => {
           const filePath = path.join(cacheDir, file);
