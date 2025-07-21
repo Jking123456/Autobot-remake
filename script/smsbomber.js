@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "smsbomber",
     version: "1.0.6",
-    author: "vernex + updated by ChatGPT",
+    author: "vernex + updated by Homer Rebatis",
     description: "Send SMS to PH numbers only using Haji Mix API",
     cooldowns: 10,
     dependencies: {
