@@ -36,7 +36,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   // Set new cooldown
   cooldowns.set(cooldownKey, now);
-  setTimeout(() => cooldowns.delete(cooldownKey), 60 * 1000); // 1 minute
+  setTimeout(() => cooldowns.delete(cooldownKey), 60 * 3000); // 1 minute
 
   const title = args.join(" ");
   if (!title)
