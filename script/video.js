@@ -7,7 +7,7 @@ const cooldowns = new Map(); // Cooldown tracker
 module.exports.config = {
   name: "video",
   version: "9",
-  credits: "Cliff", // API by Jonell & Churo
+  credits: "Homer Rebatis", // API by Jonell & Churo
   description: "Search video from YouTube",
   commandCategory: "media",
   hasPermssion: 0,
