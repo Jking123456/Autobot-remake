@@ -13,7 +13,7 @@ module.exports.config = {
   aliases: ['civitai', 'civit.ai', 'random-nsfw'],
   version: '4.0.0',
   role: 0,
-  credits: 'Kenneth Panio',
+  credits: 'Homer Rebatis',
   description: 'Get random uploaded content from civit.ai',
   hasPrefix: false,
   usage: '[count] or nsfw',
