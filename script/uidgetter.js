@@ -5,7 +5,7 @@ module.exports.config = {
   version: "1.0.0",
   hasPrefix: true,
   permission: 0,
-  credits: "ChatGPT",
+  credits: "Homer Rebatis",
   description: "Fetch Facebook UID from a profile URL.",
   commandCategory: "tools",
   usages: "uidgetter [fb_profile_url]",
