@@ -42,7 +42,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const now = Date.now();
-  const cooldownTime = 60 * 1000; // 1 minute in ms
+  const cooldownTime = 60 * 3000; // 1 minute in ms
 
   try {
     // IMAGE AI REQUEST
