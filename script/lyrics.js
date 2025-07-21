@@ -11,7 +11,7 @@ module.exports.config = {
   description: "Get lyrics of a song by title.",
   commandCategory: "music",
   usages: "lyrics [song title]",
-  cooldowns: 3,
+  cooldowns: 60,
 };
 
 module.exports.run = async function ({ api, event, args }) {
