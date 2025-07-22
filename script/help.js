@@ -16,7 +16,7 @@ module.exports.run = async function({ api, event, enableCommands, args, Utils, p
     const commands = enableCommands[0].commands;
 
     // Notice message about anti-spam system
-    const notice = `⚠️ NOTICE:\nThis bot has an anti-spamming system. Abusing commands may result in temporary restrictions.\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+    const notice = `⚠️ NOTICE:\nThis bot has an anti-spamming system. Abusing commands may result in temporary restrictions.\n━━━━━━━━━━━━━━━━━━\n`;
 
     if (!input) {
       const pages = 20;
