@@ -17,8 +17,28 @@ module.exports.config = {
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
   const search = args.join(" ");
-  const cooldownTime = 120 * 3000; // 1 minute in milliseconds
+  const cooldownTime = 60 * 1000; // 1 minute in ms
   const now = Date.now();
+
+  // 🔒 Restriction: Only allow in groups if bot is admin
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "🚫 This command is disabled in this group because the bot is not an admin.",
+          threadID,
+          messageID
+        );
+      }
+    }
+  } catch (e) {
+    console.error("Admin check error:", e);
+    return api.sendMessage("⚠️ Failed to verify admin status. Try again later.", threadID, messageID);
+  }
 
   // Cooldown logic
   const lastUsed = cooldowns.get(senderID);
@@ -43,7 +63,6 @@ module.exports.run = async ({ api, event, args }) => {
       return api.sendMessage("❌ No results found.", threadID, messageID);
     }
 
-    // Pick 4 random image links
     const images = data.sort(() => 0.5 - Math.random()).slice(0, 4);
     const attachments = [];
 
@@ -58,7 +77,6 @@ module.exports.run = async ({ api, event, args }) => {
       body: `📌 Pinterest results for: "${search}"`,
       attachment: attachments
     }, threadID, () => {
-      // Clean up cache after sending
       for (let i = 0; i < 4; i++) {
         const file = path.join(__dirname, `cache/pin${i}.jpg`);
         if (fs.existsSync(file)) fs.unlinkSync(file);
