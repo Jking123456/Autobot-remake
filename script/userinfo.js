@@ -8,7 +8,7 @@ module.exports.config = {
   aliases: ["spy", "whoishe", "whoisshe", "whoami", "stalk"],
   description: "View user profile and information",
   usage: "[reply/tag/uid]",
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + ChatGPT",
   cooldowns: 5,
   commandCategory: "info"
 };
@@ -16,6 +16,31 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { senderID, messageID, messageReply, mentions, threadID } = event;
 
+  // ✅ Restrict command usage in group chats if bot is not admin
+  if (threadID != senderID) {
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const botID = api.getCurrentUserID();
+
+      const isBotAdmin = threadInfo.adminIDs.some(item => item.id === botID);
+
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "🚫 I need to be an admin in this group to run this command.",
+          threadID,
+          messageID
+        );
+      }
+    } catch (e) {
+      return api.sendMessage(
+        "⚠️ Error checking bot's admin status.",
+        threadID,
+        messageID
+      );
+    }
+  }
+
+  // ✅ Get UID from args or reply/tag
   let uid =
     args[0]?.match(/^\d+$/)?.[0] ||
     args[0]?.match(/profile\.php\?id=(\d+)/)?.[1] ||
@@ -42,7 +67,7 @@ module.exports.run = async function ({ api, event, args }) {
 ├─ 🤖 Bot Friend: ${info.isFriend ? "✅ Yes" : "❌ No"}
 ╰────────────────`;
 
-    // ✅ Fixed profile URL construction
+    // ✅ Fixed: Correct profile URL formatting
     const profileUrl = `https://facebook.com/${info.vanity || uid}`;
 
     const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
@@ -55,7 +80,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     return api.sendMessage(
       {
-        body: `${profileBox}\n\n🌐 Profile: ${profileUrl}`,
+        body: `${profileBox}\n\n🌐 View Profile:\n👉 ${profileUrl}`,
         attachment: response.data
       },
       threadID,
