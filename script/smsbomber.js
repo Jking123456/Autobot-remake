@@ -15,6 +15,23 @@ module.exports = {
   run: async function ({ api, event, args }) {
     const { threadID, messageID } = event;
 
+    // ✅ Restriction: Only allow command if bot is admin in group
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const botID = api.getCurrentUserID();
+
+      // If group chat, check if bot is admin
+      if (threadInfo.isGroup) {
+        const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+        if (!isBotAdmin) {
+          return api.sendMessage("🚫 The bot must be an admin in this group to use the 'smsbomber' command.", threadID, messageID);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error checking bot admin status:", err);
+      return api.sendMessage("⚠️ Cannot verify admin status. Try again later.", threadID, messageID);
+    }
+
     if (!args[0] || !args[1]) {
       return api.sendMessage(
         "📤 Usage:\n/smsbomber [phone_number] [amount_in_seconds]\n\nExample:\n/smsbomber 09503596043 10",
@@ -50,7 +67,6 @@ module.exports = {
       const apiUrl = `https://haji-mix.up.railway.app/api/smsbomber?phone=${encodeURIComponent(phone)}&times=${amount}`;
       let messages = [];
 
-      // --- Haji Mix API ---
       try {
         const response = await axios.get(apiUrl);
         const data = response.data;
@@ -82,7 +98,6 @@ ${serviceStats}
         messages.push(`⚠️ Failed to connect to Haji Mix API: ${err.message}`);
       }
 
-      // Final output
       return api.sendMessage(messages.join("\n\n"), threadID, messageID);
 
     } catch (error) {
