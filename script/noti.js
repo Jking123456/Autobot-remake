@@ -3,80 +3,92 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
-name: "noti",
-version: "1.1.0",
-role: 1,
-description: "Sends a message to all groups and can only be done by the admin.",
-hasPrefix: false,
-aliases: ["noti"],
-usages: "[Text]",
-cooldown: 0,
+  name: "noti",
+  version: "1.1.1",
+  role: 1,
+  description: "Sends a message to all groups and can only be done by the admin.",
+  hasPrefix: false,
+  aliases: ["noti"],
+  usages: "[Text]",
+  cooldown: 0,
 };
 
 module.exports.run = async function ({ api, event, args }) {
-const threadList = await api.getThreadList(100, null, ["INBOX"]);
-let sentCount = 0;
-const custom = args.join(" ");
+  try {
+    const threadList = await api.getThreadList(100, null, ["INBOX"]);
+    const customMessage = args.join(" ");
+    let sentCount = 0;
 
-async function sendMessage(thread) {
-try {
-await api.sendMessage(
-`𝙉𝙊𝙏𝙄𝘾𝙀 𝙁𝙍𝙊𝙈 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍 
+    if (!customMessage) {
+      return api.sendMessage("⚠️ Please provide a message to send.", event.threadID);
+    }
+
+    for (const thread of threadList) {
+      if (
+        sentCount >= 20 ||
+        !thread.isGroup ||
+        thread.threadID === event.threadID
+      ) {
+        continue;
+      }
+
+      try {
+        const baseMessage = `𝙉𝙊𝙏𝙄𝘾𝙀 𝙁𝙍𝙊𝙈 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍 
 ---------------- 
 Developer : HOMER REBATIS
 --------------- 
-『𝗡𝗼𝘁𝗶𝗰𝗲』${custom}`,
-thread.threadID
-);
-sentCount++;
+『𝗡𝗼𝘁𝗶𝗰𝗲』${customMessage}`;
 
-const content = `${custom}`;
-const languageToSay = "tl"; 
-const pathFemale = path.resolve(__dirname, "cache", `${thread.threadID}_female.mp3`);
+        await api.sendMessage(baseMessage, thread.threadID);
+        sentCount++;
 
-await downloadFile(
-`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(content)}&tl=${languageToSay}&client=tw-ob&idx=1`,
-pathFemale
-);
-api.sendMessage(
-{ attachment: fs.createReadStream(pathFemale) },
-thread.threadID,
-() => fs.unlinkSync(pathFemale)
-);
-} catch (error) {
-console.error("Error sending a message:", error);
-}
-}
+        // TTS
+        const ttsPath = path.resolve(__dirname, "cache", `${thread.threadID}_female.mp3`);
+        await fs.ensureDir(path.dirname(ttsPath));
 
-for (const thread of threadList) {
-if (sentCount >= 20) {
-break;
-}
-if (thread.isGroup && thread.name != thread.threadID && thread.threadID != event.threadID) {
-await sendMessage(thread);
-}
-}
+        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(customMessage)}&tl=tl&client=tw-ob`;
 
-if (sentCount > 0) {
-api.sendMessage(`› Sent the notification successfully.`, event.threadID);
-} else {
-api.sendMessage(
-"› No eligible group threads found to send the message to.",
-event.threadID
-);
-}
+        await downloadFile(ttsUrl, ttsPath);
+
+        await api.sendMessage(
+          { attachment: fs.createReadStream(ttsPath) },
+          thread.threadID,
+          () => fs.unlink(ttsPath) // async delete
+        );
+
+      } catch (err) {
+        console.error(`❌ Error sending to thread ${thread.threadID}:`, err.message);
+      }
+    }
+
+    if (sentCount > 0) {
+      api.sendMessage(`✅ Notification sent to ${sentCount} group(s).`, event.threadID);
+    } else {
+      api.sendMessage(`⚠️ No eligible group threads found to send the message.`, event.threadID);
+    }
+
+  } catch (err) {
+    console.error("❌ Main error in noti module:", err.message);
+    api.sendMessage("⚠️ An error occurred while sending the notifications.", event.threadID);
+  }
 };
 
+// Helper: Download file (stream)
 async function downloadFile(url, filePath) {
-const writer = fs.createWriteStream(filePath);
-const response = await axios({
-url,
-method: 'GET',
-responseType: 'stream'
-});
-response.data.pipe(writer);
-return new Promise((resolve, reject) => {
-writer.on('finish', resolve);
-writer.on('error', reject);
-});
-}
+  const writer = fs.createWriteStream(filePath);
+  const response = await axios({
+    url,
+    method: "GET",
+    responseType: "stream",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    },
+  });
+
+  response.data.pipe(writer);
+  return new Promise((resolve, reject) => {
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
+      }
