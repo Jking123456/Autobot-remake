@@ -23,6 +23,20 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, messageReply, senderID } = event;
 
+  // ✅ Admin Restriction Check
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+    const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+
+    if (!isBotAdmin) {
+      return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+    }
+  } catch (err) {
+    console.error("Failed to check bot admin status:", err);
+    return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
+  }
+
   const TEXT_API = "https://betadash-api-swordslush.vercel.app/gpt4";
   const IMAGE_API = "https://kaiz-apis.gleeze.com/api/gemini-vision";
   const IMAGE_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
@@ -42,7 +56,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const now = Date.now();
-  const cooldownTime = 60 * 3000; // 1 minute in ms
+  const cooldownTime = 60 * 1000; // 1 minute in ms
 
   try {
     // IMAGE AI REQUEST
