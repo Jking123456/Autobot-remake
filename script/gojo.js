@@ -11,9 +11,7 @@ module.exports.config = {
   category: "without prefix",
   usage: "gojo <your question>",
   cooldowns: 3,
-  dependency: {
-    "axios": ""
-  }
+  dependency: { "axios": "" }
 };
 
 module.exports.run = async function ({ api, event, args }) {
@@ -22,14 +20,27 @@ module.exports.run = async function ({ api, event, args }) {
   const uid = Math.floor(Math.random() * 1000000).toString();
   const apikey = "25644cdb-f51e-43f1-894a-ec718918e649";
 
+  // ✅ Restrict usage if bot is not admin in group
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+    const isBotAdmin = threadInfo.adminIDs.some(e => e.id == botID);
+
+    if (!isBotAdmin) {
+      return api.sendMessage("❌ This command is only available when the bot is an **admin** in this group.", threadID, messageID);
+    }
+  } catch (e) {
+    console.error("Bot admin check failed:", e.message);
+    return api.sendMessage("⚠️ Could not verify bot permissions.", threadID, messageID);
+  }
+
   if (!question) {
-    return api.sendMessage("💬 Please enter a question. Example: gojo who's the best sorcerer?", threadID, messageID);
+    return api.sendMessage("💬 Please enter a question.\n\nExample: gojo who's the best sorcerer?", threadID, messageID);
   }
 
   try {
     const url = `https://kaiz-apis.gleeze.com/api/gojo?ask=${encodeURIComponent(question)}&uid=${uid}&apikey=${apikey}`;
     const res = await axios.get(url);
-
     const reply = res?.data?.response;
 
     if (!reply) {
@@ -37,7 +48,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     return api.sendMessage(
-      `•| 𝙶𝙾𝙹𝙾 𝚂𝙰𝚃𝙾𝚁𝚄 |•\n\n${reply}\n\n•| 𝙼𝙰𝙳𝙴 𝙱𝚈 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂  |•`,
+      `•| 𝙶𝙾𝙹𝙾 𝚂𝙰𝚃𝙾𝚁𝚄 |•\n\n${reply}\n\n•| 𝙼𝙰𝙳𝙴 𝙱𝚈 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`,
       threadID,
       messageID
     );
