@@ -13,16 +13,34 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+
+  // ✅ Bot admin restriction
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 This command can only be used if the bot is an admin in this group.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Could not verify admin status. Try again later.", threadID, messageID);
+  }
+
   try {
     const username = args.join("").trim();
     if (!username)
-      return api.sendMessage("❗ Please provide a TikTok username.\n\nUsage: tikstalk [username]", event.threadID, event.messageID);
+      return api.sendMessage("❗ Please provide a TikTok username.\n\nUsage: tikstalk [username]", threadID, messageID);
 
     const res = await axios.get(`https://betadash-search-download.vercel.app/tikstalk?username=${encodeURIComponent(username)}`);
     const data = res.data;
 
     if (!data.username) {
-      return api.sendMessage("❌ User not found or API returned an invalid response.", event.threadID, event.messageID);
+      return api.sendMessage("❌ User not found or API returned an invalid response.", threadID, messageID);
     }
 
     const {
@@ -50,15 +68,14 @@ module.exports.run = async function ({ api, event, args }) {
 🎬 Videos: ${videoCount}
 👍 Total Likes: ${diggCount}`;
 
-    // Send avatar first, then profile info
     const imgStream = await axios.get(avatarLarger, { responseType: "stream" });
     return api.sendMessage({
       body: info,
       attachment: imgStream.data
-    }, event.threadID, event.messageID);
+    }, threadID, messageID);
 
   } catch (error) {
     console.error(error);
-    return api.sendMessage("❌ Error fetching TikTok data. Please try again later.", event.threadID, event.messageID);
+    return api.sendMessage("❌ Error fetching TikTok data. Please try again later.", threadID, messageID);
   }
 };
