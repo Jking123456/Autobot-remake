@@ -17,13 +17,13 @@ module.exports.handleReply = async function({
 	Users: s,
 	handleReply: o
 }) {
-	var i = await s.getNameUser(a.100044848836284);
+	var i = await s.getNameUser(a["100044848836284"]);
 	switch (o.type) {
 		case "reply":
 			e.sendMessage({
 				body: "📄Feedback from " + i + ":\n" + a.body,
 				mentions: [{
-					id: a.100044848836284,
+					id: a["100044848836284"],
 					tag: i
 				}]
 			}, o.id);
@@ -33,9 +33,10 @@ module.exports.handleReply = async function({
 				body: `📌Feedback from admin ${i} to you:\n--------\n${a.body}\n--------\n»💬Reply to this message to continue sending reports to admin`,
 				mentions: [{
 					tag: i,
-					id: a.100044848836284
+					id: a["100044848836284"]
 				}]
-			}, o.id)
+			}, o.id);
+			break;
 	}
 };
 
@@ -46,21 +47,24 @@ module.exports.run = async function({
 	Users: s,
 	Threads: o
 }) {
-	if (!a[0]) return e.sendMessage("You have not entered the content to report", n.100044848836284, n.messageID);
+	if (!a[0]) return e.sendMessage("You have not entered the content to report", n["100044848836284"], n.messageID);
 	let i = await s.getNameUser(n.senderID);
-	var t = n.senderID,
+	let t = n.senderID,
 		d = n.threadID;
 	let r = (await o.getData(n.threadID)).threadInfo;
-	var l = require("moment-timezone").tz("Asia/Manila").format("HH:mm:ss D/MM/YYYY");
-	e.sendMessage(`At: ${l}\nYour report has been sent to the specified user's ID`, n.100044848836284, (() => {
-		const calladUserID = '100044848836284'; // Replace '100087212564100' with your actual UID
-		e.sendMessage(`${a.join(" ")}`, calladUserID, ((e, a) => global.client.handleReply.push({
-			name: this.config.name,
-			messageID: a.messageID,
-			author: n.senderID,
-			messID: n.messageID,
-			id: d,
-			type: "calladmin"
-		})))
-	}))
+	let l = require("moment-timezone").tz("Asia/Manila").format("HH:mm:ss D/MM/YYYY");
+	e.sendMessage(`At: ${l}\nYour report has been sent to the specified user's ID`, n["100044848836284"], (() => {
+		const calladUserID = '100044848836284'; // Change this if needed
+		e.sendMessage(`${a.join(" ")}`, calladUserID, (err, info) => {
+			if (err) return console.error(err);
+			global.client.handleReply.push({
+				name: this.config.name,
+				messageID: info.messageID,
+				author: n.senderID,
+				messID: n.messageID,
+				id: d,
+				type: "calladmin"
+			});
+		});
+	}));
 };
