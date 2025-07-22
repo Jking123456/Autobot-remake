@@ -17,15 +17,43 @@ module.exports = {
   run: async function ({ api, event, args }) {
     const { threadID, messageID, senderID } = event;
 
+    // 🔒 Restriction: Only allow in groups if bot is admin
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const botID = api.getCurrentUserID();
+
+      if (threadInfo.isGroup) {
+        const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+        if (!isBotAdmin) {
+          return api.sendMessage(
+            "🚫 This command is disabled in this group because the bot is not an admin.",
+            threadID,
+            messageID
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Admin check error:", e);
+      return api.sendMessage(
+        "⚠️ Failed to verify admin status. Try again later.",
+        threadID,
+        messageID
+      );
+    }
+
     // Cooldown check
     const now = Date.now();
-    const cooldownTime = 60 * 3000; // 1 minute in milliseconds
+    const cooldownTime = 60 * 3000; // 1 minute
 
     if (cooldowns.has(senderID)) {
       const expiration = cooldowns.get(senderID);
       if (now < expiration) {
         const remaining = ((expiration - now) / 3000).toFixed(0);
-        return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "nglspam" command again.`, threadID, messageID);
+        return api.sendMessage(
+          `⏳ Please wait ${remaining} seconds before using the "nglspam" command again.`,
+          threadID,
+          messageID
+        );
       }
     }
 
