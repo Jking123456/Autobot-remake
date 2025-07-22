@@ -20,7 +20,23 @@ module.exports.config = {
 module.exports.run = async function ({ api, args, event }) {
   const { threadID, messageID, senderID } = event;
 
-  // Check cooldown
+  // ✅ Admin check for group
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 Bot must be an admin in this group to use the 'video' command.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check error:", err);
+    return api.sendMessage("⚠️ Could not verify bot's admin status. Please try again later.", threadID, messageID);
+  }
+
+  // Cooldown check
   const cooldownTime = 60 * 3000; // 1 minute in milliseconds
   const now = Date.now();
   const lastUsed = cooldowns.get(senderID);
@@ -32,8 +48,7 @@ module.exports.run = async function ({ api, args, event }) {
 
   const searchQuery = args.join(" ");
   if (!searchQuery) {
-    api.sendMessage("Usage: video <search text>", threadID, messageID);
-    return;
+    return api.sendMessage("📌 Usage: video <search text>", threadID, messageID);
   }
 
   try {
@@ -44,12 +59,10 @@ module.exports.run = async function ({ api, args, event }) {
 
     // Fetch data from API
     const response = await axios.get(`https://haji-mix.up.railway.app/api/youtube?search=${encodeURIComponent(searchQuery)}&stream=false&limit=1`);
-
     const videoData = response.data[0];
 
     if (!videoData || !videoData.play) {
-      api.sendMessage("❌ | No video found.", threadID, messageID);
-      return;
+      return api.sendMessage("❌ | No video found.", threadID, messageID);
     }
 
     const videoUrl = videoData.play;
@@ -62,20 +75,15 @@ module.exports.run = async function ({ api, args, event }) {
 
     api.setMessageReaction("✅", messageID, () => {}, true);
 
-    await api.sendMessage(
-      {
-        body: `Here's your video, enjoy! 🥰\n\n𝗧𝗶𝘁𝗹𝗲: ${title}`,
-        attachment: fs.createReadStream(videoPath),
-      },
-      threadID,
-      messageID
-    );
+    await api.sendMessage({
+      body: `📹 Here's your video, enjoy!\n\n🎵 Title: ${title}`,
+      attachment: fs.createReadStream(videoPath),
+    }, threadID, () => fs.unlinkSync(videoPath), messageID);
 
-    fs.unlinkSync(videoPath); // Delete temp file
     api.unsendMessage(ugh.messageID);
 
   } catch (error) {
+    console.error("❌ Error:", error);
     api.sendMessage(`❌ | Error: ${error.message}`, threadID, messageID);
-    console.error(error);
   }
 };
