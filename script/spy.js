@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 module.exports.config = {
   name: "spy",
   version: "2.0",
@@ -43,12 +45,17 @@ module.exports.run = async function ({ api, event, args }) {
     const profileUrl = `🌐 Profile: ${info.profileUrl || "Unavailable"}`;
     const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
 
-    const avatarStream = await global.utils.getStreamFromURL(avatarUrl);
+    // ✅ Use axios directly to stream the image
+    const response = await axios({
+      url: avatarUrl,
+      method: "GET",
+      responseType: "stream"
+    });
 
     return api.sendMessage(
       {
         body: `${profileBox}\n\n${profileUrl}`,
-        attachment: avatarStream
+        attachment: response.data
       },
       threadID,
       messageID
