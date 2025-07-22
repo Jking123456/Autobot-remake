@@ -1,14 +1,14 @@
 const axios = require("axios");
 
 module.exports.config = {
-  name: "spy",
+  name: "userinfo",
   version: "2.1",
   role: 0,
   hasPrefix: true,
-  aliases: ["whoishe", "whoisshe", "whoami", "stalk"],
+  aliases: ["spy", "whoishe", "whoisshe", "whoami", "stalk"],
   description: "View user profile and information",
   usage: "[reply/tag/uid]",
-  credits: "xnil6x, fixed by ChatGPT",
+  credits: "Homer Rebatis",
   cooldowns: 5,
   commandCategory: "info"
 };
@@ -45,9 +45,10 @@ module.exports.run = async function ({ api, event, args }) {
     const profileUrl =
       info.vanity || info.profileUrl
         ? `https://facebook.com/${info.vanity || uid}`
-        : "🌐 Profile: Unavailable";
+        : "Unavailable";
 
     const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
+
     const response = await axios({
       url: avatarUrl,
       method: "GET",
@@ -63,7 +64,7 @@ module.exports.run = async function ({ api, event, args }) {
       messageID
     );
   } catch (err) {
-    console.error("SPY COMMAND ERROR:", err);
-    return api.sendMessage(`❌ Couldn't spy on this user.\nReason: ${err.message}`, threadID, messageID);
+    console.error("USERINFO COMMAND ERROR:", err);
+    return api.sendMessage(`❌ Couldn't get user info.\nReason: ${err.message}`, threadID, messageID);
   }
 };
