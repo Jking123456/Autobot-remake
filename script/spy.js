@@ -8,7 +8,7 @@ module.exports.config = {
   aliases: ["whoishe", "whoisshe", "whoami", "stalk"],
   description: "Get detailed user information with elegant presentation",
   usage: "[reply/tag/uid]",
-  credits: "Homer Rebatis",
+  credits: "Converted by ChatGPT - Original by xnil6x",
   cooldowns: 5,
   commandCategory: "info"
 };
@@ -23,12 +23,21 @@ module.exports.run = async function ({ api, event, args, Users }) {
     senderID;
 
   try {
+    // Step 1: Get user info
     const [userInfo] = await api.getUserInfo(uid);
-    const userData = await Users.getData(uid);
-    const allUsers = await Users.getAll();
+    if (!userInfo || !userInfo[uid]) throw new Error("No userInfo");
 
     const info = userInfo[uid];
+
+    // Step 2: Get data from Users
+    const userData = await Users.getData(uid);
+    if (!userData) throw new Error("No userData");
+
+    const allUsers = await Users.getAll();
+    if (!Array.isArray(allUsers)) throw new Error("No allUsers list");
+
     const avatarUrl = await Users.getAvatarUrl(uid);
+
     const genderMap = { 1: "♀️ Girl", 2: "♂️ Boy", undefined: "🌈 Custom" };
 
     const formatMoney = num => {
@@ -92,7 +101,7 @@ module.exports.run = async function ({ api, event, args, Users }) {
       messageID
     );
   } catch (err) {
-    console.error("Spy Command Error:", err);
-    return api.sendMessage("❌ Couldn't spy on this user.", threadID, messageID);
+    console.error("🔍 SPY COMMAND ERROR:", err);
+    return api.sendMessage("❌ Couldn't spy on this user. Reason: " + err.message, threadID, messageID);
   }
 };
