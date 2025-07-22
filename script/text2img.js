@@ -18,6 +18,22 @@ module.exports.run = async ({ api, event, args }) => {
   const prompt = args.join(" ");
   const filePath = __dirname + `/cache/text2img.png`;
 
+  // ✅ Admin check for group
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 Bot must be an admin in this group to use the 'text2img' command.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Failed to verify admin status. Try again later.", threadID, messageID);
+  }
+
   // Cooldown check
   const cooldownTime = 60 * 3000; // 1 minute in ms
   const lastUsed = cooldowns.get(senderID);
