@@ -17,8 +17,28 @@ module.exports.run = async ({ api, event, args }) => {
   const text = args.slice(1).join(" ");
   const filePath = __dirname + `/cache/trump.png`;
 
+  // 🔐 Admin-only check
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 This command can only be used if the bot is an admin in this group.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("🔍 Admin check failed:", err);
+    return api.sendMessage("⚠️ Failed to verify bot admin status. Please try again later.", threadID, messageID);
+  }
+
   if (!uid || isNaN(uid) || !text) {
-    return api.sendMessage("❌ Please provide a valid Facebook UID **and** text.\n\nExample: trump 100044848836284 bakla", threadID, messageID);
+    return api.sendMessage(
+      "❌ Please provide a valid Facebook UID **and** text.\n\nExample: trump 100044848836284 bakla",
+      threadID,
+      messageID
+    );
   }
 
   try {
