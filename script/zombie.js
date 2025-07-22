@@ -16,6 +16,22 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
     const { threadID, messageID } = event;
 
+    // ✅ Admin Check
+    try {
+        const threadInfo = await api.getThreadInfo(threadID);
+        const botID = api.getCurrentUserID();
+
+        if (threadInfo.isGroup) {
+            const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+            if (!isBotAdmin) {
+                return api.sendMessage("🚫 This command can only be used if the bot is an admin in this group.", threadID, messageID);
+            }
+        }
+    } catch (error) {
+        console.error("⚠️ Admin check failed:", error);
+        return api.sendMessage("⚠️ Failed to verify admin status. Please try again later.", threadID, messageID);
+    }
+
     if (event.type !== "message_reply" || event.messageReply.attachments.length === 0) {
         return api.sendMessage("⚠️ Please reply to an image.", threadID, messageID);
     }
@@ -27,14 +43,14 @@ module.exports.run = async function ({ api, event }) {
 
         const response = await axios.get(
             `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`,
-            { responseType: "arraybuffer" } // ⬅️ Important to get binary image
+            { responseType: "arraybuffer" }
         );
 
         const imgPath = path.join(__dirname, "cache", `zombie_${Date.now()}.jpg`);
         fs.writeFileSync(imgPath, response.data);
 
         return api.sendMessage({ attachment: fs.createReadStream(imgPath) }, threadID, () => {
-            fs.unlinkSync(imgPath); // cleanup after send
+            fs.unlinkSync(imgPath); // cleanup
         }, messageID);
 
     } catch (err) {
