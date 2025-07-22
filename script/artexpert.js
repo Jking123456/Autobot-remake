@@ -18,12 +18,28 @@ module.exports.run = async ({ api, event, args }) => {
   const uid = args[0];
   const filePath = __dirname + `/cache/art-expert.png`;
 
-  // Check cooldown
+  // ✅ Restrict group usage unless bot is admin
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Failed to verify bot permissions. Try again later.", threadID, messageID);
+  }
+
+  // Cooldown check
   const now = Date.now();
   if (cooldowns.has(senderID)) {
     const timePassed = now - cooldowns.get(senderID);
     if (timePassed < 60 * 1000) {
-      const remaining = Math.ceil((60 * 3000 - timePassed) / 1000);
+      const remaining = Math.ceil((60 * 1000 - timePassed) / 1000);
       return api.sendMessage(`⏳ Please wait ${remaining} second(s) before using this command again.`, threadID, messageID);
     }
   }
