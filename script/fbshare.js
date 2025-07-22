@@ -15,7 +15,31 @@ module.exports.config = {
 };
 
 module.exports.run = async ({ api, event, args }) => {
-  const senderID = event.senderID;
+  const { senderID, threadID, messageID } = event;
+
+  // ✅ Restrict to group admin only
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "❌ This command can only be used in groups where the bot is an admin.",
+          threadID,
+          messageID
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage(
+      "⚠️ Couldn't verify bot permissions. Try again later.",
+      threadID,
+      messageID
+    );
+  }
 
   // Cooldown check
   if (cooldowns[senderID]) {
@@ -26,8 +50,8 @@ module.exports.run = async ({ api, event, args }) => {
       const seconds = Math.floor((remainingTime % 60000) / 1000);
       return api.sendMessage(
         `⏳ Please wait ${minutes} minute(s) and ${seconds} second(s) before using the "fbshare" command again.`,
-        event.threadID,
-        event.messageID
+        threadID,
+        messageID
       );
     }
   }
@@ -38,8 +62,8 @@ module.exports.run = async ({ api, event, args }) => {
     if (input.length < 3) {
       return api.sendMessage(
         "❌ Incorrect usage.\n\nExample:\nfbshare your_cookie_here | post_link | 100",
-        event.threadID,
-        event.messageID
+        threadID,
+        messageID
       );
     }
 
@@ -47,11 +71,11 @@ module.exports.run = async ({ api, event, args }) => {
     const amount = parseInt(amountRaw);
 
     if (!postLink.startsWith("https://")) {
-      return api.sendMessage("❌ Invalid post link. It must start with https://", event.threadID, event.messageID);
+      return api.sendMessage("❌ Invalid post link. It must start with https://", threadID, messageID);
     }
 
     if (isNaN(amount) || amount <= 0 || amount > 50000) {
-      return api.sendMessage("❌ Share amount must be a number between 1 and 50,000.", event.threadID, event.messageID);
+      return api.sendMessage("❌ Share amount must be a number between 1 and 50,000.", threadID, messageID);
     }
 
     const headers = {
@@ -67,7 +91,7 @@ module.exports.run = async ({ api, event, args }) => {
 
     const tokenMatch = tokenRes.data.match(/EAAG\w+/);
     if (!tokenMatch) {
-      return api.sendMessage("❌ Failed to extract token. Your cookie may be invalid or expired.", event.threadID, event.messageID);
+      return api.sendMessage("❌ Failed to extract token. Your cookie may be invalid or expired.", threadID, messageID);
     }
 
     const fbtoken = tokenMatch[0];
@@ -75,7 +99,7 @@ module.exports.run = async ({ api, event, args }) => {
     let success = 0;
     let fail = 0;
 
-    api.sendMessage(`⏳ Starting to share ${amount} times... Please wait.`, event.threadID);
+    api.sendMessage(`⏳ Starting to share ${amount} times... Please wait.`, threadID);
 
     for (let i = 1; i <= amount; i++) {
       try {
@@ -96,7 +120,7 @@ module.exports.run = async ({ api, event, args }) => {
       }
 
       if (i % 1000 === 0) {
-        api.sendMessage(`📢 Progress: ${i}/${amount}\n✅ Success: ${success} | ❌ Failed: ${fail}`, event.threadID);
+        api.sendMessage(`📢 Progress: ${i}/${amount}\n✅ Success: ${success} | ❌ Failed: ${fail}`, threadID);
       }
     }
 
@@ -105,11 +129,11 @@ module.exports.run = async ({ api, event, args }) => {
 
     return api.sendMessage(
       `✅ Sharing complete!\nTotal: ${amount}\nSuccess: ${success}\nFailed: ${fail}`,
-      event.threadID,
-      event.messageID
+      threadID,
+      messageID
     );
 
   } catch (err) {
-    return api.sendMessage(`❌ Error: ${err.message}`, event.threadID, event.messageID);
+    return api.sendMessage(`❌ Error: ${err.message}`, threadID, messageID);
   }
 };
