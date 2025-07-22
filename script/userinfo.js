@@ -42,10 +42,8 @@ module.exports.run = async function ({ api, event, args }) {
 ├─ 🤖 Bot Friend: ${info.isFriend ? "✅ Yes" : "❌ No"}
 ╰────────────────`;
 
-    const profileUrl =
-      info.vanity || info.profileUrl
-        ? `https://facebook.com/${info.vanity || uid}`
-        : "Unavailable";
+    // ✅ Fixed profile URL construction
+    const profileUrl = `https://facebook.com/${info.vanity || uid}`;
 
     const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
 
@@ -65,6 +63,10 @@ module.exports.run = async function ({ api, event, args }) {
     );
   } catch (err) {
     console.error("USERINFO COMMAND ERROR:", err);
-    return api.sendMessage(`❌ Couldn't get user info.\nReason: ${err.message}`, threadID, messageID);
+    return api.sendMessage(
+      `❌ Couldn't get user info.\nReason: ${err.message}`,
+      threadID,
+      messageID
+    );
   }
 };
