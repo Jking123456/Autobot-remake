@@ -17,6 +17,23 @@ module.exports.config = {
 module.exports.run = async function({ api, event }) {
   const { threadID, messageID, senderID } = event;
 
+  // ✅ Group admin restriction
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
+  }
+
+  // ⏳ Cooldown logic
   const cooldownTime = 60 * 1000; // 1 minute
   const now = Date.now();
   const lastUsed = cooldowns.get(senderID);
