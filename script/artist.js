@@ -10,7 +10,7 @@ module.exports.config = {
   credits: "ChatGPT",
   aliases: [],
   usages: "< Facebook UID >",
-  cooldown: 2, // general cooldown (can be ignored if per-user is applied)
+  cooldown: 2,
 };
 
 module.exports.run = async ({ api, event, args }) => {
@@ -18,12 +18,28 @@ module.exports.run = async ({ api, event, args }) => {
   const uid = args[0];
   const filePath = __dirname + `/cache/artist.png`;
 
-  // 1-minute cooldown check per sender
+  // ✅ Restrict to admin-only in groups
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
+  }
+
+  // 1-minute cooldown check
   const now = Date.now();
   if (cooldowns.has(senderID)) {
     const elapsed = now - cooldowns.get(senderID);
     if (elapsed < 60 * 1000) {
-      const waitTime = Math.ceil((60 * 3000 - elapsed) / 1000);
+      const waitTime = Math.ceil((60 * 1000 - elapsed) / 1000);
       return api.sendMessage(`⏳ Please wait ${waitTime} second(s) before using this command again.`, threadID, messageID);
     }
   }
