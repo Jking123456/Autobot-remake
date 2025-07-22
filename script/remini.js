@@ -14,6 +14,24 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID } = event;
+
+  // ✅ Check if in a group and bot is admin
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", threadID, messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check error:", err);
+    return api.sendMessage("⚠️ Unable to verify bot admin status. Try again later.", threadID, messageID);
+  }
+
   const messageReply = event.messageReply;
 
   if (
@@ -22,13 +40,13 @@ module.exports.run = async function ({ api, event }) {
     messageReply.attachments.length === 0 || 
     messageReply.attachments[0].type !== "photo"
   ) {
-    return api.sendMessage("📸 Please reply to a photo to enhance it.", event.threadID, event.messageID);
+    return api.sendMessage("📸 Please reply to a photo to enhance it.", threadID, messageID);
   }
 
   const photoUrl = messageReply.attachments[0].url;
 
   // Send loading message
-  const loadingMessage = await api.sendMessage("⏳ Enhancing image, please wait...", event.threadID);
+  const loadingMessage = await api.sendMessage("⏳ Enhancing image, please wait...", threadID);
 
   try {
     const apiURL = `https://kaiz-apis.gleeze.com/api/remini?url=${encodeURIComponent(photoUrl)}&stream=false&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
@@ -48,7 +66,7 @@ module.exports.run = async function ({ api, event }) {
     return api.sendMessage({
       body: "✅ Image enhanced successfully!",
       attachment: fs.createReadStream(savePath)
-    }, event.threadID, event.messageID);
+    }, threadID, messageID);
 
   } catch (err) {
     console.error("Remini Error:", err);
@@ -56,7 +74,6 @@ module.exports.run = async function ({ api, event }) {
     // Delete loading message
     api.unsendMessage(loadingMessage.messageID);
 
-    // Send error message
-    return api.sendMessage(`❌ Failed to enhance image.\n${err.message}`, event.threadID, event.messageID);
+    return api.sendMessage(`❌ Failed to enhance image.\n${err.message}`, threadID, messageID);
   }
 };
