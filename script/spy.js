@@ -8,7 +8,7 @@ module.exports.config = {
   aliases: ["whoishe", "whoisshe", "whoami", "stalk"],
   description: "Get detailed user information with elegant presentation",
   usage: "[reply/tag/uid]",
-  credits: "Converted by ChatGPT - Original by xnil6x",
+  credits: "Homer Rebatis",
   cooldowns: 5,
   commandCategory: "info"
 };
