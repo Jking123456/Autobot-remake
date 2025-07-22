@@ -11,7 +11,7 @@ module.exports.config = {
   commandCategory: "info"
 };
 
-module.exports.run = async function ({ api, event, args, Users }) {
+module.exports.run = async function ({ api, event, args, usersData }) {
   const { senderID, messageID, messageReply, mentions, threadID } = event;
 
   let uid =
@@ -27,9 +27,9 @@ module.exports.run = async function ({ api, event, args, Users }) {
 
     if (!info) throw new Error("Invalid user or can't access user info");
 
-    const userData = await Users.getData(uid);
-    const allUsers = await Users.getAll();
-    const avatarUrl = await Users.getAvatarUrl(uid);
+    const userData = await usersData.get(uid);
+    const allUsers = await usersData.getAll();
+    const avatarUrl = await usersData.getAvatarUrl(uid);
 
     const genderMap = { 1: "♀️ Girl", 2: "♂️ Boy", undefined: "🌈 Custom" };
 
