@@ -15,34 +15,33 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   try {
-    const threadList = await api.getThreadList(100, null, ["INBOX"]);
     const customMessage = args.join(" ");
-    let sentCount = 0;
-
     if (!customMessage) {
       return api.sendMessage("⚠️ Please provide a message to send.", event.threadID);
     }
 
+    const threadList = await api.getThreadList(100, null, ["INBOX"]);
+    console.log(`✅ Retrieved ${threadList.length} threads.`);
+
+    let sentCount = 0;
+
     for (const thread of threadList) {
-      if (
-        sentCount >= 20 ||
-        !thread.isGroup ||
-        thread.threadID === event.threadID
-      ) {
-        continue;
-      }
+      if (sentCount >= 20) break;
+      if (!thread.isGroup || thread.threadID === event.threadID) continue;
 
       try {
-        const baseMessage = `𝙉𝙊𝙏𝙄𝘾𝙀 𝙁𝙍𝙊𝙈 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍 
+        const message = `𝙉𝙊𝙏𝙄𝘾𝙀 𝙁𝙍𝙊𝙈 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍 
 ---------------- 
 Developer : HOMER REBATIS
 --------------- 
 『𝗡𝗼𝘁𝗶𝗰𝗲』${customMessage}`;
 
-        await api.sendMessage(baseMessage, thread.threadID);
+        await api.sendMessage(message, thread.threadID);
+        console.log(`✅ Message sent to: ${thread.threadID}`);
         sentCount++;
 
-        // TTS
+        /*
+        // Optional: TTS (Text-to-Speech)
         const ttsPath = path.resolve(__dirname, "cache", `${thread.threadID}_female.mp3`);
         await fs.ensureDir(path.dirname(ttsPath));
 
@@ -53,22 +52,23 @@ Developer : HOMER REBATIS
         await api.sendMessage(
           { attachment: fs.createReadStream(ttsPath) },
           thread.threadID,
-          () => fs.unlink(ttsPath) // async delete
+          () => fs.unlink(ttsPath)
         );
+        */
 
       } catch (err) {
-        console.error(`❌ Error sending to thread ${thread.threadID}:`, err.message);
+        console.error(`❌ Error sending to thread ${thread.threadID}:`, err);
       }
     }
 
     if (sentCount > 0) {
       api.sendMessage(`✅ Notification sent to ${sentCount} group(s).`, event.threadID);
     } else {
-      api.sendMessage(`⚠️ No eligible group threads found to send the message.`, event.threadID);
+      api.sendMessage("⚠️ No eligible group threads found to send the message.", event.threadID);
     }
 
   } catch (err) {
-    console.error("❌ Main error in noti module:", err.message);
+    console.error("❌ Main error in noti module:", err);
     api.sendMessage("⚠️ An error occurred while sending the notifications.", event.threadID);
   }
 };
@@ -91,4 +91,4 @@ async function downloadFile(url, filePath) {
     writer.on("finish", resolve);
     writer.on("error", reject);
   });
-      }
+    }
