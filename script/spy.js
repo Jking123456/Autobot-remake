@@ -1,5 +1,3 @@
-const axios = require("axios");
-
 module.exports.config = {
   name: "spy",
   version: "2.0",
@@ -14,7 +12,8 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event, args, Users }) {
-  let { senderID, messageID, messageReply, mentions, threadID } = event;
+  const { senderID, messageID, messageReply, mentions, threadID } = event;
+
   let uid =
     args[0]?.match(/^\d+$/)?.[0] ||
     args[0]?.match(/profile\.php\?id=(\d+)/)?.[1] ||
@@ -23,19 +22,13 @@ module.exports.run = async function ({ api, event, args, Users }) {
     senderID;
 
   try {
-    // Step 1: Get user info
-    const [userInfo] = await api.getUserInfo(uid);
-    if (!userInfo || !userInfo[uid]) throw new Error("No userInfo");
-
+    const userInfo = await api.getUserInfo(uid);
     const info = userInfo[uid];
 
-    // Step 2: Get data from Users
+    if (!info) throw new Error("Invalid user or can't access user info");
+
     const userData = await Users.getData(uid);
-    if (!userData) throw new Error("No userData");
-
     const allUsers = await Users.getAll();
-    if (!Array.isArray(allUsers)) throw new Error("No allUsers list");
-
     const avatarUrl = await Users.getAvatarUrl(uid);
 
     const genderMap = { 1: "♀️ Girl", 2: "♂️ Boy", undefined: "🌈 Custom" };
@@ -90,18 +83,18 @@ module.exports.run = async function ({ api, event, args, Users }) {
 
     const profileUrl = `🌐 Profile: ${info.profileUrl || "Unavailable"}`;
 
-    const res = await global.utils.getStreamFromURL(avatarUrl);
+    const avatarStream = await global.utils.getStreamFromURL(avatarUrl);
 
     return api.sendMessage(
       {
         body: `${profileBox}\n\n${statsBox}\n\n${profileUrl}`,
-        attachment: res
+        attachment: avatarStream
       },
       threadID,
       messageID
     );
   } catch (err) {
     console.error("🔍 SPY COMMAND ERROR:", err);
-    return api.sendMessage("❌ Couldn't spy on this user. Reason: " + err.message, threadID, messageID);
+    return api.sendMessage(`❌ Couldn't spy on this user. Reason: ${err.message}`, threadID, messageID);
   }
 };
