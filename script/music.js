@@ -20,6 +20,22 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const senderID = event.senderID;
 
+  // 🔒 Restriction: Only allow in groups if bot is admin
+  try {
+    const threadInfo = await api.getThreadInfo(event.threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", event.threadID, event.messageID);
+      }
+    }
+  } catch (err) {
+    console.error("Admin check error:", err);
+    return api.sendMessage("⚠️ Failed to check group admin status. Try again later.", event.threadID, event.messageID);
+  }
+
   // Cooldown check
   const now = Date.now();
   const cooldownTime = 60 * 3000; // 1 minute in milliseconds
@@ -36,7 +52,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   const query = args.join(' ');
   if (!query) {
-    return api.sendMessage(`Please enter a song name.\nExample: music Shape of You`, event.threadID, event.messageID);
+    return api.sendMessage(`❗ Please enter a song name.\nExample: music Shape of You`, event.threadID, event.messageID);
   }
 
   try {
