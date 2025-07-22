@@ -23,6 +23,25 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const senderID = event.senderID;
 
+  // ✅ Restrict usage in groups unless the bot is admin
+  try {
+    const threadInfo = await api.getThreadInfo(event.threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "🚫 This command is disabled because the bot is not an admin in this group.",
+          event.threadID
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Cannot check admin status. Try again later.", event.threadID);
+  }
+
   // Fixed 1-minute cooldown check
   const now = Date.now();
   if (cooldowns.has(senderID)) {
@@ -30,12 +49,12 @@ module.exports.run = async function ({ api, event }) {
     const cooldownTime = 60 * 3000;
 
     if (timePassed < cooldownTime) {
-      return api.sendMessage(`⏳ Please wait 1 minute before using the "faceswap" command again.`, event.threadID);
+      return api.sendMessage(`⏳ Please wait 1 minute before using the \"faceswap\" command again.`, event.threadID);
     }
   }
 
   try {
-    if (event.type !== "message_reply") 
+    if (event.type !== "message_reply")
       return api.sendMessage("❗ Please reply to two images.", event.threadID);
 
     const attachments = event.messageReply.attachments;
