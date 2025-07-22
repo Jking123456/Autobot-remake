@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "spy",
-  version: "2.0",
+  version: "2.1",
   role: 0,
   hasPrefix: true,
   aliases: ["whoishe", "whoisshe", "whoami", "stalk"],
@@ -42,10 +42,12 @@ module.exports.run = async function ({ api, event, args }) {
 ├─ 🤖 Bot Friend: ${info.isFriend ? "✅ Yes" : "❌ No"}
 ╰────────────────`;
 
-    const profileUrl = `🌐 Profile: ${info.profileUrl || "Unavailable"}`;
-    const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
+    const profileUrl =
+      info.vanity || info.profileUrl
+        ? `https://facebook.com/${info.vanity || uid}`
+        : "🌐 Profile: Unavailable";
 
-    // ✅ Use axios directly to stream the image
+    const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
     const response = await axios({
       url: avatarUrl,
       method: "GET",
@@ -54,7 +56,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     return api.sendMessage(
       {
-        body: `${profileBox}\n\n${profileUrl}`,
+        body: `${profileBox}\n\n🌐 Profile: ${profileUrl}`,
         attachment: response.data
       },
       threadID,
