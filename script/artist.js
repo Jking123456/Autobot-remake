@@ -26,7 +26,7 @@ module.exports.run = async ({ api, event, args }) => {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
@@ -39,7 +39,7 @@ module.exports.run = async ({ api, event, args }) => {
   if (cooldowns.has(senderID)) {
     const elapsed = now - cooldowns.get(senderID);
     if (elapsed < 60 * 1000) {
-      const waitTime = Math.ceil((60 * 1000 - elapsed) / 1000);
+      const waitTime = Math.ceil((10 * 1000 - elapsed) / 1000);
       return api.sendMessage(`⏳ Please wait ${waitTime} second(s) before using this command again.`, threadID, messageID);
     }
   }
