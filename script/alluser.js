@@ -3,8 +3,8 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "alluser",
-    version: "1.0.0",
-    author: "cliff (converted by ChatGPT)",
+    version: "1.1.0",
+    author: "cliff (fixed by ChatGPT)",
     countDown: 5,
     role: 0,
     shortDescription: "List all users in the group",
@@ -15,15 +15,41 @@ module.exports = {
 
   onStart: async function ({ api, event, usersData }) {
     const threadID = event.threadID;
-    const participantIDs = event.participantIDs;
-    let msg = "";
-    let index = 1;
 
-    for (const userID of participantIDs) {
-      const name = await usersData.getName(userID);
-      msg += `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+
+      if (!participantIDs || participantIDs.length === 0) {
+        return api.sendMessage("❌ No participants found in this group.", threadID);
+      }
+
+      let msgChunks = [];
+      let msg = "";
+      let index = 1;
+
+      for (const userID of participantIDs) {
+        let name = await usersData.getName(userID).catch(() => null);
+        if (!name) name = "Unknown User";
+
+        const line = `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
+
+        // Prevent exceeding message limit
+        if ((msg + line).length > 19000) {
+          msgChunks.push(msg);
+          msg = "";
+        }
+        msg += line;
+      }
+
+      msgChunks.push(msg); // Push the last chunk
+
+      for (const chunk of msgChunks) {
+        await api.sendMessage(`📋 All users in this group:\n\n${chunk}`, threadID);
+      }
+    } catch (err) {
+      console.error("alluser error:", err);
+      api.sendMessage("❌ Failed to fetch group users. Please try again later.", threadID);
     }
-
-    api.sendMessage(`📋 All users in this group:\n\n${msg}`, threadID);
   }
 };
