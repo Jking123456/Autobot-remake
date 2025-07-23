@@ -8,7 +8,7 @@ module.exports.config = {
   aliases: ["spy", "whoishe", "whoisshe", "whoami", "stalk"],
   description: "View user profile and information",
   usage: "[reply/tag/uid]",
-  credits: "Homer Rebatis + ChatGPT",
+  credits: "Homer Rebatis",
   cooldowns: 5,
   commandCategory: "info"
 };
@@ -26,7 +26,7 @@ module.exports.run = async function ({ api, event, args }) {
 
       if (!isBotAdmin) {
         return api.sendMessage(
-          "🚫 I need to be an admin in this group to run this command.",
+          "🚫 This command can only be used in groups where the bot is an admin.",
           threadID,
           messageID
         );
