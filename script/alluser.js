@@ -1,0 +1,44 @@
+module.exports.run = async ({ api, event }) => {
+  const { threadID, messageID } = event;
+
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const participantIDs = threadInfo.participantIDs || [];
+
+    if (participantIDs.length === 0) {
+      return api.sendMessage("❌ No participants found in this group.", threadID, messageID);
+    }
+
+    // Fetch user info in bulk for all participants
+    const usersInfo = await api.getUserInfo(participantIDs);
+
+    let msg = "";
+    let index = 1;
+    const msgChunks = [];
+
+    for (const userID of participantIDs) {
+      const info = usersInfo[userID];
+      const name = info?.name || "Unknown User";
+
+      const line = `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
+
+      if ((msg + line).length > 18000) {
+        msgChunks.push(msg);
+        msg = "";
+      }
+
+      msg += line;
+    }
+
+    if (msg.length > 0) {
+      msgChunks.push(msg);
+    }
+
+    for (const chunk of msgChunks) {
+      await api.sendMessage(`📋 All users in this group:\n\n${chunk}`, threadID);
+    }
+  } catch (err) {
+    console.error("alluser.js error:", err);
+    api.sendMessage("❌ Failed to fetch group users. Please try again later.", threadID, messageID);
+  }
+};
