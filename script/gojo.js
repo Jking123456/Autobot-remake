@@ -27,7 +27,7 @@ module.exports.run = async function ({ api, event, args }) {
     const isBotAdmin = threadInfo.adminIDs.some(e => e.id == botID);
 
     if (!isBotAdmin) {
-      return api.sendMessage("❌ This command is only available when the bot is an **admin** in this group.", threadID, messageID);
+      return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
     }
   } catch (e) {
     console.error("Bot admin check failed:", e.message);
