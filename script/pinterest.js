@@ -17,7 +17,7 @@ module.exports.config = {
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
   const search = args.join(" ");
-  const cooldownTime = 60 * 1000; // 1 minute in ms
+  const cooldownTime = 10 * 1000; // 1 minute in ms
   const now = Date.now();
 
   // 🔒 Restriction: Only allow in groups if bot is admin
@@ -29,7 +29,7 @@ module.exports.run = async ({ api, event, args }) => {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage(
-          "🚫 This command is disabled in this group because the bot is not an admin.",
+          "🚫 This command can only be used in groups where the bot is an admin.",
           threadID,
           messageID
         );
