@@ -6,7 +6,7 @@ module.exports.config = {
   aliases: ["listuser", "groupusers", "members"],
   description: "List all users in the current group chat.",
   usage: "",
-  credits: "Homer Rebatis + ChatGPT Fix",
+  credits: "Homer Rebatis",
   cooldowns: 5,
   commandCategory: "group"
 };
