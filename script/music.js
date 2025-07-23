@@ -28,7 +28,7 @@ module.exports.run = async function ({ api, event, args }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", event.threadID, event.messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", event.threadID, event.messageID);
       }
     }
   } catch (err) {
@@ -38,7 +38,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   // Cooldown check
   const now = Date.now();
-  const cooldownTime = 60 * 3000; // 1 minute in milliseconds
+  const cooldownTime = 10 * 1000; // 1 minute in milliseconds
 
   if (cooldowns.has(senderID)) {
     const expiration = cooldowns.get(senderID);
