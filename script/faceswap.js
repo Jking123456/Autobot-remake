@@ -32,7 +32,7 @@ module.exports.run = async function ({ api, event }) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage(
-          "🚫 This command is disabled because the bot is not an admin in this group.",
+          "🚫 This command can only be used in groups where the bot is an admin.",
           event.threadID
         );
       }
@@ -46,7 +46,7 @@ module.exports.run = async function ({ api, event }) {
   const now = Date.now();
   if (cooldowns.has(senderID)) {
     const timePassed = now - cooldowns.get(senderID);
-    const cooldownTime = 60 * 3000;
+    const cooldownTime = 10 * 1000;
 
     if (timePassed < cooldownTime) {
       return api.sendMessage(`⏳ Please wait 1 minute before using the \"faceswap\" command again.`, event.threadID);
