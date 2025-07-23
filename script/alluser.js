@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "alluser",
     version: "1.1.0",
-    author: "cliff (fixed by ChatGPT)",
+    author: "Homer Rebatis",
     countDown: 5,
     role: 0,
     shortDescription: "List all users in the group",
