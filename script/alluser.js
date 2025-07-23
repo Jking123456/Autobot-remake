@@ -6,7 +6,7 @@ module.exports.config = {
   aliases: ["listuser", "groupusers", "members"],
   description: "List all users in the current group chat.",
   usage: "",
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + ChatGPT Fix",
   cooldowns: 5,
   commandCategory: "group"
 };
@@ -22,7 +22,7 @@ module.exports.run = async function ({ api, event }) {
       return api.sendMessage("❌ No participants found in this group.", threadID, messageID);
     }
 
-    // Fetch user info in bulk for all participants
+    // Fetch all user info
     const usersInfo = await api.getUserInfo(participantIDs);
 
     let msg = "";
@@ -30,11 +30,20 @@ module.exports.run = async function ({ api, event }) {
     const msgChunks = [];
 
     for (const userID of participantIDs) {
-      const info = usersInfo[userID];
-      const name = info?.name || "Unknown User";
+      let name = "Unknown User";
+
+      // Try to get name safely
+      try {
+        if (usersInfo[userID] && usersInfo[userID].name) {
+          name = usersInfo[userID].name;
+        }
+      } catch (e) {
+        // Fail silently for this user
+      }
 
       const line = `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
 
+      // Avoid hitting message character limits
       if ((msg + line).length > 18000) {
         msgChunks.push(msg);
         msg = "";
