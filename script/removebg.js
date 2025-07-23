@@ -5,7 +5,7 @@ module.exports.config = {
   name: "removebg",
   version: "1.0.1",
   role: 0,
-  credits: "Harith (Updated by ChatGPT)",
+  credits: "Harith (Updated by Homer Rebatis)",
   aliases: [],
   usages: "< reply image >",
   cooldown: 2,
@@ -23,7 +23,7 @@ module.exports.run = async ({ api, event, args }) => {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
