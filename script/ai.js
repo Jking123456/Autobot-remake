@@ -8,7 +8,7 @@ module.exports.config = {
   name: "ai",
   version: "1.2.8",
   permission: 0,
-  credits: "Homer Rebatis + ChatGPT",
+  credits: "Homer Rebatis",
   description: "Ask AI via Kaiz Gemini Vision (image) or Kaiz-AI (text only).",
   prefix: false,
   premium: false,
@@ -30,7 +30,7 @@ module.exports.run = async function ({ api, event, args }) {
     const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
 
     if (!isBotAdmin) {
-      return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+      return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
     }
   } catch (err) {
     console.error("Failed to check bot admin status:", err);
