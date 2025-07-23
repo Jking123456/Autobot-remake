@@ -8,7 +8,7 @@ module.exports.config = {
   aliases: ["spy", "whoishe", "whoisshe", "whoami", "stalk"],
   description: "View user profile and information",
   usage: "[reply/tag/uid]",
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis (modified by ChatGPT)",
   cooldowns: 5,
   commandCategory: "info"
 };
@@ -67,10 +67,10 @@ module.exports.run = async function ({ api, event, args }) {
 ├─ 🤖 Bot Friend: ${info.isFriend ? "✅ Yes" : "❌ No"}
 ╰────────────────`;
 
-    // ✅ Fixed: Correct profile URL formatting
     const profileUrl = `https://facebook.com/${info.vanity || uid}`;
 
-    const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
+    // ✅ Use custom profile picture API
+    const avatarUrl = `https://kaiz-apis.gleeze.com/api/facebookpfp?uid=${uid}&apikey=12417c89-ac72-4c8e-a174-9ee378771b24`;
 
     const response = await axios({
       url: avatarUrl,
