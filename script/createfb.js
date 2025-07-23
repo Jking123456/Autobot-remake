@@ -3,7 +3,7 @@ const axios = require('axios');
 module.exports.config = {
   name: "createfb",
   role: 0,
-  credits: "Neth (Fixed by ChatGPT)",
+  credits: "Neth (Fixed by Homer Rebatis)",
   description: "Create a Facebook account via API",
   hasPrefix: true,
   cooldown: 10 * 60 * 1000, // 10 minutes
