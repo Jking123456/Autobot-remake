@@ -7,7 +7,7 @@ module.exports.config = {
   version: "1.0.0",
   hasPrefix: true,
   permission: 0,
-  credits: "Homer Rebatis + ChatGPT",
+  credits: "Homer Rebatis",
   description: "Get lyrics of a song by title.",
   commandCategory: "music",
   usages: "lyrics [song title]",
@@ -27,7 +27,7 @@ module.exports.run = async function ({ api, event, args }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("❌ This command can only be used in groups where the bot is an admin.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
@@ -52,7 +52,7 @@ module.exports.run = async function ({ api, event, args }) {
 
   // Set new cooldown
   cooldowns.set(cooldownKey, now);
-  setTimeout(() => cooldowns.delete(cooldownKey), 60 * 1000); // 1 minute
+  setTimeout(() => cooldowns.delete(cooldownKey), 10 * 1000); // 1 minute
 
   const title = args.join(" ");
   if (!title) {
