@@ -21,7 +21,7 @@ module.exports.run = async ({ api, event }) => {
     const isBotAdmin = threadInfo.adminIDs.some(e => e.id == botID);
 
     if (!isBotAdmin) {
-      return api.sendMessage("❌ This command only works if the bot is an **admin** in this group.", threadID, messageID);
+      return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
     }
 
     const response = await axios.get('https://evilinsult.com/generate_insult.php?lang=fr&type=json');
