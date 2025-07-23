@@ -26,7 +26,7 @@ module.exports.run = async ({ api, event, args }) => {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 Bot must be an admin in this group to use the 'text2img' command.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
@@ -35,7 +35,7 @@ module.exports.run = async ({ api, event, args }) => {
   }
 
   // Cooldown check
-  const cooldownTime = 60 * 3000; // 1 minute in ms
+  const cooldownTime = 10 * 1000; // 1 minute in ms
   const lastUsed = cooldowns.get(senderID);
   const now = Date.now();
 
