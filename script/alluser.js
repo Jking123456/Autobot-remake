@@ -1,4 +1,17 @@
-module.exports.run = async ({ api, event }) => {
+module.exports.config = {
+  name: "alluser",
+  version: "1.0",
+  role: 0,
+  hasPrefix: true,
+  aliases: ["listuser", "groupusers", "members"],
+  description: "List all users in the current group chat.",
+  usage: "",
+  credits: "Homer Rebatis",
+  cooldowns: 5,
+  commandCategory: "group"
+};
+
+module.exports.run = async function ({ api, event }) {
   const { threadID, messageID } = event;
 
   try {
