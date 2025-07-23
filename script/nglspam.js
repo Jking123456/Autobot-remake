@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "nglspam",
     version: "1.0.0",
-    author: "vernex",
+    author: "Homer Rebatis",
     description: "Send anonymous messages to an NGL user using an API",
     cooldowns: 10,
     dependencies: {
@@ -26,7 +26,7 @@ module.exports = {
         const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
         if (!isBotAdmin) {
           return api.sendMessage(
-            "🚫 This command is disabled in this group because the bot is not an admin.",
+            "🚫 This command can only be used in groups where the bot is an admin.",
             threadID,
             messageID
           );
@@ -43,7 +43,7 @@ module.exports = {
 
     // Cooldown check
     const now = Date.now();
-    const cooldownTime = 60 * 3000; // 1 minute
+    const cooldownTime = 10 * 1000; // 1 minute
 
     if (cooldowns.has(senderID)) {
       const expiration = cooldowns.get(senderID);
