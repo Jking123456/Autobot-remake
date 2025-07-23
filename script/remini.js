@@ -24,7 +24,7 @@ module.exports.run = async function ({ api, event }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
