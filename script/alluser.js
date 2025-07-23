@@ -1,28 +1,29 @@
-module.exports.config = {
-	name: "alluser",
-	credits: "cliff",
-	version: '1.0.0',
-	role: 0,
-	cooldown: 0,
-	aliases: ['user'],
-	hasPrefix: false,
-	usage: "",
+const axios = require("axios");
 
+module.exports = {
+  config: {
+    name: "alluser",
+    version: "1.0.0",
+    author: "cliff (converted by ChatGPT)",
+    countDown: 5,
+    role: 0,
+    shortDescription: "List all users in the group",
+    longDescription: "Displays all users in the current group with their name, ID, and Facebook link.",
+    category: "group",
+    guide: "{pn}"
+  },
+
+  onStart: async function ({ api, event, usersData }) {
+    const threadID = event.threadID;
+    const participantIDs = event.participantIDs;
+    let msg = "";
+    let index = 1;
+
+    for (const userID of participantIDs) {
+      const name = await usersData.getName(userID);
+      msg += `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
+    }
+
+    api.sendMessage(`📋 All users in this group:\n\n${msg}`, threadID);
+  }
 };
-module.exports.run = async function ({ api, event, args, Users }) {
-
- function reply(d) {
-	api.sendMessage(d, event.threadID, event.messageID)
- }
- var ep = event.participantIDs;
- msg = ""
- msgs = ""
- m = 0;
- for (let i of ep) {
-	m += 1;
-	const name = await Users.getNameUser(i);
-	msg += m+". "+name+"\nuser id : "+i+"\nfacebook link: https://facebook.com/"+i+"\n\n";
- }
- msgs += "all users in this group\n\n"+msg;
- reply(msgs)
-}
