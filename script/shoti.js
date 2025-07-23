@@ -11,7 +11,7 @@ module.exports.config = {
   description: "Fetch a random Shoti video.",
   prefix: false,
   premium: false,
-  credits: "Akimitsu (Modified by ChatGPT)",
+  credits: "Akimitsu (Modified by Homer Rebatis)",
   cooldowns: 10,
   category: "media"
 };
@@ -19,7 +19,7 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const { threadID, messageID, senderID } = event;
   const now = Date.now();
-  const cooldownTime = 60 * 1000; // 1 minute
+  const cooldownTime = 10 * 1000; // 1 minute
 
   // Check if the bot is an admin in group chats
   try {
@@ -29,7 +29,7 @@ module.exports.run = async function ({ api, event }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 This command is disabled in this group because the bot is not an admin.", threadID, messageID);
+        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
