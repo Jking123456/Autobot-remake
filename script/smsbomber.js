@@ -24,7 +24,7 @@ module.exports = {
       if (threadInfo.isGroup) {
         const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
         if (!isBotAdmin) {
-          return api.sendMessage("🚫 The bot must be an admin in this group to use the 'smsbomber' command.", threadID, messageID);
+          return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
         }
       }
     } catch (err) {
