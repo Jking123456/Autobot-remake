@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "alluser",
-  version: "1.0",
+  version: "1.1",
   role: 0,
   hasPrefix: true,
   aliases: ["listuser", "groupusers", "members"],
@@ -17,13 +17,22 @@ module.exports.run = async function ({ api, event }) {
   try {
     const threadInfo = await api.getThreadInfo(threadID);
     const participantIDs = threadInfo.participantIDs || [];
+    const userInfoList = threadInfo.userInfo || [];
 
     if (participantIDs.length === 0) {
       return api.sendMessage("❌ No participants found in this group.", threadID, messageID);
     }
 
-    // Fetch all user info
+    // Fetch names from getUserInfo
     const usersInfo = await api.getUserInfo(participantIDs);
+
+    // Create a quick lookup map from threadInfo.userInfo
+    const fallbackNames = {};
+    for (const user of userInfoList) {
+      if (user.id && user.name) {
+        fallbackNames[user.id] = user.name;
+      }
+    }
 
     let msg = "";
     let index = 1;
@@ -32,18 +41,14 @@ module.exports.run = async function ({ api, event }) {
     for (const userID of participantIDs) {
       let name = "Unknown User";
 
-      // Try to get name safely
-      try {
-        if (usersInfo[userID] && usersInfo[userID].name) {
-          name = usersInfo[userID].name;
-        }
-      } catch (e) {
-        // Fail silently for this user
+      if (usersInfo[userID]?.name) {
+        name = usersInfo[userID].name;
+      } else if (fallbackNames[userID]) {
+        name = fallbackNames[userID];
       }
 
       const line = `${index++}. ${name}\nUID: ${userID}\nFB: https://facebook.com/${userID}\n\n`;
 
-      // Avoid hitting message character limits
       if ((msg + line).length > 18000) {
         msgChunks.push(msg);
         msg = "";
@@ -59,6 +64,7 @@ module.exports.run = async function ({ api, event }) {
     for (const chunk of msgChunks) {
       await api.sendMessage(`📋 All users in this group:\n\n${chunk}`, threadID);
     }
+
   } catch (err) {
     console.error("alluser.js error:", err);
     api.sendMessage("❌ Failed to fetch group users. Please try again later.", threadID, messageID);
