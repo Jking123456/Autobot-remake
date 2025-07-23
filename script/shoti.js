@@ -2,11 +2,11 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs-extra');
 
-const cooldowns = new Map(); // Cooldown tracker
+const cooldowns = new Map();
 
 module.exports.config = {
   name: "shoti",
-  version: "1.0.0",
+  version: "1.0.1",
   role: 0,
   description: "Fetch a random Shoti video.",
   prefix: false,
@@ -19,72 +19,67 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const { threadID, messageID, senderID } = event;
   const now = Date.now();
-  const cooldownTime = 10 * 1000; // 1 minute
+  const cooldownTime = 10 * 1000;
 
-  // Check if the bot is an admin in group chats
+  // Cooldown check
+  if (cooldowns.has(senderID) && now < cooldowns.get(senderID)) {
+    const remaining = ((cooldowns.get(senderID) - now) / 1000).toFixed(0);
+    return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "shoti" command again.`, threadID, messageID);
+  }
+  cooldowns.set(senderID, now + cooldownTime);
+
+  // Check if in group and bot is admin
   try {
     const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
-
     if (threadInfo.isGroup) {
+      const botID = api.getCurrentUserID();
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
       }
     }
   } catch (err) {
-    console.error("Admin check failed:", err);
-    return api.sendMessage("⚠️ Unable to verify bot admin status. Try again later.", threadID, messageID);
+    console.error("❌ Admin check failed:", err);
+    return api.sendMessage("⚠️ Failed to check bot admin status. Please try again later.", threadID, messageID);
   }
 
-  // Cooldown check
-  if (cooldowns.has(senderID)) {
-    const expiration = cooldowns.get(senderID);
-    if (now < expiration) {
-      const remaining = ((expiration - now) / 1000).toFixed(0);
-      return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "shoti" command again.`, threadID, messageID);
-    }
-  }
-
-  cooldowns.set(senderID, now + cooldownTime);
+  // Inform user
+  api.sendMessage("🎬 Fetching a random Shoti video, please wait...", threadID, messageID);
 
   try {
-    api.sendMessage("🎬 Fetching a random Shoti video, please wait...", threadID, messageID);
-
-    const response = await axios.get('https://kaiz-apis.gleeze.com/api/shoti?apikey=25644cdb-f51e-43f1-894a-ec718918e649');
-    const data = response.data?.shoti;
+    const res = await axios.get('https://kaiz-apis.gleeze.com/api/shoti?apikey=25644cdb-f51e-43f1-894a-ec718918e649');
+    const data = res.data?.shoti;
 
     if (!data || !data.videoUrl) {
-      return api.sendMessage('❌ Failed to fetch a Shoti video. Please try again later.', threadID, messageID);
+      return api.sendMessage('❌ Failed to fetch Shoti video. Try again later.', threadID, messageID);
     }
 
-    const fileName = `${messageID}.mp4`;
+    const fileName = `${Date.now()}.mp4`;
     const filePath = path.join(__dirname, fileName);
 
-    const downloadResponse = await axios({
+    const videoStream = await axios({
       method: 'GET',
       url: data.videoUrl,
-      responseType: 'stream',
+      responseType: 'stream'
     });
 
     const writer = fs.createWriteStream(filePath);
-    downloadResponse.data.pipe(writer);
+    videoStream.data.pipe(writer);
 
-    writer.on('finish', async () => {
+    writer.on('finish', () => {
       api.sendMessage({
-        body: `🎥 Here’s your random Shoti video!\n\n📌 Title: ${data.title}\n👤 User: @${data.username}`,
+        body: `🎥 Here’s your random Shoti video!\n\n📌 Title: ${data.title}\n👤 Username: @${data.username}\n🧑 Nickname: ${data.nickname}\n📍 Region: ${data.region}`,
         attachment: fs.createReadStream(filePath)
-      }, threadID, () => {
-        fs.unlinkSync(filePath); // Clean up
-      }, messageID);
+      }, threadID, () => fs.unlinkSync(filePath), messageID);
     });
 
-    writer.on('error', () => {
-      api.sendMessage('🚫 Error downloading the video. Please try again.', threadID, messageID);
+    writer.on('error', (err) => {
+      console.error('❌ File write error:', err);
+      api.sendMessage('🚫 Error saving the video. Please try again.', threadID, messageID);
     });
 
   } catch (error) {
-    console.error('Error fetching Shoti video:', error);
-    api.sendMessage('🚫 Error fetching Shoti video. Try again later.', threadID, messageID);
+    console.error('❌ API error:', error);
+    api.sendMessage('🚫 Failed to fetch or send the Shoti video. Try again later.', threadID, messageID);
   }
 };
