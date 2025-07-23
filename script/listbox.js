@@ -1,7 +1,7 @@
 module.exports.config = {
   name: "listbox",
-  version: "2.0.0",
-  credits: "Homer Rebatis + Modified",
+  version: "2.1.0",
+  credits: "Homer Rebatis",
   role: 0,
   description: "Lists all group threads (inbox) the bot is part of",
   hasPrefix: false,
@@ -12,7 +12,7 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event }) {
   try {
-    const threads = await api.getThreadList(20, null, ["INBOX"]);
+    const threads = await api.getThreadList(1000, null, ["INBOX"]);
 
     const groupThreads = threads.filter(thread => thread.isGroup && thread.isSubscribed);
 
