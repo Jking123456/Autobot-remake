@@ -17,7 +17,10 @@ module.exports.handleEvent = async function ({ api, event }) {
             const senderID = addedParticipants[0].userFbId;
             let userInfo = await api.getUserInfo(senderID);
             let name = userInfo[senderID].name;
-            const avatarUrl = `https://graph.facebook.com/${senderID}/picture?type=large`;
+
+            // ✅ Updated avatar using Kaiz API
+            const avatarUrl = `https://kaiz-apis.gleeze.com/api/facebookpfp?uid=${senderID}&apikey=12417c89-ac72-4c8e-a174-9ee378771b24`;
+
             const gender = userInfo[senderID]?.gender;
             const prefix = gender === 2 ? "Mr." : gender === 1 ? "Miss" : "";
 
@@ -31,7 +34,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             const memberCount = groupInfo.participantIDs.length;
             const background = groupInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
 
-            // New Kaiz API endpoint
+            // Kaiz Welcome Image API
             const apiUrl = `https://kaiz-apis.gleeze.com/api/welcome?username=${encodeURIComponent(name)}&avatarUrl=${encodeURIComponent(avatarUrl)}&groupname=${encodeURIComponent(groupName)}&bg=${encodeURIComponent(background)}&memberCount=${memberCount}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
             const { data } = await axios.get(apiUrl, { responseType: 'arraybuffer' });
