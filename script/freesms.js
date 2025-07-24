@@ -23,36 +23,28 @@ module.exports.run = async function({ api, event, args }) {
   }
 
   try {
-    api.sendMessage("⏳ Getting Turnstile token, please wait...", threadID, messageID);
+    api.sendMessage("⏳ Solving CAPTCHA and sending SMS...", threadID, messageID);
 
     const browser = await puppeteer.launch({
-  headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
-});
+      headless: "new", // more stable on Render
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
     const page = await browser.newPage();
 
-    await page.goto("https://freemessagetext.vercel.app/", { waitUntil: "networkidle0" });
+    await page.goto("https://freemessagetext.vercel.app/", { waitUntil: "networkidle2" });
 
-    // Wait for CAPTCHA container
-    await page.waitForSelector('.cf-turnstile iframe', { timeout: 10000 });
+    // ✅ Wait for Turnstile response token field
+    await page.waitForSelector('textarea[name="cf-turnstile-response"]', { timeout: 15000 });
 
-    // Evaluate to get the token from the iframe (Turnstile auto submits after solving)
-    const token = await page.evaluate(() => {
-      return new Promise((resolve, reject) => {
-        const interval = setInterval(() => {
-          const input = document.querySelector('textarea[name="cf-turnstile-response"]');
-          if (input && input.value.trim().length > 0) {
-            clearInterval(interval);
-            resolve(input.value.trim());
-          }
-        }, 500);
-        setTimeout(() => reject("Timeout getting token"), 15000);
-      });
-    });
+    // ✅ Extract token value directly
+    const token = await page.$eval('textarea[name="cf-turnstile-response"]', el => el.value);
+
+    if (!token) throw new Error("CAPTCHA token was not generated.");
 
     await browser.close();
 
-    // Use token to send SMS
+    // 🔐 Use the token to call the API
     const res = await axios.get(`https://freemessagetext.vercel.app/api/send`, {
       params: {
         number: number,
@@ -63,10 +55,10 @@ module.exports.run = async function({ api, event, args }) {
 
     const result = res.data;
 
-    if (result.success && result.response && result.response.success == 1) {
-      api.sendMessage(`✅ Message sent to ${number}!\n📩 ${result.response.message}`, threadID, messageID);
+    if (result.success && result.response?.success == 1) {
+      api.sendMessage(`✅ SMS sent to ${number}!\n📩 ${result.response.message}`, threadID, messageID);
     } else {
-      api.sendMessage(`❌ Failed to send message:\n${JSON.stringify(result, null, 2)}`, threadID, messageID);
+      api.sendMessage(`❌ Failed to send SMS:\n${JSON.stringify(result.response || result, null, 2)}`, threadID, messageID);
     }
 
   } catch (error) {
