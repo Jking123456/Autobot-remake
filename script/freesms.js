@@ -75,9 +75,9 @@ module.exports.run = async function ({ api, event, args }) {
 // ✅ Uses full puppeteer (Chromium auto-installed)
 async function getTurnstileToken() {
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
-  });
+  headless: "new",
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 
   const page = await browser.newPage();
   let token = null;
