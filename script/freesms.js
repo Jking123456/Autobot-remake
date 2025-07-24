@@ -1,108 +1,73 @@
-const chromium = require('chrome-aws-lambda');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const axios = require('axios');
-
-const cooldowns = new Map();
 
 module.exports.config = {
   name: "freesms",
   version: "1.0.0",
   role: 0,
-  credits: "Homer Rebatis + ChatGPT",
-  aliases: [],
-  usages: "<number> <message>",
-  cooldown: 2,
+  hasPrefix: true,
+  credits: "ChatGPT + Homer",
+  description: "Send free SMS using Turnstile bypass",
+  usages: "[number] [message]",
+  cooldown: 10
 };
 
-async function getTurnstileToken() {
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
-    defaultViewport: chromium.defaultViewport,
-  });
-
-  const page = await browser.newPage();
-  await page.goto('https://freemessagetext.vercel.app', {
-    waitUntil: 'networkidle2',
-    timeout: 60000
-  });
-
-  await page.waitForSelector('.cf-turnstile iframe');
-
-  await page.evaluate(() => {
-    window.turnstileToken = "";
-    window.onTurnstileCallback = function (token) {
-      window.turnstileToken = token;
-    };
-  });
-
-  const token = await page.waitForFunction(() => window.turnstileToken?.length > 0, {
-    timeout: 60000
-  }).then(() => page.evaluate(() => window.turnstileToken));
-
-  await browser.close();
-  return token;
-}
-
-module.exports.run = async ({ api, event, args }) => {
-  const { threadID, messageID, senderID } = event;
-
-  // ✅ Admin check in groups
-  try {
-    const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
-
-    if (threadInfo.isGroup) {
-      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-      if (!isBotAdmin) {
-        return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
-      }
-    }
-  } catch (err) {
-    console.error("Admin check failed:", err);
-    return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
-  }
-
-  // Cooldown check
-  const now = Date.now();
-  if (cooldowns.has(senderID)) {
-    const elapsed = now - cooldowns.get(senderID);
-    if (elapsed < 60 * 1000) {
-      const waitTime = Math.ceil((60 * 1000 - elapsed) / 1000);
-      return api.sendMessage(`⏳ Please wait ${waitTime} second(s) before using this command again.`, threadID, messageID);
-    }
-  }
-
-  if (args.length < 2) {
-    return api.sendMessage("❌ Usage: freesms <number> <message>\n\nExample: freesms +639123456789 Hello world!", threadID, messageID);
-  }
+module.exports.run = async function({ api, event, args }) {
+  const { threadID, messageID } = event;
 
   const number = args[0];
-  const text = args.slice(1).join(" ");
+  const message = args.slice(1).join(" ");
+
+  if (!number || !message) {
+    return api.sendMessage("❌ Usage: freesms <number> <message>", threadID, messageID);
+  }
 
   try {
-    cooldowns.set(senderID, now);
-    api.sendMessage("📡 Sending SMS, solving CAPTCHA...", threadID, messageID);
+    api.sendMessage("⏳ Getting Turnstile token, please wait...", threadID, messageID);
 
-    const token = await getTurnstileToken();
+    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox'] });
+    const page = await browser.newPage();
 
-    const apiUrl = `https://freemessagetext.vercel.app/api/send?number=${encodeURIComponent(number)}&text=${encodeURIComponent(text)}&cf-turnstile-token=${token}`;
+    await page.goto("https://freemessagetext.vercel.app/", { waitUntil: "networkidle0" });
 
-    const res = await axios.get(apiUrl);
-    const data = res.data;
+    // Wait for CAPTCHA container
+    await page.waitForSelector('.cf-turnstile iframe', { timeout: 10000 });
 
-    if (data.success && data.response?.success === 1) {
-      const { message, totalsent, limit, sendDelay, adfreq } = data.response;
-      return api.sendMessage(
-        `✅ ${message}\n🔢 Total Sent: ${totalsent} / ${limit}\n🕒 Delay: ${sendDelay}s\n📢 Ad Frequency: ${adfreq}`,
-        threadID, messageID
-      );
+    // Evaluate to get the token from the iframe (Turnstile auto submits after solving)
+    const token = await page.evaluate(() => {
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const input = document.querySelector('textarea[name="cf-turnstile-response"]');
+          if (input && input.value.trim().length > 0) {
+            clearInterval(interval);
+            resolve(input.value.trim());
+          }
+        }, 500);
+        setTimeout(() => reject("Timeout getting token"), 15000);
+      });
+    });
+
+    await browser.close();
+
+    // Use token to send SMS
+    const res = await axios.get(`https://freemessagetext.vercel.app/api/send`, {
+      params: {
+        number: number,
+        text: message,
+        "cf-turnstile-token": token
+      }
+    });
+
+    const result = res.data;
+
+    if (result.success && result.response && result.response.success == 1) {
+      api.sendMessage(`✅ Message sent to ${number}!\n📩 ${result.response.message}`, threadID, messageID);
     } else {
-      return api.sendMessage("❌ Failed: " + (data.response?.message || "Unknown error"), threadID, messageID);
+      api.sendMessage(`❌ Failed to send message:\n${JSON.stringify(result, null, 2)}`, threadID, messageID);
     }
-  } catch (err) {
-    console.error("SMS Error:", err);
-    return api.sendMessage("❌ Error: " + err.message, threadID, messageID);
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    api.sendMessage(`❌ Error: ${error.message}`, threadID, messageID);
   }
 };
