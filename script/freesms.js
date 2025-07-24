@@ -31,7 +31,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     const page = await browser.newPage();
 
-    // ✅ Use real User-Agent to avoid Cloudflare bot block
+    // ✅ Set real user agent
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537.36"
     );
@@ -41,15 +41,17 @@ module.exports.run = async function ({ api, event, args }) {
       timeout: 120000
     });
 
-    // ⏳ Give Turnstile time to load
-    await page.waitForTimeout(10000);
+    // ⏳ Wait for Turnstile iframe to load
+    await page.waitForSelector('iframe[src*="turnstile"]', { timeout: 30000 });
 
-    // ✅ Wait directly for the token response field
-    await page.waitForSelector('textarea[name="cf-turnstile-response"]', { timeout: 20000 });
+    // ⌛ Give time for user verification / auto-solve
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[name="cf-turnstile-response"]');
+      return el && el.value.length > 10;
+    }, { timeout: 30000 });
 
-    const token = await page.evaluate(() => {
-      return document.querySelector('textarea[name="cf-turnstile-response"]')?.value || null;
-    });
+    // ✅ Get CAPTCHA token
+    const token = await page.$eval('[name="cf-turnstile-response"]', el => el.value);
 
     await browser.close();
 
@@ -57,7 +59,7 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage("❌ Failed to retrieve CAPTCHA token.", threadID, messageID);
     }
 
-    // Send SMS with token
+    // ✅ Send SMS request
     const res = await axios.get("https://freemessagetext.vercel.app/api/send", {
       params: {
         number,
