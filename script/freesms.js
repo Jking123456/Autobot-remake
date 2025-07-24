@@ -1,4 +1,4 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 const axios = require("axios");
 
 module.exports.config = {
@@ -34,12 +34,16 @@ module.exports.run = async function ({ api, event, args }) {
   const formattedNumber = rawNumber.replace(/^0/, "+63");
 
   try {
-    const browser = await puppeteer.launch({ headless: "new" });
+    const browser = await puppeteer.launch({
+      headless: "new",
+      executablePath: "/usr/bin/google-chrome", // ✅ adjust this path if necessary
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
     const page = await browser.newPage();
-
     await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
-    await page.waitForSelector('input[name="cf-turnstile-token"]', { timeout: 10000 });
 
+    await page.waitForSelector('input[name="cf-turnstile-token"]', { timeout: 10000 });
     const token = await page.$eval('input[name="cf-turnstile-token"]', el => el.value);
     await browser.close();
 
