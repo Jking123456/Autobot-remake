@@ -34,18 +34,11 @@ module.exports.run = async function ({ api, event, args }) {
   const formattedNumber = rawNumber.replace(/^0/, "+63");
 
   try {
-    const browser = await puppeteer.launch({
-      headless: "new",
-      executablePath: "/usr/bin/google-chrome", // ✅ adjust this path if necessary
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
+    const token = await getTurnstileToken();
 
-    const page = await browser.newPage();
-    await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
-
-    await page.waitForSelector('input[name="cf-turnstile-token"]', { timeout: 10000 });
-    const token = await page.$eval('input[name="cf-turnstile-token"]', el => el.value);
-    await browser.close();
+    if (!token) {
+      return api.sendMessage("❌ Failed to retrieve Turnstile token.", event.threadID, event.messageID);
+    }
 
     const response = await axios.get("https://freemessagetext.vercel.app/api/send", {
       params: {
@@ -63,7 +56,7 @@ module.exports.run = async function ({ api, event, args }) {
       );
     } else {
       return api.sendMessage(
-        `⚠️ Failed to send SMS: ${response.data?.message || "Unknown error"}`,
+        `⚠️ Failed to send SMS:\n${response.data?.message || "Unknown error"}`,
         event.threadID,
         event.messageID
       );
@@ -78,3 +71,41 @@ module.exports.run = async function ({ api, event, args }) {
     );
   }
 };
+
+// ⬇️ Turnstile token scraper using Puppeteer
+async function getTurnstileToken() {
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: "/usr/bin/google-chrome",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+
+  const page = await browser.newPage();
+
+  let token = null;
+
+  await page.exposeFunction("onTokenReady", (receivedToken) => {
+    token = receivedToken;
+  });
+
+  await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
+
+  // Attempt to hook into Turnstile callback if the page uses it
+  await page.evaluate(() => {
+    // Try to re-render Turnstile with a callback
+    if (window.turnstile) {
+      try {
+        turnstile.render("#captcha", {
+          sitekey: document.querySelector('[data-sitekey]')?.getAttribute("data-sitekey") || "",
+          callback: token => window.onTokenReady(token)
+        });
+      } catch (e) {}
+    }
+  });
+
+  // Wait up to 15 seconds for token to be received
+  await page.waitForFunction(() => window.turnstileToken !== undefined, { timeout: 15000 }).catch(() => {});
+
+  await browser.close();
+  return token;
+          }
