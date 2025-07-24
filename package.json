@@ -28,7 +28,7 @@
     "node-fetch": "^3.2.6",
     "npmlog": "^1.2.0",
     "pastebin-api": "^7.0.0",
-    "puppeteer": "^10.1.0",
+    "puppeteer": "^22.5.0",
     "pidusage": "^3.0.1",
     "request": "^2.53.0",
     "websocket-stream": "^5.5.0",
