@@ -1,60 +1,74 @@
-const twilio = require("twilio");
-
-const accountSid = "AC01d8044aed6fa12c336f94418df17df3"; // Replace with your real SID
-const authToken = "61f999db6aa75fddc4c65f5a13c8427b"; // Replace with your real token
-const fromNumber = "+17473000907"; // Your Twilio number or registered sender ID
-
-const client = twilio(accountSid, authToken);
+const puppeteer = require("puppeteer");
+const axios = require("axios");
 
 module.exports.config = {
   name: "freesms",
   version: "1.0.0",
   hasPrefix: true,
-  permission: 0, // 0 = everyone
-  credits: "Homer Rebatis",
-  description: "Send SMS to PH number using Twilio",
+  permission: 0,
+  credits: "Homer Rebatis + ChatGPT",
+  description: "Send free SMS via freemessagetext.vercel.app",
   commandCategory: "tools",
   usages: "freesms 09xxxxxxxxx | your message",
-  cooldowns: 5
+  cooldowns: 10
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  try {
-    const input = args.join(" ").split("|").map(str => str.trim());
+  const input = args.join(" ").split("|").map(item => item.trim());
 
-    if (input.length < 2) {
+  if (input.length < 2) {
+    return api.sendMessage(
+      "❗ Usage:\nfreesms 09xxxxxxxxx | your message",
+      event.threadID,
+      event.messageID
+    );
+  }
+
+  const rawNumber = input[0];
+  const messageText = input.slice(1).join(" ");
+
+  if (!/^09\d{9}$/.test(rawNumber)) {
+    return api.sendMessage("❌ Invalid PH number. Use format: 09xxxxxxxxx", event.threadID, event.messageID);
+  }
+
+  const formattedNumber = rawNumber.replace(/^0/, "+63");
+
+  try {
+    const browser = await puppeteer.launch({ headless: "new" });
+    const page = await browser.newPage();
+
+    await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
+    await page.waitForSelector('input[name="cf-turnstile-token"]', { timeout: 10000 });
+
+    const token = await page.$eval('input[name="cf-turnstile-token"]', el => el.value);
+    await browser.close();
+
+    const response = await axios.get("https://freemessagetext.vercel.app/api/send", {
+      params: {
+        number: formattedNumber,
+        text: messageText,
+        "cf-turnstile-token": token
+      }
+    });
+
+    if (response.data?.success) {
       return api.sendMessage(
-        "❗ Usage: freesms 09xxxxxxxxx | your message",
+        `✅ SMS sent to ${formattedNumber}\n📩 Status: ${response.data.message || "Success"}`,
+        event.threadID,
+        event.messageID
+      );
+    } else {
+      return api.sendMessage(
+        `⚠️ Failed to send SMS: ${response.data?.message || "Unknown error"}`,
         event.threadID,
         event.messageID
       );
     }
 
-    const phone = input[0];
-    const messageText = input.slice(1).join(" ");
-
-    if (!/^09\d{9}$/.test(phone)) {
-      return api.sendMessage("❌ Invalid PH number. Use format: 09xxxxxxxxx", event.threadID, event.messageID);
-    }
-
-    const formattedPhone = phone.replace(/^0/, "+63");
-
-    const sent = await client.messages.create({
-      body: messageText,
-      from: fromNumber,
-      to: formattedPhone
-    });
-
-    return api.sendMessage(
-      `✅ SMS sent to ${formattedPhone}\n🆔 SID: ${sent.sid}`,
-      event.threadID,
-      event.messageID
-    );
-
   } catch (error) {
-    console.error("Twilio SMS Error:", error);
+    console.error("SMS Error:", error);
     return api.sendMessage(
-      `❌ Failed to send SMS:\n${error.message}`,
+      `❌ Error sending SMS:\n${error.message}`,
       event.threadID,
       event.messageID
     );
