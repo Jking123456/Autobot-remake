@@ -1,7 +1,8 @@
-const puppeteer = require('puppeteer');
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
 const axios = require('axios');
 
-const cooldowns = new Map(); // cooldown per sender
+const cooldowns = new Map();
 
 module.exports.config = {
   name: "freesms",
@@ -15,8 +16,10 @@ module.exports.config = {
 
 async function getTurnstileToken() {
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: chromium.args,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
   });
 
   const page = await browser.newPage();
@@ -45,7 +48,7 @@ async function getTurnstileToken() {
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
 
-  // Admin-only check in groups
+  // ✅ Admin check in groups
   try {
     const threadInfo = await api.getThreadInfo(threadID);
     const botID = api.getCurrentUserID();
