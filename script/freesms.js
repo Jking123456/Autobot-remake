@@ -23,31 +23,50 @@ module.exports.run = async function({ api, event, args }) {
   }
 
   try {
-    api.sendMessage("⏳ Solving CAPTCHA and sending SMS...", threadID, messageID);
+    api.sendMessage("⏳ Getting Turnstile token, please wait...", threadID, messageID);
 
     const browser = await puppeteer.launch({
-      headless: "new", // more stable on Render
+      headless: "new", // Required for Puppeteer v22+
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
 
-    await page.goto("https://freemessagetext.vercel.app/", { waitUntil: "networkidle2" });
+    // Set user agent and viewport to mimic real browser
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537.36"
+    );
+    await page.setViewport({ width: 1280, height: 800 });
 
-    // ✅ Wait for Turnstile response token field
-    await page.waitForSelector('textarea[name="cf-turnstile-response"]', { timeout: 15000 });
+    // Load page with extended timeout
+    await page.goto("https://freemessagetext.vercel.app/", {
+      waitUntil: "networkidle2",
+      timeout: 60000
+    });
 
-    // ✅ Extract token value directly
-    const token = await page.$eval('textarea[name="cf-turnstile-response"]', el => el.value);
+    // Optional: wait for iframe to fully finish loading
+    await page.waitForSelector('.cf-turnstile iframe', { timeout: 20000 });
 
-    if (!token) throw new Error("CAPTCHA token was not generated.");
+    // Wait and extract Turnstile token from hidden textarea
+    const token = await page.evaluate(() => {
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const input = document.querySelector('textarea[name="cf-turnstile-response"]');
+          if (input && input.value.trim().length > 0) {
+            clearInterval(interval);
+            resolve(input.value.trim());
+          }
+        }, 500);
+        setTimeout(() => reject(new Error("Timeout getting Turnstile token")), 20000);
+      });
+    });
 
     await browser.close();
 
-    // 🔐 Use the token to call the API
-    const res = await axios.get(`https://freemessagetext.vercel.app/api/send`, {
+    // Use token to send SMS
+    const res = await axios.get("https://freemessagetext.vercel.app/api/send", {
       params: {
-        number: number,
+        number,
         text: message,
         "cf-turnstile-token": token
       }
@@ -55,10 +74,10 @@ module.exports.run = async function({ api, event, args }) {
 
     const result = res.data;
 
-    if (result.success && result.response?.success == 1) {
-      api.sendMessage(`✅ SMS sent to ${number}!\n📩 ${result.response.message}`, threadID, messageID);
+    if (result.success && result.response && result.response.success === 1) {
+      api.sendMessage(`✅ Message sent to ${number}!\n📩 ${result.response.message}`, threadID, messageID);
     } else {
-      api.sendMessage(`❌ Failed to send SMS:\n${JSON.stringify(result.response || result, null, 2)}`, threadID, messageID);
+      api.sendMessage(`❌ Failed to send message:\n${JSON.stringify(result, null, 2)}`, threadID, messageID);
     }
 
   } catch (error) {
