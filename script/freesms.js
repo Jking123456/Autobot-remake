@@ -1,6 +1,5 @@
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 const axios = require("axios");
-const { execSync } = require("child_process");
 
 module.exports.config = {
   name: "freesms",
@@ -33,14 +32,6 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const formattedNumber = rawNumber.replace(/^0/, "+63");
-
-  // DEBUG: Check if chrome exists
-  try {
-    const chromePathCheck = execSync("which google-chrome").toString().trim();
-    console.log("✅ Chrome installed at:", chromePathCheck);
-  } catch (e) {
-    console.log("❌ google-chrome not found in PATH");
-  }
 
   try {
     const token = await getTurnstileToken();
@@ -81,14 +72,10 @@ module.exports.run = async function ({ api, event, args }) {
   }
 };
 
-// ✅ Turnstile Token Extractor
+// ✅ Uses full puppeteer (Chromium auto-installed)
 async function getTurnstileToken() {
-  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome";
-  console.log("🚀 Launching Chrome at:", executablePath);
-
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath,
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
@@ -101,7 +88,6 @@ async function getTurnstileToken() {
 
   await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
 
-  // Inject callback logic for Turnstile
   await page.evaluate(() => {
     const renderCaptcha = () => {
       if (window.turnstile && document.querySelector("#captcha")) {
@@ -128,4 +114,4 @@ async function getTurnstileToken() {
 
   await browser.close();
   return token;
-    }
+}
