@@ -1,9 +1,12 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-extra");
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const axios = require("axios");
+
+puppeteer.use(StealthPlugin());
 
 module.exports.config = {
   name: "freesms",
-  version: "1.0.1",
+  version: "1.0.2",
   role: 0,
   hasPrefix: true,
   credits: "ChatGPT + Homer",
@@ -31,7 +34,6 @@ module.exports.run = async function ({ api, event, args }) {
 
     const page = await browser.newPage();
 
-    // ✅ Set real user agent
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537.36"
     );
@@ -41,16 +43,16 @@ module.exports.run = async function ({ api, event, args }) {
       timeout: 120000
     });
 
-    // ⏳ Wait for Turnstile iframe to load
-    await page.waitForSelector('iframe[src*="turnstile"]', { timeout: 30000 });
+    // ✅ Wait for Turnstile container
+    await page.waitForSelector(".cf-turnstile", { timeout: 30000 });
 
-    // ⌛ Give time for user verification / auto-solve
+    // ✅ Wait for token to be generated
     await page.waitForFunction(() => {
       const el = document.querySelector('[name="cf-turnstile-response"]');
       return el && el.value.length > 10;
     }, { timeout: 30000 });
 
-    // ✅ Get CAPTCHA token
+    // ✅ Extract token
     const token = await page.$eval('[name="cf-turnstile-response"]', el => el.value);
 
     await browser.close();
@@ -59,7 +61,7 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage("❌ Failed to retrieve CAPTCHA token.", threadID, messageID);
     }
 
-    // ✅ Send SMS request
+    // ✅ Send the SMS
     const res = await axios.get("https://freemessagetext.vercel.app/api/send", {
       params: {
         number,
