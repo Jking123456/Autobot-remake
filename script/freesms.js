@@ -76,7 +76,7 @@ module.exports.run = async function ({ api, event, args }) {
 async function getTurnstileToken() {
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: "/usr/bin/google-chrome",
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome",
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
