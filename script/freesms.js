@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer-core");
 const axios = require("axios");
+const { execSync } = require("child_process");
 
 module.exports.config = {
   name: "freesms",
@@ -33,6 +34,14 @@ module.exports.run = async function ({ api, event, args }) {
 
   const formattedNumber = rawNumber.replace(/^0/, "+63");
 
+  // DEBUG: Check if chrome exists
+  try {
+    const chromePathCheck = execSync("which google-chrome").toString().trim();
+    console.log("✅ Chrome installed at:", chromePathCheck);
+  } catch (e) {
+    console.log("❌ google-chrome not found in PATH");
+  }
+
   try {
     const token = await getTurnstileToken();
 
@@ -63,7 +72,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
   } catch (error) {
-    console.error("SMS Error:", error);
+    console.error("❌ SMS Error:", error);
     return api.sendMessage(
       `❌ Error sending SMS:\n${error.message}`,
       event.threadID,
@@ -72,16 +81,18 @@ module.exports.run = async function ({ api, event, args }) {
   }
 };
 
-// ⬇️ Turnstile token scraper using Puppeteer
+// ✅ Turnstile Token Extractor
 async function getTurnstileToken() {
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome";
+  console.log("🚀 Launching Chrome at:", executablePath);
+
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome",
+    executablePath,
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
   const page = await browser.newPage();
-
   let token = null;
 
   await page.exposeFunction("onTokenReady", (receivedToken) => {
@@ -90,22 +101,31 @@ async function getTurnstileToken() {
 
   await page.goto("https://freemessagetext.vercel.app", { waitUntil: "networkidle2" });
 
-  // Attempt to hook into Turnstile callback if the page uses it
+  // Inject callback logic for Turnstile
   await page.evaluate(() => {
-    // Try to re-render Turnstile with a callback
-    if (window.turnstile) {
-      try {
-        turnstile.render("#captcha", {
-          sitekey: document.querySelector('[data-sitekey]')?.getAttribute("data-sitekey") || "",
-          callback: token => window.onTokenReady(token)
-        });
-      } catch (e) {}
-    }
+    const renderCaptcha = () => {
+      if (window.turnstile && document.querySelector("#captcha")) {
+        try {
+          turnstile.render('#captcha', {
+            sitekey: document.querySelector('[data-sitekey]')?.getAttribute("data-sitekey") || '',
+            callback: (token) => {
+              window.onTokenReady(token);
+              window.turnstileToken = token;
+            }
+          });
+        } catch (e) {}
+      }
+    };
+    setTimeout(renderCaptcha, 1000);
   });
 
-  // Wait up to 15 seconds for token to be received
-  await page.waitForFunction(() => window.turnstileToken !== undefined, { timeout: 15000 }).catch(() => {});
+  try {
+    await page.waitForFunction(() => window.turnstileToken !== undefined, { timeout: 15000 });
+  } catch {
+    await browser.close();
+    return null;
+  }
 
   await browser.close();
   return token;
-          }
+    }
