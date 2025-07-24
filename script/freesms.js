@@ -25,7 +25,10 @@ module.exports.run = async function({ api, event, args }) {
   try {
     api.sendMessage("⏳ Getting Turnstile token, please wait...", threadID, messageID);
 
-    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
     const page = await browser.newPage();
 
     await page.goto("https://freemessagetext.vercel.app/", { waitUntil: "networkidle0" });
