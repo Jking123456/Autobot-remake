@@ -38,11 +38,11 @@ module.exports.run = async function ({ api, event, args }) {
 
     await page.goto("https://freemessagetext.vercel.app/", {
       waitUntil: "networkidle2",
-      timeout: 60000
+      timeout: 120000
     });
 
     // ⏳ Give Turnstile time to load
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(10000);
 
     // ✅ Wait directly for the token response field
     await page.waitForSelector('textarea[name="cf-turnstile-response"]', { timeout: 20000 });
