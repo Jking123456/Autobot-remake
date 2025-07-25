@@ -17,6 +17,12 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
+
+  // 🚧 Under Maintenance Mode
+  return api.sendMessage("⚠️ The `freesms` command is currently under maintenance. Please try again later.", threadID, messageID);
+
+  // ⛔ The rest of the command is disabled while under maintenance
+
   const number = args[0];
   const message = args.slice(1).join(" ");
 
@@ -43,16 +49,13 @@ module.exports.run = async function ({ api, event, args }) {
       timeout: 120000
     });
 
-    // ✅ Wait for Turnstile container
     await page.waitForSelector(".cf-turnstile", { timeout: 120000 });
 
-    // ✅ Wait for token to be generated
     await page.waitForFunction(() => {
       const el = document.querySelector('[name="cf-turnstile-response"]');
       return el && el.value.length > 10;
     }, { timeout: 120000 });
 
-    // ✅ Extract token
     const token = await page.$eval('[name="cf-turnstile-response"]', el => el.value);
 
     await browser.close();
@@ -61,7 +64,6 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage("❌ Failed to retrieve CAPTCHA token.", threadID, messageID);
     }
 
-    // ✅ Send the SMS
     const res = await axios.get("https://freemessagetext.vercel.app/api/send", {
       params: {
         number,
