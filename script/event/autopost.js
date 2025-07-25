@@ -11,19 +11,18 @@ let isCronStarted = false;
 
 module.exports.handleEvent = async function({ api }) {
     if (!isCronStarted) {
-        // Start the cron job only once
         startAutoPost(api);
         isCronStarted = true;
     }
 };
 
 function startAutoPost(api) {
-    cron.schedule("0 * * * *", async function () { // Runs at the start of every hour
+    cron.schedule("0 * * * *", async function () { // Runs every hour
         try {
-            const response = await axios.get("https://catfact.ninja/fact");
-            const catFact = response.data.fact;
+            const response = await axios.get("https://xvi-rest-api.vercel.app/api/devquote");
+            const { quote } = response.data;
 
-            const message = `𝚁𝙰𝙽𝙳𝙾𝙼 𝙲𝙰𝚃 𝙵𝙰𝙲𝚃 meow: “${catFact}”`;
+            const message = `💻 𝗗𝗘𝗩 𝗤𝗨𝗢𝗧𝗘\n“${quote}”`;
 
             const formData = {
                 input: {
@@ -57,13 +56,13 @@ function startAutoPost(api) {
             const postID = postResult.data.story_create.story.legacy_story_hideable_id;
             const postLink = `https://www.facebook.com/${api.getCurrentUserID()}/posts/${postID}`;
 
-            api.sendMessage(`[AUTO POST]\nLink: ${postLink}`, /* Specify the thread ID or recipient here */);
+            api.sendMessage(`[AUTO POST]\nLink: ${postLink}`, /* add threadID if needed */);
             console.log(`[AUTO POST]\nLink: ${postLink}`);
         } catch (error) {
-            console.error("Error during auto-posting:", error);
+            console.error("❌ Error during auto-posting:", error.message || error);
         }
     }, {
         scheduled: true,
         timezone: "Asia/Manila",
     });
-            }
+}
