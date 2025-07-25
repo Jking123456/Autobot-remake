@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const cooldowns = {}; // Stores cooldowns per senderID
-const COOLDOWN_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+const COOLDOWN_DURATION = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
 module.exports.config = {
   name: "fbshare",
@@ -46,10 +46,19 @@ module.exports.run = async ({ api, event, args }) => {
     const remainingTime = COOLDOWN_DURATION - (Date.now() - cooldowns[senderID]);
 
     if (remainingTime > 0) {
-      const minutes = Math.floor(remainingTime / 60000);
-      const seconds = Math.floor((remainingTime % 60000) / 1000);
+      const days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+      let timeMsg = [];
+      if (days) timeMsg.push(`${days} day(s)`);
+      if (hours) timeMsg.push(`${hours} hour(s)`);
+      if (minutes) timeMsg.push(`${minutes} minute(s)`);
+      if (seconds) timeMsg.push(`${seconds} second(s)`);
+
       return api.sendMessage(
-        `⏳ Please wait ${minutes} minute(s) and ${seconds} second(s) before using the "fbshare" command again.`,
+        `⏳ Please wait ${timeMsg.join(", ")} before using the "fbshare" command again.`,
         threadID,
         messageID
       );
