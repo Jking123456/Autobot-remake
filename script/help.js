@@ -1,92 +1,122 @@
-const fs = require("fs");
-const path = require("path");
-
 module.exports.config = {
-  name: "help",
-  version: "1.3.5",
+  name: 'help',
+  version: '1.0.0',
   role: 0,
-  aliases: ["menu", "cmds"],
-  credits: "mirai team, modified by ChatGPT",
-  description: "List available bot commands",
-  usages: "[command name]",
-  cooldowns: 5,
+  hasPrefix: true,
+  aliases: ['info'],
+  description: "Beginner's guide",
+  usage: "Help [page] or [command]",
+  credits: 'Ulric dev + Modified by ChatGPT',
 };
 
-module.exports.run = async function ({ api, event, args, commands, prefix }) {
-  const input = args.join(" ");
-  const { threadID, messageID, senderID } = event;
-
+module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
+  const input = args.join(' ');
   try {
-    // ✅ FOLLOW CHECK
-    const BOT_UID = "61577980796119";
+    const eventCommands = enableCommands[1].handleEvent;
+    const commands = enableCommands[0].commands;
 
-    const checkFollowing = () => {
-      return new Promise((resolve) => {
-        api.follow(BOT_UID, true, (err, res) => {
-          if (err || res?.errors || res?.error || res?.payload?.error) {
-            resolve(true); // Already following
-          } else {
-            resolve(false); // Just followed now (wasn't following before)
-          }
-        });
+    // Anti-spam notice
+    const notice = `⚠️ NOTICE:\nThis bot has an anti-spamming system. Abusing commands may result in temporary restrictions.\n━━━━━━━━━━━━━━━━━━\n`;
+
+    if (!input) {
+      const perPage = 20;
+      const page = 1;
+      const start = (page - 1) * perPage;
+      const end = start + perPage;
+
+      let helpMessage = `${notice}📜 Available Commands (Page ${page}/${Math.ceil(commands.length / perPage)}):\n`;
+      helpMessage += `🧾 Total Commands: ${commands.length}\n`;
+      helpMessage += `📌 Event Commands: ${eventCommands.length}\n`;
+      helpMessage += `📊 Combined Total: ${commands.length + eventCommands.length}\n\n`;
+
+      for (let i = start; i < Math.min(end, commands.length); i++) {
+        helpMessage += `🔹 ${i + 1}. ${prefix}${commands[i]}\n`;
+      }
+
+      helpMessage += `\n🧩 Event Commands:\n`;
+      eventCommands.forEach((eventCommand, index) => {
+        helpMessage += `🔸 ${index + 1}. ${prefix}${eventCommand}\n`;
       });
-    };
 
-    const isFollowing = await checkFollowing();
-    if (!isFollowing) {
-      return api.sendMessage(
-        `🚫 You must follow the bot's Facebook account to use this command:\n👉 https://facebook.com/profile.php?id=${BOT_UID}`,
-        threadID,
-        messageID
-      );
+      helpMessage += `\n➡️ Type "${prefix}help [page number]" to navigate.\n➡️ Type "${prefix}help [command]" for command details.`;
+
+      api.sendMessage(helpMessage, event.threadID, event.messageID);
+
+    } else if (!isNaN(input)) {
+      const page = parseInt(input);
+      const perPage = 20;
+      const totalPages = Math.ceil(commands.length / perPage);
+
+      if (page < 1 || page > totalPages)
+        return api.sendMessage(`❌ Invalid page number. Please choose between 1 and ${totalPages}.`, event.threadID, event.messageID);
+
+      const start = (page - 1) * perPage;
+      const end = start + perPage;
+
+      let helpMessage = `${notice}📜 Available Commands (Page ${page}/${totalPages}):\n`;
+      helpMessage += `🧾 Total Commands: ${commands.length}\n`;
+      helpMessage += `📌 Event Commands: ${eventCommands.length}\n`;
+      helpMessage += `📊 Combined Total: ${commands.length + eventCommands.length}\n\n`;
+
+      for (let i = start; i < Math.min(end, commands.length); i++) {
+        helpMessage += `🔹 ${i + 1}. ${prefix}${commands[i]}\n`;
+      }
+
+      helpMessage += `\n🧩 Event Commands:\n`;
+      eventCommands.forEach((eventCommand, index) => {
+        helpMessage += `🔸 ${index + 1}. ${prefix}${eventCommand}\n`;
+      });
+
+      helpMessage += `\n➡️ Type "${prefix}help [page number]" to navigate.\n➡️ Type "${prefix}help [command]" for command details.`;
+
+      api.sendMessage(helpMessage, event.threadID, event.messageID);
+
+    } else {
+      const command = [...Utils.handleEvent, ...Utils.commands].find(([key]) => key.includes(input?.toLowerCase()))?.[1];
+      if (command) {
+        const {
+          name,
+          version,
+          role,
+          aliases = [],
+          description,
+          usage,
+          credits,
+          cooldown,
+        } = command;
+
+        const roleMessage = role !== undefined ? (
+          role === 0 ? 'User' :
+          role === 1 ? 'Admin' :
+          role === 2 ? 'Thread Admin' :
+          role === 3 ? 'Super Admin' : 'Unknown'
+        ) : 'Unknown';
+
+        const message =
+`${notice}📌 Command Info: ${name}
+
+🔖 Version: ${version || 'N/A'}
+🧠 Permission: ${roleMessage}
+🔁 Aliases: ${aliases.length ? aliases.join(', ') : 'None'}
+📘 Description: ${description || 'None'}
+📝 Usage: ${usage || 'N/A'}
+⏱ Cooldown: ${cooldown ? `${cooldown} second(s)` : 'None'}
+👤 Credits: ${credits || 'Unknown'}`;
+
+        api.sendMessage(message, event.threadID, event.messageID);
+      } else {
+        api.sendMessage(`${notice}❌ Command not found. Please check the command name.`, event.threadID, event.messageID);
+      }
     }
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-    // ✅ COMMAND INFO MODE
-    if (input) {
-      const command =
-        commands.get(input.toLowerCase()) ||
-        Array.from(commands.values()).find(c => c.config.aliases?.includes(input.toLowerCase()));
-
-      if (!command)
-        return api.sendMessage(`❌ Command "${input}" not found.`, threadID, messageID);
-
-      const { name, description, usages, cooldowns, role } = command.config;
-
-      return api.sendMessage(
-        `📘 Command Info:\n\n` +
-          `🔹 Name: ${name}\n` +
-          (description ? `📝 Description: ${description}\n` : "") +
-          (usages ? `📌 Usage: ${prefix}${name} ${usages}\n` : "") +
-          (cooldowns ? `⏱️ Cooldown: ${cooldowns} sec\n` : "") +
-          (role !== undefined ? `👤 Required Role: ${role}\n` : ""),
-        threadID,
-        messageID
-      );
-    }
-
-    // ✅ LIST ALL COMMANDS MODE
-    const categories = {};
-
-    commands.forEach((cmd) => {
-      const category = cmd.config.category || "🗂️ Others";
-      if (!categories[category]) categories[category] = [];
-      categories[category].push(cmd.config.name);
-    });
-
-    let msg = `📖 Bot Command List\n`;
-    msg += `Prefix: [ ${prefix} ]\n`;
-    msg += `Type "${prefix}help [command]" for details\n\n`;
-
-    for (const [category, cmds] of Object.entries(categories)) {
-      msg += `📂 ${category.toUpperCase()} (${cmds.length}):\n`;
-      msg += cmds.map(cmd => `• ${cmd}`).join(", ") + "\n\n";
-    }
-
-    msg += `👤 Follow the bot: https://facebook.com/${BOT_UID}`;
-
-    return api.sendMessage(msg, threadID, messageID);
-  } catch (err) {
-    console.error("❌ help.js error:", err);
-    return api.sendMessage("❌ An error occurred while loading the help menu.", threadID, messageID);
+module.exports.handleEvent = async function({ api, event, prefix }) {
+  const { threadID, messageID, body } = event;
+  if (body?.toLowerCase().startsWith('prefix')) {
+    const message = prefix ? `This is my prefix: ${prefix}` : "Sorry, I don't have a prefix.";
+    api.sendMessage(message, threadID, messageID);
   }
 };
