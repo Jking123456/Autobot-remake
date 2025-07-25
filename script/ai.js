@@ -14,27 +14,37 @@ module.exports.config = {
   premium: false,
   category: "without prefix",
   usage: "ai <question> | reply to image",
-  cooldowns: 0, // Set to 0, we’re handling custom cooldown inside
+  cooldowns: 0,
   dependency: {
     "axios": ""
   }
 };
 
+// ✅ Only allowed users if bot is not admin
+const ALLOWED_USERS_IF_NOT_ADMIN = ["100044848836284"];
+
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, messageReply, senderID } = event;
 
-  // ✅ Admin Restriction Check
+  let botIsAdmin = false;
+
+  // ✅ Check if bot is admin in this thread
   try {
     const threadInfo = await api.getThreadInfo(threadID);
     const botID = api.getCurrentUserID();
-    const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-
-    if (!isBotAdmin) {
-      return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
-    }
+    botIsAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
   } catch (err) {
-    console.error("Failed to check bot admin status:", err);
+    console.error("❌ Failed to check bot admin status:", err);
     return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
+  }
+
+  // 🚫 If bot is NOT admin and sender is NOT allowed
+  if (!botIsAdmin && !ALLOWED_USERS_IF_NOT_ADMIN.includes(senderID)) {
+    return api.sendMessage(
+      `🚫 You are not authorized to use this command.\n\nReason:\n• Bot is not an admin in this group.\n• You are not on the allowed user list.`,
+      threadID,
+      messageID
+    );
   }
 
   const TEXT_API = "https://betadash-api-swordslush.vercel.app/gpt4";
@@ -45,7 +55,6 @@ module.exports.run = async function ({ api, event, args }) {
   const question = args.join(" ").trim();
   let imageUrl = null;
 
-  // Check if replying to an image
   if (messageReply && messageReply.attachments.length > 0) {
     const attachment = messageReply.attachments[0];
     if (attachment.type === "photo" && attachment.url) {
@@ -56,10 +65,9 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const now = Date.now();
-  const cooldownTime = 10 * 1000; // 1 minute in ms
+  const cooldownTime = 10 * 1000;
 
   try {
-    // IMAGE AI REQUEST
     if (imageUrl) {
       if (imageCooldowns.has(senderID) && now - imageCooldowns.get(senderID) < cooldownTime) {
         const timeLeft = Math.ceil((cooldownTime - (now - imageCooldowns.get(senderID))) / 1000);
@@ -89,7 +97,6 @@ module.exports.run = async function ({ api, event, args }) {
       );
     }
 
-    // TEXT AI REQUEST
     if (!question) {
       return api.sendMessage("🧠 Please enter a question or reply to an image. Example: ai what is matter?", threadID, messageID);
     }
