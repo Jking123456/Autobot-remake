@@ -1,11 +1,11 @@
 const axios = require("axios");
 
-const cooldowns = {}; // Stores cooldowns per senderID
+const cooldowns = {}; // Stores cooldowns per (threadID + senderID)
 const COOLDOWN_DURATION = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
 module.exports.config = {
   name: "fbshare",
-  version: "1.0.3",
+  version: "1.0.4",
   role: 0,
   credits: "Homer Rebatis + ChatGPT",
   description: "Share a Facebook post using your cookie with share amount",
@@ -16,6 +16,7 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event, args }) => {
   const { senderID, threadID, messageID } = event;
+  const cooldownKey = `${threadID}_${senderID}`;
 
   // ✅ Restrict to group admin only
   try {
@@ -41,9 +42,9 @@ module.exports.run = async ({ api, event, args }) => {
     );
   }
 
-  // Cooldown check
-  if (cooldowns[senderID]) {
-    const remainingTime = COOLDOWN_DURATION - (Date.now() - cooldowns[senderID]);
+  // Cooldown check (per thread + sender)
+  if (cooldowns[cooldownKey]) {
+    const remainingTime = COOLDOWN_DURATION - (Date.now() - cooldowns[cooldownKey]);
 
     if (remainingTime > 0) {
       const days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
@@ -134,7 +135,7 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     // Set cooldown after execution
-    cooldowns[senderID] = Date.now();
+    cooldowns[cooldownKey] = Date.now();
 
     return api.sendMessage(
       `✅ Sharing complete!\nTotal: ${amount}\nSuccess: ${success}\nFailed: ${fail}`,
