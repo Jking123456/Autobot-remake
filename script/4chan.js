@@ -76,6 +76,12 @@ const getRandomCombinations = () => {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID } = event;
 
+  // ✅ Admin check
+  const ADMIN_UID = "100044848836284";
+  if (senderID !== ADMIN_UID) {
+    return api.sendMessage("🚫 This command is restricted to the bot admin only.", threadID, messageID);
+  }
+
   // 🔒 Cooldown check (1 minute)
   const cooldownTime = 60 * 3000;
   const now = Date.now();
