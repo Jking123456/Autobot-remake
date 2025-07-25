@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const cooldowns = {}; // Stores cooldowns per senderID
-const COOLDOWN_DURATION = 20 * 60 * 1000; // 20 minutes in milliseconds
+const COOLDOWN_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 module.exports.config = {
   name: "fbshare",
