@@ -35,7 +35,7 @@ module.exports.run = async function ({ api, event, args, commands, prefix }) {
     const isFollowing = await checkFollowing();
     if (!isFollowing) {
       return api.sendMessage(
-        `🚫 You must follow the bot's Facebook account to use this command:\n👉 https://facebook.com/profile?id=${BOT_UID}`,
+        `🚫 You must follow the bot's Facebook account to use this command:\n👉 https://facebook.com/profile.php?id=${BOT_UID}`,
         threadID,
         messageID
       );
