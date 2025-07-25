@@ -41,7 +41,7 @@ module.exports.run = async function ({ api, event, args }) {
   // 🚫 If bot is NOT admin and sender is NOT allowed
   if (!botIsAdmin && !ALLOWED_USERS_IF_NOT_ADMIN.includes(senderID)) {
     return api.sendMessage(
-      `🚫 You are not authorized to use this command.\n\nReason:\n• Bot is not an admin in this group.\n• You are not on the allowed user list.`,
+      `🚫 You are not authorized to use this command.\n\nReason:\n• Bot is not an admin in this group.\n• You are not the bot owner.`,
       threadID,
       messageID
     );
