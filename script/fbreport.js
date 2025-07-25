@@ -17,6 +17,12 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, senderID } = event;
+
+  // 🚧 Under Maintenance Mode
+  return api.sendMessage("⚠️ The `fbreport` command is currently under maintenance. Please try again later.", threadID);
+
+  // ⛔ Below this point, the code is disabled while under maintenance
+
   const cooldownKey = `${senderID}`;
 
   // Cooldown check
@@ -74,9 +80,7 @@ module.exports.run = async ({ api, event, args }) => {
     } catch (err) {
       console.error('❌ Report error:', err.response?.data || err.message);
 
-      // Send error to user
       api.sendMessage(`❌ Failed to report:\n${JSON.stringify(err.response?.data || err.message)}`, threadID);
-      
       clearInterval(reportLoop);
     }
   }, intervalMs);
