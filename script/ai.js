@@ -120,5 +120,3 @@ console.error("❌ AI Error:", error?.response?.data || error.message || error);
 return api.sendMessage("❌ An error occurred while processing your request. Please try again later.", threadID, messageID);
 }
 };
-
-  
