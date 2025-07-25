@@ -17,7 +17,7 @@ module.exports.config = {
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID, senderID } = event;
   const search = args.join(" ");
-  const cooldownTime = 10 * 1000; // 1 minute in ms
+  const cooldownTime = 1000 * 2000; // 1 minute in ms
   const now = Date.now();
 
   // 🔒 Restriction: Only allow in groups if bot is admin
