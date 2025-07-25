@@ -47,6 +47,10 @@ module.exports.run = async function({
 	Users: s,
 	Threads: o
 }) {
+	// 🚧 Under Maintenance Mode
+	return e.sendMessage("⚠️ The `callad` command is currently under maintenance. Please try again later.", n.threadID, n.messageID);
+
+	// ⛔ Below code is disabled during maintenance
 	if (!a[0]) return e.sendMessage("You have not entered the content to report", n["100044848836284"], n.messageID);
 	let i = await s.getNameUser(n.senderID);
 	let t = n.senderID,
@@ -54,7 +58,7 @@ module.exports.run = async function({
 	let r = (await o.getData(n.threadID)).threadInfo;
 	let l = require("moment-timezone").tz("Asia/Manila").format("HH:mm:ss D/MM/YYYY");
 	e.sendMessage(`At: ${l}\nYour report has been sent to the specified user's ID`, n["100044848836284"], (() => {
-		const calladUserID = '100044848836284'; // Change this if needed
+		const calladUserID = '100044848836284';
 		e.sendMessage(`${a.join(" ")}`, calladUserID, (err, info) => {
 			if (err) return console.error(err);
 			global.client.handleReply.push({
