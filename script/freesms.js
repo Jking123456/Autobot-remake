@@ -44,13 +44,13 @@ module.exports.run = async function ({ api, event, args }) {
     });
 
     // ✅ Wait for Turnstile container
-    await page.waitForSelector(".cf-turnstile", { timeout: 60000 });
+    await page.waitForSelector(".cf-turnstile", { timeout: 120000 });
 
     // ✅ Wait for token to be generated
     await page.waitForFunction(() => {
       const el = document.querySelector('[name="cf-turnstile-response"]');
       return el && el.value.length > 10;
-    }, { timeout: 60000 });
+    }, { timeout: 120000 });
 
     // ✅ Extract token
     const token = await page.$eval('[name="cf-turnstile-response"]', el => el.value);
