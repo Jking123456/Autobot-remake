@@ -79,7 +79,7 @@ module.exports.run = async function ({ api, event, args }) {
   // ✅ Admin check
   const ADMIN_UID = "100044848836284";
   if (senderID !== ADMIN_UID) {
-    return api.sendMessage("🚫 This command is restricted to the bot admin only.", threadID, messageID);
+    return api.sendMessage("🔞 This command is restricted due to sensitive content.", threadID, messageID);
   }
 
   // 🔒 Cooldown check (1 minute)
