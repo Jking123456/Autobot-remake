@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "fbdp",
-  version: "1.0.1",
+  version: "1.0.2",
   hasPrefix: true,
   permission: 0,
   credits: "Vern + ChatGPT",
@@ -33,29 +33,27 @@ module.exports.run = async function ({ api, event, args }) {
     return api.sendMessage("📌 Please provide a valid Facebook user ID.\n\nUsage: fbdp [user_id]", threadID, messageID);
   }
 
-  const apiUrl = `https://urangkapolka.vercel.app/api/fbdp?id=${uid}`;
+  const graphUrl = `https://graph.facebook.com/${uid}/picture?type=large&redirect=false`;
 
   try {
-    const response = await axios.get(apiUrl, { responseType: "text" });
-    const rawBody = response.data;
-
-    // Try to extract image URL (assuming it's in the body somewhere)
-    const match = rawBody.match(/(https?:\/\/[^"' ]+\.(jpg|jpeg|png))/i);
-    const imageUrl = match ? match[1] : null;
+    // Get image URL via Facebook Graph API with redirect=false
+    const { data } = await axios.get(graphUrl);
+    const imageUrl = data?.data?.url;
 
     if (!imageUrl) {
-      return api.sendMessage("❌ Couldn't find profile picture link in the API response.", threadID, messageID);
+      return api.sendMessage("❌ Failed to get profile picture URL. Try a different UID.", threadID, messageID);
     }
 
-    const imgData = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
+    // Now download the image itself
+    const imgBuffer = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
 
     return api.sendMessage({
       body: `📸 Profile picture of UID: ${uid}`,
-      attachment: Buffer.from(imgData, "binary")
+      attachment: Buffer.from(imgBuffer, "binary")
     }, threadID, messageID);
 
   } catch (err) {
     console.error("fbdp.js error:", err.message || err);
-    return api.sendMessage("⚠️ Error fetching profile picture. Please check the UID or try again later.", threadID, messageID);
+    return api.sendMessage("⚠️ Error fetching profile picture. The UID may be invalid or private.", threadID, messageID);
   }
 };
