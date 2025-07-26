@@ -2,10 +2,10 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "fbdp",
-  version: "1.1.0",
+  version: "1.2.0",
   hasPrefix: true,
   permission: 0,
-  credits: "Homer Rebatis",
+  credits: "Vern + ChatGPT",
   description: "Get Facebook profile picture by user ID.",
   commandCategory: "tools",
   usages: "fbdp [facebook_user_id]",
@@ -15,7 +15,7 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
 
-  // Admin restriction for group
+  // Restrict command to group admin usage only
   const threadInfo = await api.getThreadInfo(threadID);
   if (threadInfo.isGroup) {
     const botID = api.getCurrentUserID();
@@ -30,22 +30,10 @@ module.exports.run = async function ({ api, event, args }) {
     return api.sendMessage("📌 Please provide a valid Facebook user ID.\n\nUsage: fbdp [user_id]", threadID, messageID);
   }
 
-  const apiUrl = `https://urangkapolka.vercel.app/api/fbdp?id=${uid}`;
+  const imageUrl = `https://urangkapolka.vercel.app/api/fbdp?id=${uid}`;
 
   try {
-    // Get the HTML response
-    const htmlRes = await axios.get(apiUrl, { responseType: "text" });
-    const html = htmlRes.data;
-
-    // Extract image URL from <img src="...">
-    const match = html.match(/<img[^>]+src="([^"]+)"/i);
-    const imageUrl = match ? match[1] : null;
-
-    if (!imageUrl) {
-      return api.sendMessage("❌ Couldn't extract image from API page.", threadID, messageID);
-    }
-
-    // Download the image
+    // Fetch the image directly
     const imageData = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
 
     return api.sendMessage({
@@ -53,8 +41,8 @@ module.exports.run = async function ({ api, event, args }) {
       attachment: Buffer.from(imageData, "binary")
     }, threadID, messageID);
 
-  } catch (err) {
-    console.error("❌ fbdp.js error:", err.message || err);
+  } catch (error) {
+    console.error("❌ fbdp.js error:", error.message || error);
     return api.sendMessage("⚠️ Failed to fetch profile picture. Please try again later.", threadID, messageID);
   }
 };
