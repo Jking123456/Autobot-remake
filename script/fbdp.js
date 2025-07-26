@@ -2,20 +2,20 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "fbdp",
-  version: "1.0.8",
+  version: "1.1.0",
   hasPrefix: true,
   permission: 0,
   credits: "Homer Rebatis",
-  description: "Get a fixed Facebook profile picture from API.",
+  description: "Get Facebook profile picture by user ID.",
   commandCategory: "tools",
-  usages: "fbdp",
+  usages: "fbdp [facebook_user_id]",
   cooldowns: 3,
 };
 
-module.exports.run = async function ({ api, event }) {
+module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
 
-  // Require bot to be admin in group
+  // Admin restriction for group
   const threadInfo = await api.getThreadInfo(threadID);
   if (threadInfo.isGroup) {
     const botID = api.getCurrentUserID();
@@ -25,22 +25,36 @@ module.exports.run = async function ({ api, event }) {
     }
   }
 
-  // Use the static API link (no UID in query)
-  const apiUrl = `https://urangkapolka.vercel.app/api/fbdp?id=`;
+  const uid = args[0];
+  if (!uid || isNaN(uid)) {
+    return api.sendMessage("📌 Please provide a valid Facebook user ID.\n\nUsage: fbdp [user_id]", threadID, messageID);
+  }
+
+  const apiUrl = `https://urangkapolka.vercel.app/api/fbdp?id=${uid}`;
 
   try {
-    const response = await axios.get(apiUrl, {
-      responseType: "arraybuffer",
-      maxRedirects: 5
-    });
+    // Get the HTML response
+    const htmlRes = await axios.get(apiUrl, { responseType: "text" });
+    const html = htmlRes.data;
+
+    // Extract image URL from <img src="...">
+    const match = html.match(/<img[^>]+src="([^"]+)"/i);
+    const imageUrl = match ? match[1] : null;
+
+    if (!imageUrl) {
+      return api.sendMessage("❌ Couldn't extract image from API page.", threadID, messageID);
+    }
+
+    // Download the image
+    const imageData = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
 
     return api.sendMessage({
-      body: `📸 Facebook profile picture`,
-      attachment: Buffer.from(response.data, "binary")
+      body: `📸 Profile picture of UID: ${uid}`,
+      attachment: Buffer.from(imageData, "binary")
     }, threadID, messageID);
 
   } catch (err) {
-    console.error("fbdp.js error:", err.message || err);
+    console.error("❌ fbdp.js error:", err.message || err);
     return api.sendMessage("⚠️ Failed to fetch profile picture. Please try again later.", threadID, messageID);
   }
 };
