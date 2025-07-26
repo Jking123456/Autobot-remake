@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "fbdp",
-  version: "1.0.2",
+  version: "1.0.4",
   hasPrefix: true,
   permission: 0,
   credits: "Vern + ChatGPT",
@@ -15,45 +15,46 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
 
-  // Check if command is used in a group
   const threadInfo = await api.getThreadInfo(threadID);
   const isGroup = threadInfo.isGroup;
-
   if (isGroup) {
     const botID = api.getCurrentUserID();
-    const botData = threadInfo.adminIDs.find(item => item.id == botID);
-    if (!botData) {
+    const isBotAdmin = threadInfo.adminIDs.some(item => item.id == botID);
+    if (!isBotAdmin) {
       return api.sendMessage("🚫 This command can only be used when the bot is an admin in this group.", threadID, messageID);
     }
   }
 
   const uid = args[0];
-
   if (!uid || isNaN(uid)) {
     return api.sendMessage("📌 Please provide a valid Facebook user ID.\n\nUsage: fbdp [user_id]", threadID, messageID);
   }
 
-  const graphUrl = `https://graph.facebook.com/${uid}/picture?type=large&redirect=false`;
+  const apiUrl = `https://urangkapolka.vercel.app/api/fbdp?id=${uid}`;
 
   try {
-    // Get image URL via Facebook Graph API with redirect=false
-    const { data } = await axios.get(graphUrl);
-    const imageUrl = data?.data?.url;
+    // Get the HTML response
+    const response = await axios.get(apiUrl, { responseType: "text" });
+    const html = response.data;
+
+    // Extract image URL from <img src="...">
+    const match = html.match(/<img[^>]+src="([^"]+)"/i);
+    const imageUrl = match ? match[1] : null;
 
     if (!imageUrl) {
-      return api.sendMessage("❌ Failed to get profile picture URL. Try a different UID.", threadID, messageID);
+      return api.sendMessage("❌ Couldn't extract profile picture from the API page.", threadID, messageID);
     }
 
-    // Now download the image itself
-    const imgBuffer = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
+    // Download the image from extracted URL
+    const imageData = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
 
     return api.sendMessage({
       body: `📸 Profile picture of UID: ${uid}`,
-      attachment: Buffer.from(imgBuffer, "binary")
+      attachment: Buffer.from(imageData, "binary")
     }, threadID, messageID);
 
   } catch (err) {
-    console.error("fbdp.js error:", err.message || err);
-    return api.sendMessage("⚠️ Error fetching profile picture. The UID may be invalid or private.", threadID, messageID);
+    console.error("fbdp error:", err.message || err);
+    return api.sendMessage("⚠️ Error fetching profile picture. Try again later or check the UID.", threadID, messageID);
   }
 };
