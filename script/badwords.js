@@ -9,7 +9,7 @@ module.exports.config = {
 	name: "badwords",
 	version: "1.0.1",
 	role: 2,
-	credits: "Jonell Magallanes (Re-create by Bogart)",
+	credits: "Homer rebatis",
 	description: "Manage and enforce banned words",
 	hasPrefix: false,
 	usages: "add [word] | remove [word] | list | on | off",
