@@ -6,7 +6,7 @@ module.exports.config = {
   aliases: ['info'],
   description: "Beginner's guide",
   usage: "Help [page] or [command]",
-  credits: 'Ulric dev + Modified by ChatGPT',
+  credits: 'Homer Rebatis',
 };
 
 module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
