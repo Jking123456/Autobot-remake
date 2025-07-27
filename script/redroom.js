@@ -14,7 +14,7 @@ module.exports.config = {
   aliases: ['porno'],
   description: "Sends a random 18+ video from the API",
   usage: "{prefix}redroom homer_bot",
-  credits: "Hazeyy, updated by ChatGPT"
+  credits: "Homer Rebatis"
 };
 
 module.exports.run = async function({ api, event, args }) {
