@@ -5,7 +5,7 @@ module.exports.config = {
   version: "1.0.4",
   role: 0,
   hasPrefix: true,
-  credits: "ChatGPT + Homer + Vern",
+  credits: "Homer Rebatis",
   description: "Send free SMS using urangkapolka API",
   usages: "[number] [message]",
   cooldown: 10
