@@ -4,7 +4,7 @@ module.exports.config = {
   name: "greetingscheduler",
   version: "1.0.0",
   hasPermission: 2,
-  credits: "YourName",
+  credits: "Homer Rebatis",
   description: "Sends scheduled greetings to all groups",
   commandCategory: "system",
   usages: "",
