@@ -2,7 +2,7 @@ module.exports.config = {
   name: "feedback",
   version: "1.1.0",
   role: 0,
-  credits: "pakyubot + ChatGPT",
+  credits: "Homer Rebatis",
   description: "Send feedback to the bot admin (only if bot is admin in group).",
   commandCategory: "utilities",
   cooldowns: 5,
