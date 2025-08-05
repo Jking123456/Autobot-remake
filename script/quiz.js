@@ -7,7 +7,7 @@ module.exports.config = {
   name: "quiz",
   version: "1.0.0",
   hasPermission: 0,
-  credits: "Kaizenji & pakyubot",
+  credits: "Homer Rebatis",
   description: "Get a quiz question and answer it",
   commandCategory: "game",
   usages: "[A/B/C/D]",
