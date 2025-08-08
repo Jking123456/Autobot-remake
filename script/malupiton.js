@@ -31,10 +31,33 @@ module.exports.handleEvent = async function ({ api, event }) {
   const now = Date.now();
   const cooldownTime = 5000; // 5 seconds
 
-  if (malupitonCooldowns.has(senderID) && now - malupitonCooldowns.get(senderID) < cooldownTime) return;
+  if (
+    malupitonCooldowns.has(senderID) &&
+    now - malupitonCooldowns.get(senderID) < cooldownTime
+  ) {
+    return;
+  }
 
   malupitonCooldowns.set(senderID, now);
 
+  try {
+    const prompt = encodeURIComponent(body);
+    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
+    const res = await axios.get(url);
+
+    if (res.data && res.data.response) {
+      api.sendMessage(
+        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
+        threadID,
+        messageID
+      );
+    }
+  } catch (error) {
+    console.error("Malupiton API Error:", error.message || error);
+  }
+};
+
+module.exports.run = function () {};
   try {
     const prompt = encodeURIComponent(body);
     const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
