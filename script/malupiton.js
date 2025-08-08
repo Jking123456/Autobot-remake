@@ -1,14 +1,14 @@
 const axios = require("axios");
 
-const malupitonCooldowns = new Map();
-const BOT_ID = "61577980796119"; // Your bot's FB ID to avoid self-reply
+const cooldowns = new Map();
+const BOT_ID = "61577980796119"; // Bot's own FB ID to prevent self-replies
 
 module.exports.config = {
   name: "malupiton",
   version: "1.0.0",
   permission: 0,
   credits: "pakyubot",
-  description: "Auto reply using Bossing API when trigger words are detected",
+  description: "Auto reply from Bossing API",
   prefix: false,
   category: "without prefix",
   cooldowns: 0
@@ -18,48 +18,37 @@ module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, body, senderID } = event;
   if (!body) return;
 
-  // Ignore messages from the bot itself
   if (String(senderID) === BOT_ID) return;
 
   const triggers = ["boss", "bossing", "kupal", "ogag", "malupiton", "aray ko"];
-  const msgLower = body.toLowerCase();
+  const lower = body.toLowerCase();
 
-  // Check if any trigger word is in the message
-  let triggered = false;
-  for (let word of triggers) {
-    if (msgLower.includes(word)) {
-      triggered = true;
+  let match = false;
+  for (let t of triggers) {
+    if (lower.includes(t)) {
+      match = true;
       break;
     }
   }
-  if (!triggered) return;
+  if (!match) return;
 
-  // Cooldown to prevent spam
   const now = Date.now();
-  const cooldownTime = 5000; // 5 seconds
-  if (malupitonCooldowns.has(senderID) && now - malupitonCooldowns.get(senderID) < cooldownTime) {
-    return;
-  }
-  malupitonCooldowns.set(senderID, now);
+  if (cooldowns.has(senderID) && now - cooldowns.get(senderID) < 5000) return;
+  cooldowns.set(senderID, now);
 
   try {
     const prompt = encodeURIComponent(body);
     const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
     const res = await axios.get(url);
-
     if (res.data && res.data.response) {
-      api.sendMessage(
-        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
-        threadID,
-        messageID
-      );
+      api.sendMessage(res.data.response, threadID, messageID);
     }
-  } catch (err) {
-    console.error("Malupiton API Error:", err.message || err);
+  } catch (e) {
+    console.log("Malupiton API Error:", e.message);
   }
 };
 
-module.exports.run = function () {};  ) {
+module.exports.run = function () {};module.exports.run = function () {};  ) {
     return;
   }
 
