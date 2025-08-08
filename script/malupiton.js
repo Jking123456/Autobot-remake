@@ -3,89 +3,87 @@ const axios = require("axios");
 // Cooldown storage
 const textCooldowns = new Map();
 
+// Trigger words (lowercase)
+const triggerWords = [
+  "malupiton",
+  "kupal",
+  "ogag",
+  "boss",
+  "bossing",
+  "tagumpay",
+  "tarantado",
+  "tarub",
+  "aray"
+];
+
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.0",
+  version: "1.0.2",
   permission: 0,
   credits: "You",
-  description: "Goat bot (Malupiton) — talks like a certified kupal using the Bossing API.",
+  description: "Auto-replies when trigger words are detected using Bossing API.",
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "malupiton <message>",
-  cooldowns: 0, // using custom cooldown below
-  dependency: {
-    "axios": ""
-  }
+  usage: "Just type any trigger word",
+  cooldowns: 0 // custom cooldown used instead
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID, senderID, messageReply } = event;
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
 
-  // Prevent bot replying to itself
+  // Ignore empty or non-text messages
+  if (!body || typeof body !== "string") return;
+
+  // Fetch bot's own ID once
+  let botID;
   try {
-    const botID = api.getCurrentUserID();
-    if (senderID === botID) return; // message from the bot itself
-    if (messageReply && messageReply.senderID === botID) return; // replying to a bot message
+    botID = api.getCurrentUserID();
   } catch (err) {
-    // If api.getCurrentUserID fails for some reason, just continue (non-fatal)
-    console.warn("Couldn't fetch bot ID:", err);
+    console.warn("⚠️ Couldn't fetch bot ID:", err);
+    return; // safer to skip if we can't confirm bot ID
   }
 
-  // Basic admin-only option: (uncomment to enforce group-admin-only usage)
-  // try {
-  //   const threadInfo = await api.getThreadInfo(threadID);
-  //   const botID = api.getCurrentUserID();
-  //   const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-  //   if (!isBotAdmin) return api.sendMessage("🚫 Make me an admin first so I can run here, Bossing.", threadID, messageID);
-  // } catch (err) {
-  //   console.warn("Thread info check failed:", err);
-  // }
+  // Prevent replying to itself or another bot message
+  if (senderID === botID) return; // message from bot
+  if (messageReply && messageReply.senderID === botID) return; // reply to bot's message
 
-  const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
-  // create a UID to send (the API you provided used uid=1 in the example — randomize or set static if you prefer)
-  const UID = Math.floor(Math.random() * 1000000).toString();
+  // Check for trigger words (case-insensitive)
+  const lowerBody = body.toLowerCase();
+  if (!triggerWords.some(word => lowerBody.includes(word))) return;
 
-  const question = args.join(" ").trim();
-
+  // Cooldown per user
   const now = Date.now();
-  const cooldownTime = 6 * 1000; // 6 seconds per user
+  const cooldownTime = 6000; // 6 seconds
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
     return api.sendMessage(`⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`, threadID, messageID);
   }
   textCooldowns.set(senderID, now);
 
-  try {
-    // Build request URL. The API accepts prompt and uid (example you provided had prompt=&uid=1)
-    const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
+  // Prepare API request
+  const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
+  const UID = Math.floor(Math.random() * 1000000).toString();
+  const question = body.trim();
 
+  try {
+    const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
     const res = await axios.get(url, { timeout: 20000 });
     const data = res?.data;
 
-    // The example JSON you gave returns { "status": true, "response": "..." }
     let replyText = "";
-
-    if (data) {
-      if (typeof data === "string") {
-        // If API returns raw string
-        replyText = data;
-      } else if (data.response) {
-        replyText = data.response;
-      } else if (data.data && data.data.response) {
-        replyText = data.data.response;
-      } else {
-        replyText = JSON.stringify(data);
-      }
+    if (typeof data === "string") {
+      replyText = data;
+    } else if (data.response) {
+      replyText = data.response;
+    } else if (data.data && data.data.response) {
+      replyText = data.data.response;
     } else {
-      replyText = "⚠️ Walang nakuha na sagot mula sa Bossing API.";
+      replyText = JSON.stringify(data);
     }
 
-    // Optional cleanup: ensure the reply is a string and not too long
-    if (typeof replyText !== "string") replyText = String(replyText);
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
-    // Final message format — goat/kapal vibe
     const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`;
 
     return api.sendMessage(final, threadID, messageID);
@@ -93,4 +91,8 @@ module.exports.run = async function ({ api, event, args }) {
     console.error("❌ Malupiton API Error:", error?.response?.data || error?.message || error);
     return api.sendMessage("❌ May problema sa Bossing API. Subukan ulit mamaya, Bossing.", threadID, messageID);
   }
+};
+
+module.exports.run = () => {
+  // This command is event-based
 };
