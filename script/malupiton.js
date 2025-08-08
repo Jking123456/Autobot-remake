@@ -86,7 +86,7 @@ module.exports.run = async function ({ api, event, args }) {
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
     // Final message format — goat/kapal vibe
-    const final = `🦙 •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`;
+    const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`;
 
     return api.sendMessage(final, threadID, messageID);
   } catch (error) {
