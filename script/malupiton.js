@@ -1,16 +1,14 @@
 const axios = require("axios");
 
 const malupitonCooldowns = new Map();
-
-// Your bot's Facebook user ID to avoid self-replies
-const BOT_ID = "61577980796119";
+const BOT_ID = "61577980796119"; // Your bot's FB ID to avoid self-reply
 
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.3",
+  version: "1.0.0",
   permission: 0,
   credits: "pakyubot",
-  description: "Auto reply from Bossing API when trigger words are detected",
+  description: "Auto reply using Bossing API when trigger words are detected",
   prefix: false,
   category: "without prefix",
   cooldowns: 0
@@ -20,21 +18,48 @@ module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, body, senderID } = event;
   if (!body) return;
 
-  // 🚫 Prevent bot from replying to itself
+  // Ignore messages from the bot itself
   if (String(senderID) === BOT_ID) return;
 
   const triggers = ["boss", "bossing", "kupal", "ogag", "malupiton", "aray ko"];
-  const msg = body.toLowerCase();
+  const msgLower = body.toLowerCase();
 
-  if (!triggers.some(word => msg.includes(word))) return;
+  // Check if any trigger word is in the message
+  let triggered = false;
+  for (let word of triggers) {
+    if (msgLower.includes(word)) {
+      triggered = true;
+      break;
+    }
+  }
+  if (!triggered) return;
 
+  // Cooldown to prevent spam
   const now = Date.now();
   const cooldownTime = 5000; // 5 seconds
+  if (malupitonCooldowns.has(senderID) && now - malupitonCooldowns.get(senderID) < cooldownTime) {
+    return;
+  }
+  malupitonCooldowns.set(senderID, now);
 
-  if (
-    malupitonCooldowns.has(senderID) &&
-    now - malupitonCooldowns.get(senderID) < cooldownTime
-  ) {
+  try {
+    const prompt = encodeURIComponent(body);
+    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
+    const res = await axios.get(url);
+
+    if (res.data && res.data.response) {
+      api.sendMessage(
+        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
+        threadID,
+        messageID
+      );
+    }
+  } catch (err) {
+    console.error("Malupiton API Error:", err.message || err);
+  }
+};
+
+module.exports.run = function () {};  ) {
     return;
   }
 
