@@ -8,13 +8,13 @@ module.exports.config = {
   name: "ai",
   version: "1.2.8",
   permission: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis (modified)",
   description: "Ask AI via Kaiz Gemini Vision (image) or Kaiz-AI (text only).",
   prefix: false,
   premium: false,
   category: "without prefix",
   usage: "ai <question> | reply to image",
-  cooldowns: 0, // Set to 0, we’re handling custom cooldown inside
+  cooldowns: 0,
   dependency: {
     "axios": ""
   }
@@ -22,21 +22,6 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, messageReply, senderID } = event;
-
-  // ✅ Admin Restriction Check
-  try {
-    const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
-    const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-
-    if (!isBotAdmin) {
-      return api.sendMessage("🚫 This command can only be used in groups where the bot is an admin.", threadID, messageID);
-    }
-
-  } catch (err) {
-    console.error("Failed to check bot admin status:", err);
-    return api.sendMessage("⚠️ Couldn't verify bot permissions. Try again later.", threadID, messageID);
-  }
 
   const TEXT_API = "https://betadash-api-swordslush.vercel.app/gpt4";
   const IMAGE_API = "https://kaiz-apis.gleeze.com/api/gemini-vision";
@@ -110,7 +95,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     return api.sendMessage(
-      `•| 𝙷𝙾𝙼𝙴𝚁 𝙰𝙸 𝙱𝙾𝚃 |•\n\n${result}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`,
+      `•| 𝙰𝚂𝚂𝙸𝚂𝚃𝙰𝙽𝚃 - 𝙰𝙸 |•\n\n${result}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙰𝙽𝙾𝙽𝚈𝙼𝙾𝚄𝚂 𝙶𝚄𝚈 |•`,
       threadID,
       messageID
     );
