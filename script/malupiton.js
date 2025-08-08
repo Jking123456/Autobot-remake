@@ -84,7 +84,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
-    const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`;
+    const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙰𝙽𝙾𝙽𝚈𝙼𝙾𝚄𝚂 𝙶𝚄𝚈 |•`;
 
     return api.sendMessage(final, threadID, messageID);
   } catch (error) {
