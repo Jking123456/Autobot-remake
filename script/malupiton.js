@@ -13,12 +13,13 @@ module.exports.config = {
   premium: false,
   category: "without prefix",
   usage: "Say any of the trigger words and bot will reply",
-  cooldowns: 0, // manual cooldown
+  cooldowns: 0,
   dependency: {
     "axios": ""
   }
 };
 
+// ✅ Marked as async so await works
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, body, senderID } = event;
   if (!body) return;
@@ -26,7 +27,6 @@ module.exports.handleEvent = async function ({ api, event }) {
   const triggers = ["boss", "bossing", "kupal", "ogag", "malupiton", "aray ko"];
   const msg = body.toLowerCase();
 
-  // If message doesn't contain any trigger word, ignore
   if (!triggers.some(word => msg.includes(word))) return;
 
   // Cooldown check (per user)
@@ -34,7 +34,34 @@ module.exports.handleEvent = async function ({ api, event }) {
   const cooldownTime = 5 * 1000; // 5 seconds cooldown
 
   if (malupitonCooldowns.has(senderID) && now - malupitonCooldowns.get(senderID) < cooldownTime) {
-    return; // Ignore if still in cooldown
+    return; // Still in cooldown
+  }
+
+  malupitonCooldowns.set(senderID, now);
+
+  try {
+    const prompt = encodeURIComponent(body);
+    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
+
+    const res = await axios.get(url);
+    const replyText = res?.data?.response;
+
+    if (!replyText) return;
+
+    return api.sendMessage(
+      `${replyText}`,
+      threadID,
+      messageID
+    );
+
+  } catch (error) {
+    console.error("❌ Malupiton API Error:", error?.response?.data || error.message || error);
+  }
+};
+
+module.exports.run = function () {
+  // Not used — this is auto-reply only
+};    return; // Ignore if still in cooldown
   }
 
   malupitonCooldowns.set(senderID, now);
