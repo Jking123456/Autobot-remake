@@ -1,152 +1,96 @@
 const axios = require("axios");
 
-const cooldowns = new Map();
-const BOT_ID = "61577980796119"; // Bot's own FB ID to prevent self-replies
+// Cooldown storage
+const textCooldowns = new Map();
 
 module.exports.config = {
   name: "malupiton",
   version: "1.0.0",
   permission: 0,
-  credits: "pakyubot",
-  description: "Auto reply from Bossing API",
+  credits: "You",
+  description: "Goat bot (Malupiton) — talks like a certified kupal using the Bossing API.",
   prefix: false,
+  premium: false,
   category: "without prefix",
-  cooldowns: 0
+  usage: "malupiton <message>",
+  cooldowns: 0, // using custom cooldown below
+  dependency: {
+    "axios": ""
+  }
 };
 
-module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, messageID, body, senderID } = event;
-  if (!body) return;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, senderID, messageReply } = event;
 
-  if (String(senderID) === BOT_ID) return;
-
-  const triggers = ["boss", "bossing", "kupal", "ogag", "malupiton", "aray ko"];
-  const lower = body.toLowerCase();
-
-  let match = false;
-  for (let t of triggers) {
-    if (lower.includes(t)) {
-      match = true;
-      break;
-    }
+  // Prevent bot replying to itself
+  try {
+    const botID = api.getCurrentUserID();
+    if (senderID === botID) return; // message from the bot itself
+    if (messageReply && messageReply.senderID === botID) return; // replying to a bot message
+  } catch (err) {
+    // If api.getCurrentUserID fails for some reason, just continue (non-fatal)
+    console.warn("Couldn't fetch bot ID:", err);
   }
-  if (!match) return;
+
+  // Basic admin-only option: (uncomment to enforce group-admin-only usage)
+  // try {
+  //   const threadInfo = await api.getThreadInfo(threadID);
+  //   const botID = api.getCurrentUserID();
+  //   const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+  //   if (!isBotAdmin) return api.sendMessage("🚫 Make me an admin first so I can run here, Bossing.", threadID, messageID);
+  // } catch (err) {
+  //   console.warn("Thread info check failed:", err);
+  // }
+
+  const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
+  // create a UID to send (the API you provided used uid=1 in the example — randomize or set static if you prefer)
+  const UID = Math.floor(Math.random() * 1000000).toString();
+
+  const question = args.join(" ").trim();
 
   const now = Date.now();
-  if (cooldowns.has(senderID) && now - cooldowns.get(senderID) < 5000) return;
-  cooldowns.set(senderID, now);
+  const cooldownTime = 6 * 1000; // 6 seconds per user
+  if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
+    const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
+    return api.sendMessage(`⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`, threadID, messageID);
+  }
+  textCooldowns.set(senderID, now);
 
   try {
-    const prompt = encodeURIComponent(body);
-    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
-    const res = await axios.get(url);
-    if (res.data && res.data.response) {
-      api.sendMessage(res.data.response, threadID, messageID);
-    }
-  } catch (e) {
-    console.log("Malupiton API Error:", e.message);
-  }
-};
+    // Build request URL. The API accepts prompt and uid (example you provided had prompt=&uid=1)
+    const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
 
-module.exports.run = function () {};module.exports.run = function () {};  ) {
-    return;
-  }
+    const res = await axios.get(url, { timeout: 20000 });
+    const data = res?.data;
 
-  malupitonCooldowns.set(senderID, now);
+    // The example JSON you gave returns { "status": true, "response": "..." }
+    let replyText = "";
 
-  try {
-    const prompt = encodeURIComponent(body);
-    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
-    const res = await axios.get(url);
-
-    if (res.data && res.data.response) {
-      api.sendMessage(
-        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
-        threadID,
-        messageID
-      );
-    }
-  } catch (error) {
-    console.error("Malupiton API Error:", error.message || error);
-  }
-};
-
-module.exports.run = function () {};      now - malupitonCooldowns.get(senderID) < cooldownTime
-    ) {
-      return;
-    }
-
-    malupitonCooldowns.set(senderID, now);
-
-    try {
-      const prompt = encodeURIComponent(body);
-      const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
-      const res = await axios.get(url);
-
-      if (res.data && res.data.response) {
-        api.sendMessage(
-          `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
-          threadID,
-          messageID
-        );
+    if (data) {
+      if (typeof data === "string") {
+        // If API returns raw string
+        replyText = data;
+      } else if (data.response) {
+        replyText = data.response;
+      } else if (data.data && data.data.response) {
+        replyText = data.data.response;
+      } else {
+        replyText = JSON.stringify(data);
       }
-    } catch (error) {
-      console.error("Malupiton API Error:", error.message || error);
+    } else {
+      replyText = "⚠️ Walang nakuha na sagot mula sa Bossing API.";
     }
-  })();
-};
 
-module.exports.run = function () {};  ) {
-    return;
-  }
+    // Optional cleanup: ensure the reply is a string and not too long
+    if (typeof replyText !== "string") replyText = String(replyText);
+    if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
-  malupitonCooldowns.set(senderID, now);
+    // Final message format — goat/kapal vibe
+    const final = `🦙 •| MALUPITON BOT |•\n\n${replyText}\n\n•| OWNER: Bossing |•`;
 
-  try {
-    const prompt = encodeURIComponent(body);
-    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
-    const res = await axios.get(url);
-
-    if (res.data && res.data.response) {
-      api.sendMessage(
-        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
-        threadID,
-        messageID
-      );
-    }
+    return api.sendMessage(final, threadID, messageID);
   } catch (error) {
-    console.error("Malupiton API Error:", error.message || error);
+    console.error("❌ Malupiton API Error:", error?.response?.data || error?.message || error);
+    return api.sendMessage("❌ May problema sa Bossing API. Subukan ulit mamaya, Bossing.", threadID, messageID);
   }
 };
-
-module.exports.run = function () {};
-  try {
-    const prompt = encodeURIComponent(body);
-    const url = `https://markdevs-last-api-p2y6.onrender.com/bossing?prompt=${prompt}&uid=1`;
-    const res = await axios.get(url);
-
-    if (res.data && res.data.response) {
-      api.sendMessage(
-        `•| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙷𝙾𝙼𝙴𝚁 𝚁𝙴𝙱𝙰𝚃𝙸𝚂 |•`,
-        threadID,
-        messageID
-      );
-    }
-  } catch (error) {
-    console.error("Malupiton API Error:", error.message || error);
-  }
-};
-
-module.exports.run = function () {};    if (res.data && res.data.response) {
-      api.sendMessage(
-        `•| 𝙱𝙾𝚂𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 |•\n\n${res.data.response}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝚙𝚊𝚔𝚢𝚞𝚋𝚘𝚝 |•`,
-        threadID,
-        messageID
-      );
-    }
-  } catch (error) {
-    console.error("Malupiton API Error:", error.message || error);
-  }
-};
-
-module.exports.run = function () {};
