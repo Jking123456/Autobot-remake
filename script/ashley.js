@@ -18,7 +18,7 @@ module.exports.config = {
   name: "ashley",
   version: "1.0.0",
   permission: 0,
-  credits: "You",
+  credits: "Bogart Magalapok",
   description: "AI girlfriend auto-replies when trigger words are detected using Ashley API.",
   prefix: false,
   premium: false,
