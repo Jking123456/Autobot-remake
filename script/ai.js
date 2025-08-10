@@ -8,7 +8,7 @@ module.exports.config = {
   name: "ai-autotrigger",
   version: "1.0.0",
   permission: 0,
-  credits: "Homer Rebatis (modified by ChatGPT)",
+  credits: "Homer Rebatis",
   description: "Auto AI reply if message ends with '.' or '?'. Also works with image replies.",
   prefix: false,
   premium: false,
