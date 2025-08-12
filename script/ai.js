@@ -5,9 +5,9 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "ai-autotrigger",
-  version: "1.1.0",
+  version: "1.1.1",
   permission: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + ChatGPT",
   description: "Auto AI reply with typing indicator, supports text and image triggers.",
   prefix: false,
   premium: false,
@@ -25,7 +25,17 @@ module.exports.handleEvent = async function ({ api, event }) {
   if (senderID === botID) return;
   if (messageReply && messageReply.senderID === botID) return;
 
-  const trimmed = body.trim();
+  const trimmed = body.trim().toLowerCase();
+
+  // 📌 Send notice if user types "ai"
+  if (trimmed === "ai") {
+    return api.sendMessage(
+      "🤖 To trigger AI:\n• End your message with `.` or `?`\n• Or reply to an image with your question.\nExample: `What is HTML?` or reply to a photo with `Describe this.`",
+      threadID,
+      messageID
+    );
+  }
+
   const endsWithTrigger = /[.?]$/.test(trimmed);
 
   let imageUrl = null;
