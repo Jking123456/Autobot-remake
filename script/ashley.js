@@ -16,7 +16,7 @@ const triggerWords = [
 
 module.exports.config = {
   name: "ashley",
-  version: "1.0.2",
+  version: "1.0.3",
   permission: 0,
   credits: "Bogart Magalapok + ChatGPT",
   description: "AI girlfriend auto-replies when trigger words are detected using Ashley API.",
@@ -24,12 +24,11 @@ module.exports.config = {
   premium: false,
   category: "without prefix",
   usage: "Type any trigger word (e.g. babe, ashley, mahal...)",
-  cooldowns: 0 // custom cooldown used instead
+  cooldowns: 0
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply } = event;
-
+  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
   if (!body || typeof body !== "string") return;
 
   // Fetch bot's own ID
@@ -46,8 +45,37 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   const lowerBody = body.toLowerCase().trim();
 
+  // If user specifically types "ashley"
+  if (lowerBody === "ashley") {
+    return api.sendMessage(
+      "💡 To trigger Ashley AI, just type any of these words in your message:\n\n" +
+      `🔹 ${triggerWords.join(", ")}\n\n` +
+      "Example: `Hi babe, kumusta ka?` or `Ashley, anong ginagawa mo?`",
+      threadID,
+      messageID
+    );
+  }
+
   // Trigger word check
   if (!triggerWords.some(word => lowerBody.includes(word))) return;
+
+  // 🔒 Restriction: Only run if bot is admin in group chats
+  if (isGroup) {
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "🔒 Hindi mo magagamit ang command na ito hangga’t hindi admin ang bot sa group na ito.\n" +
+          "➡️ Gawin muna akong admin para ma-unlock ang Ashley AI 💕",
+          threadID,
+          messageID
+        );
+      }
+    } catch (err) {
+      console.error("❌ Error fetching thread info:", err);
+    }
+  }
 
   // Per-user cooldown
   const now = Date.now();
@@ -100,5 +128,3 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage("❌ May problema sa Ashley API. Subukan ulit mamaya, babe.", threadID, messageID);
   }
 };
-
-module.exports.run = () => {};
