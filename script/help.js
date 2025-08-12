@@ -1,12 +1,12 @@
 module.exports.config = {
   name: 'help',
-  version: '1.0.0',
+  version: '1.0.1',
   role: 0,
   hasPrefix: true,
   aliases: ['info'],
   description: "Beginner's guide",
   usage: "Help [page] or [command]",
-  credits: 'Homer Rebatis',
+  credits: 'Homer Rebatis + Modified by GPT-5',
 };
 
 module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
@@ -15,8 +15,11 @@ module.exports.run = async function({ api, event, enableCommands, args, Utils, p
     const eventCommands = enableCommands[1].handleEvent;
     const commands = enableCommands[0].commands;
 
-    // Anti-spam notice
-    const notice = `⚠️ NOTICE:\nThis bot has an anti-spamming system. Abusing commands may result in temporary restrictions.\n━━━━━━━━━━━━━━━━━━\n`;
+    // Anti-spam and admin-lock notice
+    const notice = `⚠️ NOTICE:
+This bot has an anti-spamming system. Abusing commands may result in temporary restrictions.
+🔒 Some commands are locked — to unlock them, make the bot an admin in this group.
+━━━━━━━━━━━━━━━━━━\n`;
 
     if (!input) {
       const perPage = 20;
