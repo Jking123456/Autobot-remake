@@ -18,7 +18,7 @@ const triggerWords = [
 
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.2",
+  version: "1.0.4",
   permission: 0,
   credits: "You",
   description: "Auto-replies when trigger words are detected using Bossing API.",
@@ -29,39 +29,72 @@ module.exports.config = {
   cooldowns: 0 // custom cooldown used instead
 };
 
-module.exports.handleEvent = async function ({ api, event }) {
+module.exports.handleEvent = async function ({ api, event, Threads }) {
   const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
 
-  // Ignore empty or non-text messages
   if (!body || typeof body !== "string") return;
 
-  // Fetch bot's own ID once
   let botID;
   try {
     botID = api.getCurrentUserID();
   } catch (err) {
     console.warn("⚠️ Couldn't fetch bot ID:", err);
-    return; // safer to skip if we can't confirm bot ID
+    return;
   }
 
-  // Prevent replying to itself or another bot message
-  if (senderID === botID) return; // message from bot
-  if (messageReply && messageReply.senderID === botID) return; // reply to bot's message
+  if (senderID === botID) return;
+  if (messageReply && messageReply.senderID === botID) return;
 
-  // Check for trigger words (case-insensitive)
   const lowerBody = body.toLowerCase();
   if (!triggerWords.some(word => lowerBody.includes(word))) return;
 
-  // Cooldown per user
+  // ✅ Check if bot is admin before allowing
+  if (isGroup) {
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+      if (!botIsAdmin) {
+        return api.sendMessage(
+          "🚫 Locked! To use this command, make the bot an admin in this group.",
+          threadID,
+          messageID
+        );
+      }
+    } catch (err) {
+      console.error("⚠️ Error checking admin status:", err);
+      return api.sendMessage(
+        "⚠️ Couldn't verify admin status. Please try again.",
+        threadID,
+        messageID
+      );
+    }
+  }
+
+  // Special case for "malupiton"
+  if (lowerBody.trim() === "malupiton") {
+    const guideMessage = `📜 𝗧𝗿𝗶𝗴𝗴𝗲𝗿 𝗪𝗼𝗿𝗱 𝗚𝘂𝗶𝗱𝗲\n
+💡 Just type any of these words in chat (without prefix) and the bot will auto-reply:\n
+${triggerWords.map(w => `• ${w}`).join("\n")}\n
+⏳ Cooldown: 6 seconds per user.\n
+🛠 Example: Type "bossing", "aray", or "tagumpay" and see the magic happen!`;
+
+    return api.sendMessage(guideMessage, threadID, messageID);
+  }
+
+  // Cooldown
   const now = Date.now();
-  const cooldownTime = 6000; // 6 seconds
+  const cooldownTime = 6000;
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
-    return api.sendMessage(`⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`, threadID, messageID);
+    return api.sendMessage(
+      `⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`,
+      threadID,
+      messageID
+    );
   }
   textCooldowns.set(senderID, now);
 
-  // Prepare API request
+  // API Request
   const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
   const UID = Math.floor(Math.random() * 1000000).toString();
   const question = body.trim();
@@ -72,15 +105,10 @@ module.exports.handleEvent = async function ({ api, event }) {
     const data = res?.data;
 
     let replyText = "";
-    if (typeof data === "string") {
-      replyText = data;
-    } else if (data.response) {
-      replyText = data.response;
-    } else if (data.data && data.data.response) {
-      replyText = data.data.response;
-    } else {
-      replyText = JSON.stringify(data);
-    }
+    if (typeof data === "string") replyText = data;
+    else if (data.response) replyText = data.response;
+    else if (data.data && data.data.response) replyText = data.data.response;
+    else replyText = JSON.stringify(data);
 
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
@@ -89,10 +117,12 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage(final, threadID, messageID);
   } catch (error) {
     console.error("❌ Malupiton API Error:", error?.response?.data || error?.message || error);
-    return api.sendMessage("❌ May problema sa Bossing API. Subukan ulit mamaya, Bossing.", threadID, messageID);
+    return api.sendMessage(
+      "❌ May problema sa Bossing API. Subukan ulit mamaya, Bossing.",
+      threadID,
+      messageID
+    );
   }
 };
 
-module.exports.run = () => {
-  // This command is event-based
-};
+module.exports.run = () => {};
