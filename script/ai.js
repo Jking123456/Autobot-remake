@@ -4,7 +4,7 @@ const axios = require("axios");
 const textCooldowns = new Map();
 
 module.exports.config = {
-  name: "ai-autotrigger",
+  name: "ai",
   version: "1.1.1",
   permission: 0,
   credits: "Homer Rebatis + ChatGPT",
