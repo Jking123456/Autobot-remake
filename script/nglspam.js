@@ -26,7 +26,7 @@ module.exports = {
         const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
         if (!isBotAdmin) {
           return api.sendMessage(
-            "🚫 This command can only be used in groups where the bot is an admin.",
+            "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
             threadID,
             messageID
           );
