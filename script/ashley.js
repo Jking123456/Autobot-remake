@@ -66,8 +66,8 @@ module.exports.handleEvent = async function ({ api, event }) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage(
-          "🔒 Hindi mo magagamit ang command na ito hangga’t hindi admin ang bot sa group na ito.\n" +
-          "➡️ Gawin muna akong admin para ma-unlock ang Ashley AI 💕",
+          
+          "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
           threadID,
           messageID
         );
