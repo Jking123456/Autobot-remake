@@ -18,7 +18,7 @@ const triggerWords = [
 
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.2",
+  version: "1.0.4",
   permission: 0,
   credits: "You",
   description: "Auto-replies when trigger words are detected using Bossing API.",
@@ -32,36 +32,73 @@ module.exports.config = {
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
 
-  // Ignore empty or non-text messages
   if (!body || typeof body !== "string") return;
 
-  // Fetch bot's own ID once
+  // Fetch bot's own ID
   let botID;
   try {
     botID = api.getCurrentUserID();
   } catch (err) {
     console.warn("⚠️ Couldn't fetch bot ID:", err);
-    return; // safer to skip if we can't confirm bot ID
+    return;
   }
 
-  // Prevent replying to itself or another bot message
-  if (senderID === botID) return; // message from bot
-  if (messageReply && messageReply.senderID === botID) return; // reply to bot's message
+  if (senderID === botID) return;
+  if (messageReply && messageReply.senderID === botID) return;
 
-  // Check for trigger words (case-insensitive)
   const lowerBody = body.toLowerCase();
   if (!triggerWords.some(word => lowerBody.includes(word))) return;
 
-  // Cooldown per user
+  // Restriction: check if bot is admin in the group
+  if (isGroup) {
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const isAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+
+      if (!isAdmin) {
+        return api.sendMessage(
+          "⚠ This command is locked.\n\n🔑 Make the bot an admin to use the Malupiton feature in this group.",
+          threadID,
+          messageID
+        );
+      }
+    } catch (err) {
+      console.error("❌ Error checking admin status:", err);
+      return;
+    }
+  }
+
+  // Cooldown
   const now = Date.now();
-  const cooldownTime = 6000; // 6 seconds
+  const cooldownTime = 6000;
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
     return api.sendMessage(`⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`, threadID, messageID);
   }
   textCooldowns.set(senderID, now);
 
-  // Prepare API request
+  // If the user types exactly "malupiton", show usage guide
+  if (lowerBody.trim() === "malupiton") {
+    const guideMessage = 
+`📜 𝗠𝗔𝗟𝗨𝗣𝗜𝗧𝗢𝗡 𝗕𝗢𝗧 - 𝗚𝗨𝗜𝗗𝗘 📜
+
+💬 𝗧𝗿𝗶𝗴𝗴𝗲𝗿 𝗪𝗼𝗿𝗱𝘀:
+${triggerWords.map(w => `• ${w}`).join("\n")}
+
+🛠 𝗛𝗼𝘄 𝘁𝗼 𝗨𝘀𝗲:
+1. Just type any trigger word in the chat (no prefix needed).
+2. The bot will automatically reply with a Bossing-style message.
+3. Example: type "boss" or "ogag".
+
+ℹ Some commands might be locked.  
+   To unlock them, make the bot an admin in the group.
+
+⚡ 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 6 seconds per user.`;
+
+    return api.sendMessage(guideMessage, threadID, messageID);
+  }
+
+  // Normal Bossing API flow
   const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
   const UID = Math.floor(Math.random() * 1000000).toString();
   const question = body.trim();
@@ -93,6 +130,4 @@ module.exports.handleEvent = async function ({ api, event }) {
   }
 };
 
-module.exports.run = () => {
-  // This command is event-based
-};
+module.exports.run = () => {};
