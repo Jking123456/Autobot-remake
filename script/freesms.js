@@ -21,7 +21,7 @@ module.exports.run = async function ({ api, event, args }) {
     const isBotAdmin = threadInfo.adminIDs.some(e => e.id === botID);
 
     if (!isBotAdmin) {
-      return api.sendMessage("❌ This command only works if the bot is an **admin** in this chat.", threadID, messageID);
+      return api.sendMessage("🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.", threadID, messageID);
     }
   } catch (err) {
     console.error("Error checking admin status:", err);
