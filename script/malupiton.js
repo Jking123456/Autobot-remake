@@ -55,7 +55,7 @@ module.exports.handleEvent = async function ({ api, event, Threads }) {
       const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
       if (!botIsAdmin) {
         return api.sendMessage(
-          "🚫 Locked! To use this command, make the bot an admin in this group.",
+          "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
           threadID,
           messageID
         );
