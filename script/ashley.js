@@ -28,7 +28,7 @@ module.exports.config = {
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
+  const { threadID, messageID, senderID, body, messageReply } = event;
 
   if (!body || typeof body !== "string") return;
 
@@ -45,39 +45,6 @@ module.exports.handleEvent = async function ({ api, event }) {
   if (messageReply && messageReply.senderID === botID) return;
 
   const lowerBody = body.toLowerCase().trim();
-
-  // 📌 Usage/help trigger if message starts with "ashley"
-  if (/^ashley(\s|$|\?|help|-)/.test(lowerBody)) {
-    return api.sendMessage(
-      "💖 **Ashley AI – Usage Guide**\n\n" +
-      "To talk to Ashley, just include any of these words in your message:\n" +
-      "• babe\n• ash\n• ashley\n• mahal\n• love\n• sexy\n• ganda\n\n" +
-      "💬 Example:\n" +
-      "`Hi babe, kumain ka na?`\n" +
-      "`Ashley, miss mo na ba ako?`\n\n" +
-      "💡 Tip: Works in DMs, or in groups if the bot is an admin.",
-      threadID,
-      messageID
-    );
-  }
-
-  // 📌 Restriction: Block in groups unless bot is admin
-  if (isGroup) {
-    try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const isAdmin = threadInfo.adminIDs.some(a => a.id == botID);
-      if (!isAdmin) {
-        return api.sendMessage(
-          "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
-          threadID,
-          messageID
-        );
-      }
-    } catch (err) {
-      console.error("❌ Failed to check admin status:", err);
-      return;
-    }
-  }
 
   // Trigger word check
   if (!triggerWords.some(word => lowerBody.includes(word))) return;
@@ -113,9 +80,8 @@ module.exports.handleEvent = async function ({ api, event }) {
     }
 
     // Block unsafe replies
-    const loweredReply = replyText.toLowerCase();
     const blockedPatterns = /(bata|child|minor|underage|under-age|kinder|anak)/i;
-    if (blockedPatterns.test(loweredReply)) {
+    if (blockedPatterns.test(replyText.toLowerCase())) {
       console.warn("⚠️ Blocked potential minor-related response from Ashley API.");
       return api.sendMessage(
         "⚠️ Hindi ako pwedeng magbigay ng ganoong klaseng sagot. Pakitanong ang iba o subukan ang ibang usapan, mahal.",
