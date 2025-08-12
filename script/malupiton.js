@@ -73,10 +73,10 @@ module.exports.handleEvent = async function ({ api, event, Threads }) {
   // Special case for "malupiton"
   if (lowerBody.trim() === "malupiton") {
     const guideMessage = `📜 𝗧𝗿𝗶𝗴𝗴𝗲𝗿 𝗪𝗼𝗿𝗱 𝗚𝘂𝗶𝗱𝗲\n
-💡 Just type any of these words in chat (without prefix) and the bot will auto-reply:\n
+💡 To trigger Malupiton Command, just type any of these words in your message:\n
 ${triggerWords.map(w => `• ${w}`).join("\n")}\n
 ⏳ Cooldown: 6 seconds per user.\n
-🛠 Example: Type "bossing", "aray", or "tagumpay" and see the magic happen!`;
+🛠 Example: 'kahit kailan kupal ka talaga' or 'bossing ikaw nanaman'`;
 
     return api.sendMessage(guideMessage, threadID, messageID);
   }
