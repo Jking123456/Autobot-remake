@@ -1,7 +1,8 @@
 const axios = require("axios");
 
 // Cooldown storage
-const textCooldowns = new Map();
+const textCooldowns = new Map(); // per-user
+const threadCooldowns = new Map(); // per-thread
 
 // Trigger words (lowercase)
 const triggerWords = [
@@ -18,9 +19,9 @@ const triggerWords = [
 
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.4",
+  version: "1.0.5",
   permission: 0,
-  credits: "You",
+  credits: "You + ChatGPT Fix",
   description: "Auto-replies when trigger words are detected using Bossing API.",
   prefix: false,
   premium: false,
@@ -34,7 +35,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   if (!body || typeof body !== "string") return;
 
-  // Fetch bot's own ID
+  // Bot ID check
   let botID;
   try {
     botID = api.getCurrentUserID();
@@ -43,24 +44,33 @@ module.exports.handleEvent = async function ({ api, event }) {
     return;
   }
 
+  // 🚫 Ignore all bot's own messages
   if (senderID === botID) return;
+
+  // 🚫 Ignore messages that are replies to the bot
   if (messageReply && messageReply.senderID === botID) return;
+
+  // 🚫 Ignore the locked admin restriction message
+  const lockedText = "🚫 Locked ! to use this, make the bot admin in this group.";
+  if (body.includes(lockedText)) return;
+
+  // 📌 Thread-level cooldown to stop spam & bot ping-pong
+  const threadCooldownTime = 5000; // 5 seconds
+  if (threadCooldowns.has(threadID) && Date.now() - threadCooldowns.get(threadID) < threadCooldownTime) {
+    return;
+  }
+  threadCooldowns.set(threadID, Date.now());
 
   const lowerBody = body.toLowerCase();
   if (!triggerWords.some(word => lowerBody.includes(word))) return;
 
-  // Restriction: check if bot is admin in the group
+  // Restriction: check if bot is admin in group
   if (isGroup) {
     try {
       const threadInfo = await api.getThreadInfo(threadID);
       const isAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
-
       if (!isAdmin) {
-        return api.sendMessage(
-          "⚠ This command is locked.\n\n🔑 Make the bot an admin to use the Malupiton feature in this group.",
-          threadID,
-          messageID
-        );
+        return api.sendMessage(lockedText, threadID, messageID);
       }
     } catch (err) {
       console.error("❌ Error checking admin status:", err);
@@ -68,7 +78,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     }
   }
 
-  // Cooldown
+  // Per-user cooldown
   const now = Date.now();
   const cooldownTime = 6000;
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
@@ -77,7 +87,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   }
   textCooldowns.set(senderID, now);
 
-  // If the user types exactly "malupiton", show usage guide
+  // Show usage guide if exactly "malupiton"
   if (lowerBody.trim() === "malupiton") {
     const guideMessage = 
 `📜 𝗠𝗔𝗟𝗨𝗣𝗜𝗧𝗢𝗡 𝗕𝗢𝗧 - 𝗚𝗨𝗜𝗗𝗘 📜
@@ -94,7 +104,6 @@ ${triggerWords.map(w => `• ${w}`).join("\n")}
    To unlock them, make the bot an admin in the group.
 
 ⚡ 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 6 seconds per user.`;
-
     return api.sendMessage(guideMessage, threadID, messageID);
   }
 
@@ -122,7 +131,6 @@ ${triggerWords.map(w => `• ${w}`).join("\n")}
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
     const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙰𝙽𝙾𝙽𝚈𝙼𝙾𝚄𝚂 𝙶𝚄𝚈 |•`;
-
     return api.sendMessage(final, threadID, messageID);
   } catch (error) {
     console.error("❌ Malupiton API Error:", error?.response?.data || error?.message || error);
