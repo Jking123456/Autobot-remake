@@ -1,14 +1,14 @@
 // google.js
 // Search via https://rapido.zetsu.xyz/api/google?q=
 // Author: Homer Rebatis
-// Credits: Pedro Pendoko (request)
+// Credits: Pedro Pendoko
 
 const axios = require("axios");
 
 module.exports.config = {
   name: "google",
-  version: "1.0.2",
-  role: 0, // Everyone can use, but restricted by bot admin check
+  version: "1.0.3",
+  role: 0, // Everyone can use, but restricted by admin & E2EE checks
   hasPrefix: true,
   aliases: ["g", "search"],
   description: "Search Google and return the top results.",
@@ -23,27 +23,41 @@ async function onStart({ api, event, args }) {
   const threadID = event.threadID;
   const messageID = event.messageID;
 
-  // 🔒 Bot admin restriction check
+  // 🔒 E2EE detection
   try {
     const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
-    const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
-
-    if (!isBotAdmin) {
+    if (!threadInfo.adminIDs || threadInfo.adminIDs.length === 0) {
       return api.sendMessage(
-        "🚫 Locked! To use this command, make the bot an admin in this group.",
+        "🔒 This conversation is in **End-to-End Encryption** mode.\n" +
+        "Messenger bots cannot work here.\n\n" +
+        "➡ Please switch to a normal (non-secret) chat to use this command.",
         threadID,
         messageID
       );
     }
+
+    // 🔑 Bot admin restriction (only for groups)
+    if (threadInfo.isGroup) {
+      const botID = api.getCurrentUserID();
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+      if (!isBotAdmin) {
+        return api.sendMessage(
+          "🚫 Locked! To use this command in groups, make the bot an admin.",
+          threadID,
+          messageID
+        );
+      }
+    }
   } catch (err) {
     return api.sendMessage(
-      "⚠️ Unable to verify bot admin status. Make sure the bot is admin to use this command.",
+      "⚠️ Unable to verify chat or admin status.\n" +
+      "Make sure the bot is admin and not in an encrypted conversation.",
       threadID,
       messageID
     );
   }
 
+  // Validate query
   const query = args.join(" ").trim();
   if (!query) {
     return api.sendMessage(
@@ -58,6 +72,7 @@ async function onStart({ api, event, args }) {
     // Step 1: Send "typing..." placeholder message
     placeholder = await api.sendMessage("⌛ Searching Google...", threadID);
 
+    // Step 2: Call search API
     const url = "https://rapido.zetsu.xyz/api/google?q=" + encodeURIComponent(query);
     const { data } = await axios.get(url, { timeout: 20000 });
 
@@ -65,7 +80,7 @@ async function onStart({ api, event, args }) {
       return api.editMessage(`🔍 No results found for: “${query}”`, placeholder.messageID);
     }
 
-    // Format results
+    // Step 3: Format top 8 results
     const results = data.results.slice(0, 8);
     const lines = [];
     lines.push(`🔎 Google results for: “${query}”\n`);
@@ -86,7 +101,7 @@ async function onStart({ api, event, args }) {
 
     lines.push("\n💡 Tip: Use quotes or site: to refine your search.\nExample:\n• google site:github.com goat bot facebook\n• google \"goat bot\" admin commands");
 
-    // Step 2: Edit the placeholder message with results
+    // Step 4: Edit placeholder with results
     api.editMessage(lines.join("\n"), placeholder.messageID);
 
   } catch (err) {
@@ -98,4 +113,4 @@ async function onStart({ api, event, args }) {
       placeholder?.messageID || messageID
     );
   }
-      }
+}
