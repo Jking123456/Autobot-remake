@@ -2,12 +2,12 @@ const axios = require("axios");
 
 module.exports.config = {
     name: "hastebin",
-    version: "1.0",
+    version: "1.1",
     author: "Homer Rebatis",
     countDown: 5,
     role: 0,
     shortDescription: "Upload text/code to Hastebin",
-    longDescription: "Upload up to 1000+ characters of text or code to Hastebin and get a shareable link",
+    longDescription: "Upload up to 1000+ characters of text or code to Hastebin with preserved formatting",
     category: "utility",
     guide: "{p}hastebin <text/code>"
 };
@@ -19,8 +19,8 @@ module.exports.run = async function({ api, event, args }) {
     }
 
     try {
-        // Encode text for API
-        const encodedText = encodeURIComponent(content);
+        // Encode but keep line breaks
+        const encodedText = encodeURIComponent(content).replace(/%0A/g, "\n");
         const res = await axios.get(`https://betadash-api-swordslush.vercel.app/hastebin?upload=${encodedText}`, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
