@@ -5,16 +5,16 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "fbdownloader",
-  version: "1.1.0",
+  version: "1.2.0",
   permission: 0, // Everyone can use
-  description: "Automatically download Facebook videos from URL using the new API",
+  description: "Automatically download Facebook videos from URL (handles redirects)",
 };
 
 module.exports.run = async ({ api, event, utils }) => {
   const { threadID, messageID, body } = event;
 
-  // Regex to detect Facebook video URLs (videos, share, fb.watch)
-  const fbRegex = /(https?:\/\/(?:www\.)?facebook\.com\/(?:[^\/\s]+\/videos\/[^\s]+|share\/v\/[^\s]+)|https?:\/\/fb\.watch\/[^\s]+)/i;
+  // Regex to detect Facebook video URLs, share links, and fb.watch
+  const fbRegex = /(https?:\/\/(?:www\.)?facebook\.com\/(?:[^\/\s]+\/videos\/[^\s]+|share\/[vr]\/[^\s]+)|https?:\/\/fb\.watch\/[^\s]+)/i;
 
   if (!fbRegex.test(body)) return;
 
@@ -26,19 +26,22 @@ module.exports.run = async ({ api, event, utils }) => {
   textCooldowns.set(threadID, Date.now());
 
   try {
-    // Send "Downloading..." message
-    api.sendMessage("⏳ Downloading your Facebook video...", threadID, messageID);
+    api.sendMessage("⏳ Resolving and downloading your Facebook video...", threadID, messageID);
 
     // Get FB URL from message
     const fbUrl = body.match(fbRegex)[0];
 
+    // Follow redirects to get the final URL
+    const axiosResponse = await axios.get(fbUrl, { maxRedirects: 5 });
+    const finalUrl = axiosResponse.request.res.responseUrl || fbUrl;
+
     // Call new API
     const apiKey = "25644cdb-f51e-43f1-894a-ec718918e649";
-    const response = await axios.get(`https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(fbUrl)}&apikey=${apiKey}`);
+    const response = await axios.get(`https://kaiz-apis.gleeze.com/api/fbdl-v2?url=${encodeURIComponent(finalUrl)}&apikey=${apiKey}`);
     const data = response.data;
 
     if (!data || !data.download_url) {
-      return api.sendMessage("❌ Failed to fetch video.", threadID, messageID);
+      return api.sendMessage("❌ Failed to fetch video. The URL may not be a valid Facebook video.", threadID, messageID);
     }
 
     const caption = `🎬 Author: ${data.author}`;
@@ -54,6 +57,6 @@ module.exports.run = async ({ api, event, utils }) => {
     );
   } catch (err) {
     console.error(err);
-    api.sendMessage("❌ Error occurred while downloading the video.", threadID, messageID);
+    api.sendMessage("❌ Error occurred while downloading the video. Make sure the link is a valid Facebook video.", threadID, messageID);
   }
 };
