@@ -3,32 +3,21 @@ const axios = require("axios");
 // Cooldown storage (per user)
 const textCooldowns = new Map();
 
-// Trigger words (lowercase)
-const triggerWords = [
-  "babe",
-  "ash",
-  "ashley",
-  "mahal",
-  "love",
-  "sexy",
-  "ganda"
-];
-
 module.exports.config = {
   name: "ashley",
-  version: "1.0.3",
+  version: "1.0.4",
   permission: 0,
   credits: "Bogart Magalapok + ChatGPT",
-  description: "AI girlfriend auto-replies when trigger words are detected using Ashley API.",
+  description: "AI girlfriend auto-replies when message starts with 'ashley <question>'.",
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "Type any trigger word (e.g. babe, ashley, mahal...)",
+  usage: "ashley <question>",
   cooldowns: 0
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
+  const { threadID, messageID, senderID, body, isGroup } = event;
   if (!body || typeof body !== "string") return;
 
   // Fetch bot's own ID
@@ -41,23 +30,21 @@ module.exports.handleEvent = async function ({ api, event }) {
   }
 
   if (senderID === botID) return;
-  if (messageReply && messageReply.senderID === botID) return;
 
-  const lowerBody = body.toLowerCase().trim();
+  const trimmed = body.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
 
-  // If user specifically types "ashley"
-  if (lowerBody === "ashley") {
+  // Show usage when only "ashley" is typed
+  if (lowerTrimmed === "ashley") {
     return api.sendMessage(
-      "💡 To trigger Ashley AI, just type any of these words in your message:\n\n" +
-      `🔹 ${triggerWords.join(", ")}\n\n` +
-      "Example: `Hi babe, kumusta ka?` or `Ashley, anong ginagawa mo?`",
+      "💡 Usage: `ashley <question>`\nExample: `ashley kumusta ka?`",
       threadID,
       messageID
     );
   }
 
-  // Trigger word check
-  if (!triggerWords.some(word => lowerBody.includes(word))) return;
+  // Trigger only if message starts with "ashley "
+  if (!lowerTrimmed.startsWith("ashley ")) return;
 
   // 🔒 Restriction: Only run if bot is admin in group chats
   if (isGroup) {
@@ -66,7 +53,6 @@ module.exports.handleEvent = async function ({ api, event }) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage(
-          
           "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
           threadID,
           messageID
@@ -89,7 +75,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   // Prepare API request
   const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/ashley";
   const UID = Math.floor(Math.random() * 1000000).toString();
-  const question = body.trim();
+  const question = trimmed.substring(7).trim(); // remove "ashley "
 
   try {
     const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
