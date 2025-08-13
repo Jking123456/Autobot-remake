@@ -14,7 +14,7 @@ function mapToFont(text) {
 
 module.exports.config = {
   name: "auto-post",
-  version: "1.0.1",
+  version: "1.0.0",
 };
 
 let isAutoPostStarted = false;
@@ -27,48 +27,88 @@ module.exports.handleEvent = async function({ api }) {
 };
 
 async function startAutoPost(api) {
-  const checkTimeAndPost = async () => {
-    try {
-      // Fetch from new API
-      const { data } = await axios.get("https://wildan-suldyir-apis.vercel.app/api/devquote");
-      const quoteText = mapToFont(data.quote);
-      const quoteAuthor = mapToFont(data.creator || 'Unknown');
-      const quoteMessage = `✨ 𝘋𝘦𝘷 𝘘𝘶𝘰𝘵𝘦:\n\n"${quoteText}"\n\n- ${quoteAuthor}`;
-
-      // Prepare FB post
-      const formData = {
-        input: {
-          composer_entry_point: "inline_composer",
-          composer_source_surface: "timeline",
-          idempotence_token: `${Date.now()}_FEED`,
-          source: "WWW",
-          message: { text: quoteMessage },
-          audience: { privacy: { base_state: "EVERYONE" } },
-          actor_id: api.getCurrentUserID(),
-        },
-      };
-
-      const postResult = await api.httpPost(
-        "https://www.facebook.com/api/graphql/",
-        {
-          av: api.getCurrentUserID(),
-          fb_api_req_friendly_name: "ComposerStoryCreateMutation",
-          fb_api_caller_class: "RelayModern",
-          doc_id: "7711610262190099",
-          variables: JSON.stringify(formData),
-        }
-      );
-
-      const postID = postResult.data.story_create.story.legacy_story_hideable_id;
-      const postLink = `https://www.facebook.com/${api.getCurrentUserID()}/posts/${postID}`;
-      console.log(`[AUTO POST] Successful Post! Link: ${postLink}`);
-    } catch (error) {
-      console.error("Error during auto-posting:", error);
-    }
-
-    // Wait 2 hours before next post
-    setTimeout(checkTimeAndPost, 2 * 60 * 60 * 1000);
+  const postData = {
+    "00:00": {},
+    "01:00": {},
+    "02:00": {},
+    "03:00": {},
+    "04:00": {},
+    "05:00": {},
+    "06:00": {},
+    "07:00": {},
+    "08:00": {},
+    "09:00": {},
+    "10:00": {},
+    "11:00": {},
+    "12:00": {},
+    "13:00": {},
+    "14:00": {},
+    "15:00": {},
+    "16:00": {},
+    "17:00": {},
+    "18:00": {},
+    "19:00": {},
+    "20:00": {},
+    "21:00": {},
+    "22:00": {},
+    "23:00": {}
   };
 
+  // Updated API link here
+  const response = await axios.get("https://wildan-suldyir-apis.vercel.app/api/devquote");
+  const quotes = [response.data]; // wrap single response in array for compatibility
+
+  const checkTimeAndPost = async () => {
+    const now = moment().tz('Asia/Manila');
+    const currentTime = now.format('HH:mm');
+
+    if (postData[currentTime]) {
+      try {
+        const randomQuote = quotes[0];
+        const quoteText = mapToFont(randomQuote.quote); 
+        const quoteAuthor = mapToFont(randomQuote.creator || 'Unknown'); 
+        const quoteMessage = `✨ 𝘋𝘦𝘷 𝘘𝘶𝘰𝘵𝘦𝘴:\n\n"${quoteText}"\n\n- ${quoteAuthor}`;
+
+        const formData = {
+          input: {
+            composer_entry_point: "inline_composer",
+            composer_source_surface: "timeline",
+            idempotence_token: `${Date.now()}_FEED`,
+            source: "WWW",
+            message: {
+              text: quoteMessage,
+            },
+            audience: {
+              privacy: {
+                base_state: "EVERYONE",
+              },
+            },
+            actor_id: api.getCurrentUserID(),
+          },
+        };
+
+        const postResult = await api.httpPost(
+          "https://www.facebook.com/api/graphql/",
+          {
+            av: api.getCurrentUserID(),
+            fb_api_req_friendly_name: "ComposerStoryCreateMutation",
+            fb_api_caller_class: "RelayModern",
+            doc_id: "7711610262190099",
+            variables: JSON.stringify(formData),
+          }
+        );
+
+        const postID = postResult.data.story_create.story.legacy_story_hideable_id;
+        const postLink = `https://www.facebook.com/${api.getCurrentUserID()}/posts/${postID}`;
+        console.log(`[AUTO POST] Successful Post! Link: ${postLink}`);
+      } catch (error) {
+        console.error("Error during auto-posting:", error);
+      }
+    }
+
+    const nextHour = moment().add(1, 'hour').startOf('hour');
+    const delay = nextHour.diff(moment());
+    setTimeout(checkTimeAndPost, delay);
+  };
   checkTimeAndPost();
 }
