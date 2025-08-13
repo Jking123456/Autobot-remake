@@ -5,9 +5,9 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "ai",
-  version: "1.1.2",
+  version: "1.1.3",
   permission: 0,
-  credits: "Homer Rebatis + ChatGPT",
+  credits: "Homer Rebatis",
   description: "Auto AI reply with typing indicator, supports text and image triggers.",
   prefix: false,
   premium: false,
@@ -18,34 +18,38 @@ module.exports.config = {
 
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, senderID, body, messageReply } = event;
-  if (!body || typeof body !== "string") return;
+  if (!body && !(messageReply && messageReply.attachments.length > 0)) return;
 
   let botID;
   try { botID = api.getCurrentUserID(); } catch { return; }
   if (senderID === botID) return;
   if (messageReply && messageReply.senderID === botID) return;
 
-  const trimmed = body.trim();
+  const trimmed = (body || "").trim();
   const lowerTrimmed = trimmed.toLowerCase();
 
-  // 📌 Show usage when only "ai" is typed
-  if (lowerTrimmed === "ai") {
+  const repliedImage = messageReply && messageReply.attachments.length > 0 && messageReply.attachments[0].type === "photo";
+
+  // 📌 Show usage when only "ai" is typed (text or image reply)
+  if (lowerTrimmed === "ai" || (repliedImage && !trimmed)) {
     return api.sendMessage(
-      "🤖 To trigger AI:\n• Type `ai <question>`\nExample: `ai who is the god of sea`\n• Or reply to an image with your question.",
+      "🤖 To trigger AI:\n" +
+      "• Text: `ai <question>`\n   Example: `ai who is the god of sea`\n" +
+      "• Image: Reply to an image and type `ai <your question>`\n   Example: (reply to a dog picture) `ai what breed is this?`",
       threadID,
       messageID
     );
   }
 
-  // Trigger only if message starts with "ai "
-  if (!lowerTrimmed.startsWith("ai ") && !(messageReply && messageReply.attachments.length > 0)) return;
+  // Trigger only if message starts with "ai " or replying to an image
+  if (!lowerTrimmed.startsWith("ai ") && !repliedImage) return;
 
   let question = trimmed.substring(3).trim();
   let imageUrl = null;
 
-  if (messageReply && messageReply.attachments.length > 0) {
+  if (repliedImage) {
     const attachment = messageReply.attachments[0];
-    if (attachment.type === "photo" && attachment.url) {
+    if (attachment.url) {
       imageUrl = attachment.url;
       if (!question) question = "What's in this image?";
     }
