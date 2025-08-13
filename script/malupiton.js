@@ -3,35 +3,21 @@ const axios = require("axios");
 // Cooldown storage
 const textCooldowns = new Map();
 
-// Trigger words (lowercase)
-const triggerWords = [
-  "malupiton",
-  "kupal",
-  "ogag",
-  "boss",
-  "bossing",
-  "tagumpay",
-  "tarantado",
-  "tarub",
-  "aray"
-];
-
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.4",
+  version: "1.0.5",
   permission: 0,
-  credits: "You",
-  description: "Auto-replies when trigger words are detected using Bossing API.",
+  credits: "You + ChatGPT",
+  description: "Bossing AI reply when message starts with 'malupiton <question>'.",
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "Just type any trigger word",
-  cooldowns: 0 // custom cooldown used instead
+  usage: "malupiton <question>",
+  cooldowns: 0
 };
 
-module.exports.handleEvent = async function ({ api, event, Threads }) {
-  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
-
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, messageID, senderID, body, isGroup } = event;
   if (!body || typeof body !== "string") return;
 
   let botID;
@@ -43,16 +29,27 @@ module.exports.handleEvent = async function ({ api, event, Threads }) {
   }
 
   if (senderID === botID) return;
-  if (messageReply && messageReply.senderID === botID) return;
 
-  const lowerBody = body.toLowerCase();
-  if (!triggerWords.some(word => lowerBody.includes(word))) return;
+  const trimmed = body.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
 
-  // ✅ Check if bot is admin before allowing
+  // Show usage if only "malupiton" is typed
+  if (lowerTrimmed === "malupiton") {
+    return api.sendMessage(
+      "📜 Usage: `malupiton <question>`\nExample: `malupiton sino ang pinakamalupit?`",
+      threadID,
+      messageID
+    );
+  }
+
+  // Trigger only if message starts with "malupiton "
+  if (!lowerTrimmed.startsWith("malupiton ")) return;
+
+  // ✅ Check if bot is admin before allowing in group chats
   if (isGroup) {
     try {
       const threadInfo = await api.getThreadInfo(threadID);
-      const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+      const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!botIsAdmin) {
         return api.sendMessage(
           "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
@@ -68,17 +65,6 @@ module.exports.handleEvent = async function ({ api, event, Threads }) {
         messageID
       );
     }
-  }
-
-  // Special case for "malupiton"
-  if (lowerBody.trim() === "malupiton") {
-    const guideMessage = `📜 𝗧𝗿𝗶𝗴𝗴𝗲𝗿 𝗪𝗼𝗿𝗱 𝗚𝘂𝗶𝗱𝗲\n
-💡 To trigger Malupiton Command, just type any of these words in your message:\n
-${triggerWords.map(w => `• ${w}`).join("\n")}\n
-⏳ Cooldown: 6 seconds per user.\n
-🛠 Example: 'kahit kailan kupal ka talaga' or 'bossing ikaw nanaman'`;
-
-    return api.sendMessage(guideMessage, threadID, messageID);
   }
 
   // Cooldown
@@ -97,7 +83,7 @@ ${triggerWords.map(w => `• ${w}`).join("\n")}\n
   // API Request
   const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/bossing";
   const UID = Math.floor(Math.random() * 1000000).toString();
-  const question = body.trim();
+  const question = trimmed.substring(10).trim(); // remove "malupiton "
 
   try {
     const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
