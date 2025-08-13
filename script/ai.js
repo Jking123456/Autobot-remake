@@ -5,14 +5,14 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "ai",
-  version: "1.1.1",
+  version: "1.1.2",
   permission: 0,
   credits: "Homer Rebatis + ChatGPT",
   description: "Auto AI reply with typing indicator, supports text and image triggers.",
   prefix: false,
   premium: false,
   category: "without prefix",
-  usage: "End message with '.' or '?' or reply to an image",
+  usage: "ai <question> or reply to an image with your question",
   cooldowns: 0
 };
 
@@ -25,27 +25,33 @@ module.exports.handleEvent = async function ({ api, event }) {
   if (senderID === botID) return;
   if (messageReply && messageReply.senderID === botID) return;
 
-  const trimmed = body.trim().toLowerCase();
+  const trimmed = body.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
 
-  // 📌 Send notice if user types "ai"
-  if (trimmed === "ai") {
+  // 📌 Show usage when only "ai" is typed
+  if (lowerTrimmed === "ai") {
     return api.sendMessage(
-      "🤖 To trigger AI:\n• End your message with `.` or `?`\n• Or reply to an image with your question.\nExample: `What is HTML?` or reply to a photo with `Describe this.`",
+      "🤖 To trigger AI:\n• Type `ai <question>`\nExample: `ai who is the god of sea`\n• Or reply to an image with your question.",
       threadID,
       messageID
     );
   }
 
-  const endsWithTrigger = /[.?]$/.test(trimmed);
+  // Trigger only if message starts with "ai "
+  if (!lowerTrimmed.startsWith("ai ") && !(messageReply && messageReply.attachments.length > 0)) return;
 
+  let question = trimmed.substring(3).trim();
   let imageUrl = null;
+
   if (messageReply && messageReply.attachments.length > 0) {
     const attachment = messageReply.attachments[0];
     if (attachment.type === "photo" && attachment.url) {
       imageUrl = attachment.url;
+      if (!question) question = "What's in this image?";
     }
   }
-  if (!endsWithTrigger && !imageUrl) return;
+
+  if (!question && !imageUrl) return;
 
   const now = Date.now();
   const cooldownTime = 10000;
@@ -72,7 +78,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     let result;
     if (imageUrl) {
       const params = new URLSearchParams({
-        q: trimmed || "What’s in this image?",
+        q: question,
         uid: UID,
         imageUrl: imageUrl,
         apikey: IMAGE_API_KEY
@@ -80,7 +86,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       const res = await axios.get(`${IMAGE_API}?${params.toString()}`, { timeout: 20000 });
       result = res?.data?.response || "⚠️ No response from image AI.";
     } else {
-      const res = await axios.get(`${TEXT_API}?ask=${encodeURIComponent(trimmed)}`, { timeout: 20000 });
+      const res = await axios.get(`${TEXT_API}?ask=${encodeURIComponent(question)}`, { timeout: 20000 });
       result = res?.data?.content || "⚠️ No response from text AI.";
     }
 
