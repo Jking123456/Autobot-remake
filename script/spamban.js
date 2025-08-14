@@ -1,31 +1,30 @@
 const moment = require("moment-timezone");
 
-const SPAM_LIMIT = 5; // Allowed number of spam attempts
-const TIME_WINDOW = 10; // Time window in seconds
-const BAN_DURATION = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+const COMMAND_LIMIT = 5; // Max uses before restriction
+const TIME_WINDOW = 10; // Seconds to count command usage
+const RESTRICTION_DURATION = 15 * 60 * 1000; // 15 minutes in ms
 
 module.exports.config = {
   name: "spamban",
-  version: "2.0.1",
+  version: "3.0.0",
   hasPermission: 0,
-  credits: "NTKhang (Fixed by Homer Rebatis",
-  description: `Automatically bans users who spam ${SPAM_LIMIT} times within ${TIME_WINDOW} seconds`,
+  credits: "NTKhang (Fixed by Homer Rebatis)",
+  description: `Temporarily restrict users from overusing commands. Usage limit: ${COMMAND_LIMIT} per ${TIME_WINDOW} seconds`,
   commandCategory: "System",
-  usages: "x",
+  usages: "spamban",
   cooldowns: 5
 };
 
-module.exports.run = async function ({ api, event }) {
+module.exports.run = async function({ api, event }) {
   return api.sendMessage(
-    `⚠️ Users who spam ${SPAM_LIMIT} times within ${TIME_WINDOW} seconds will be automatically banned for 1 day.`,
+    `⚠️ Users who use a command more than ${COMMAND_LIMIT} times within ${TIME_WINDOW} seconds will be temporarily restricted for ${RESTRICTION_DURATION / 60000} minutes.`,
     event.threadID,
     event.messageID
   );
 };
 
-module.exports.handleEvent = async function ({ Users, Threads, api, event }) {
+module.exports.handleEvent = async function({ Users, Threads, api, event }) {
   const { senderID, threadID, body } = event;
-
   if (!body) return;
 
   const threadSetting = global.data.threadData.get(threadID) || {};
@@ -33,76 +32,46 @@ module.exports.handleEvent = async function ({ Users, Threads, api, event }) {
 
   if (!body.startsWith(prefix)) return;
 
-  if (!global.client.autoban) global.client.autoban = {};
+  const commandName = body.slice(prefix.length).split(" ")[0];
 
-  const userData = await Users.getData(senderID) || {};
-  const userExtraData = userData.data || {};
+  if (!global.client.commandTracker) global.client.commandTracker = {};
 
-  // Check if user is banned and whether ban has expired
-  if (userExtraData.banned && userExtraData.banTime) {
+  if (!global.client.commandTracker[senderID]) global.client.commandTracker[senderID] = {};
+
+  const userCommands = global.client.commandTracker[senderID];
+
+  // Check if command is under restriction
+  if (userCommands[commandName] && userCommands[commandName].restricted) {
     const now = Date.now();
-    if (now - userExtraData.banTime >= BAN_DURATION) {
-      // Unban
-      userExtraData.banned = false;
-      userExtraData.reason = null;
-      userExtraData.banTime = null;
-      userExtraData.dateAdded = null;
-
-      await Users.setData(senderID, { data: userExtraData });
-      global.data.userBanned.delete(senderID);
-      return api.sendMessage(`✅ ${userData.name} has been unbanned automatically after 1 day.`, threadID);
+    if (now - userCommands[commandName].restrictedTime >= RESTRICTION_DURATION) {
+      // Lift restriction
+      userCommands[commandName] = { number: 0 };
     } else {
-      return api.sendMessage(`🚫 You are banned from using commands for spamming. Ban lifts automatically after 1 day.`, threadID);
+      const remaining = Math.ceil((RESTRICTION_DURATION - (now - userCommands[commandName].restrictedTime)) / 60000);
+      return api.sendMessage(`🚫 You are temporarily restricted from using '${commandName}' command. Try again in ${remaining} minute(s).`, threadID);
     }
   }
 
-  if (!global.client.autoban[senderID]) {
-    global.client.autoban[senderID] = {
-      timeStart: Date.now(),
-      number: 1
-    };
+  // Track command usage
+  if (!userCommands[commandName]) {
+    userCommands[commandName] = { number: 1, timeStart: Date.now() };
   } else {
-    const userSpam = global.client.autoban[senderID];
     const now = Date.now();
-
-    if (now - userSpam.timeStart <= TIME_WINDOW * 1000) {
-      userSpam.number += 1;
+    if (now - userCommands[commandName].timeStart <= TIME_WINDOW * 1000) {
+      userCommands[commandName].number += 1;
     } else {
-      userSpam.timeStart = now;
-      userSpam.number = 1;
+      userCommands[commandName].number = 1;
+      userCommands[commandName].timeStart = now;
     }
 
-    if (userSpam.number >= SPAM_LIMIT) {
-      const timeDate = moment.tz("Asia/Manila").format("DD/MM/YYYY HH:mm:ss");
-      const threadData = await Threads.getData(threadID);
-      const threadInfo = threadData?.threadInfo || {};
-      const threadName = threadInfo.threadName || "Unknown";
-
-      userExtraData.banned = true;
-      userExtraData.banTime = Date.now();
-      userExtraData.reason = `Spammed ${SPAM_LIMIT} commands in ${TIME_WINDOW} seconds`;
-      userExtraData.dateAdded = timeDate;
-
-      await Users.setData(senderID, { data: userExtraData });
-      global.data.userBanned.set(senderID, {
-        reason: userExtraData.reason,
-        dateAdded: userExtraData.dateAdded
-      });
-
-      global.client.autoban[senderID] = null;
-
-      api.sendMessage(
-        `🚫 User ${userData.name} has been automatically banned for 1 day.\nReason: ${userExtraData.reason}`,
+    // Restrict if usage exceeds limit
+    if (userCommands[commandName].number > COMMAND_LIMIT) {
+      userCommands[commandName].restricted = true;
+      userCommands[commandName].restrictedTime = Date.now();
+      return api.sendMessage(
+        `🚫 You have used the '${commandName}' command too many times. You are restricted from using it for ${RESTRICTION_DURATION / 60000} minutes.`,
         threadID
       );
-
-      const admins = global.config.ADMINBOT || [];
-      for (const adminID of admins) {
-        api.sendMessage(
-          `🚨 Auto-ban Report\n👤 Name: ${userData.name}\n🆔 User ID: ${senderID}\n🧵 Thread: ${threadName}\n🧵 Thread ID: ${threadID}\n📆 Time: ${timeDate}\n📌 Reason: ${userExtraData.reason}`,
-          adminID
-        );
-      }
     }
   }
 };
