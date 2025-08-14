@@ -5,10 +5,10 @@ const cooldowns = new Map(); // Cooldown map per senderID
 module.exports = {
   config: {
     name: "nglspam",
-    version: "1.0.0",
+    version: "1.1.0",
     author: "Homer Rebatis",
     description: "Send anonymous messages to an NGL user using an API",
-    cooldowns: 10,
+    cooldown: 5 * 60 * 1000, // 5 minutes cooldown per user
     dependencies: {
       axios: ""
     }
@@ -26,7 +26,7 @@ module.exports = {
         const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
         if (!isBotAdmin) {
           return api.sendMessage(
-            "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
+            "🚫 Locked! I need to be an admin to safely use this command in this group. Please promote me first.",
             threadID,
             messageID
           );
@@ -41,14 +41,14 @@ module.exports = {
       );
     }
 
-    // Cooldown check
+    // Long cooldown check (5 minutes)
     const now = Date.now();
-    const cooldownTime = 10 * 1000; // 1 minute
+    const cooldownTime = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     if (cooldowns.has(senderID)) {
       const expiration = cooldowns.get(senderID);
       if (now < expiration) {
-        const remaining = ((expiration - now) / 3000).toFixed(0);
+        const remaining = Math.ceil((expiration - now) / 1000);
         return api.sendMessage(
           `⏳ Please wait ${remaining} seconds before using the "nglspam" command again.`,
           threadID,
@@ -72,7 +72,11 @@ module.exports = {
     const message = args.slice(2).join(" ");
 
     if (isNaN(amount) || amount <= 0 || amount > 100) {
-      return api.sendMessage("❌ Invalid input. You can only send up to 100 messages.", threadID, messageID);
+      return api.sendMessage(
+        "❌ Invalid input. You can only send up to 100 messages.",
+        threadID,
+        messageID
+      );
     }
 
     try {
@@ -86,7 +90,11 @@ module.exports = {
       const data = response.data;
 
       if (!data.success) {
-        return api.sendMessage(`❌ Failed: ${data.message || "Unknown error occurred."}`, threadID, messageID);
+        return api.sendMessage(
+          `❌ Failed: ${data.message || "Unknown error occurred."}`,
+          threadID,
+          messageID
+        );
       }
 
       const successMsg = `
