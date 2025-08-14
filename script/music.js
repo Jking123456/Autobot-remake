@@ -7,14 +7,14 @@ const cooldowns = new Map(); // Store cooldowns per senderID
 
 module.exports.config = {
   name: "music",
-  version: "1.0.1",
+  version: "1.1.0",
   role: 0,
   hasPrefix: true,
   aliases: ['play'],
   usage: 'music [song name]',
   description: 'Search and download music from Spotify using API',
   credits: 'Homer Rebatis',
-  cooldown: 5
+  cooldown: 300 // 5 minutes default cooldown per user
 };
 
 module.exports.run = async function ({ api, event, args }) {
@@ -28,23 +28,35 @@ module.exports.run = async function ({ api, event, args }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.", event.threadID, event.messageID);
+        return api.sendMessage(
+          "🚫 Locked! I need to be an admin to safely use this command in this group. Please promote me first.",
+          event.threadID,
+          event.messageID
+        );
       }
     }
   } catch (err) {
     console.error("Admin check error:", err);
-    return api.sendMessage("⚠️ Failed to check group admin status. Try again later.", event.threadID, event.messageID);
+    return api.sendMessage(
+      "⚠️ Failed to check admin status. Try again later.",
+      event.threadID,
+      event.messageID
+    );
   }
 
-  // Cooldown check
+  // Long cooldown check (e.g., 5 minutes)
   const now = Date.now();
-  const cooldownTime = 10 * 1000; // 1 minute in milliseconds
+  const cooldownTime = 5 * 60 * 1000; // 5 minutes
 
   if (cooldowns.has(senderID)) {
     const expiration = cooldowns.get(senderID);
     if (now < expiration) {
       const remaining = ((expiration - now) / 1000).toFixed(0);
-      return api.sendMessage(`⏳ Please wait ${remaining} seconds before using the "music" command again.`, event.threadID, event.messageID);
+      return api.sendMessage(
+        `⏳ Please wait ${remaining} seconds before using "music" again.`,
+        event.threadID,
+        event.messageID
+      );
     }
   }
 
@@ -52,7 +64,11 @@ module.exports.run = async function ({ api, event, args }) {
 
   const query = args.join(' ');
   if (!query) {
-    return api.sendMessage(`❗ Please enter a song name.\nExample: music Shape of You`, event.threadID, event.messageID);
+    return api.sendMessage(
+      `❗ Please enter a song name.\nExample: music Shape of You`,
+      event.threadID,
+      event.messageID
+    );
   }
 
   try {
@@ -63,12 +79,15 @@ module.exports.run = async function ({ api, event, args }) {
     const data = res.data;
 
     if (!data || !data.download_url) {
-      return api.sendMessage("❌ Could not find the song or download link is missing.", event.threadID, event.messageID);
+      return api.sendMessage(
+        "❌ Could not find the song or download link is missing.",
+        event.threadID,
+        event.messageID
+      );
     }
 
     const title = data.title || "Unknown Title";
     const artist = data.artists || "Unknown Artist";
-    const thumbnail = data.thumbnail || null;
     const downloadUrl = data.download_url;
 
     const fileName = `${Date.now()}_music.mp3`;
@@ -81,7 +100,10 @@ module.exports.run = async function ({ api, event, args }) {
         const stats = fs.statSync(filePath);
         if (stats.size > 25 * 1024 * 1024) {
           fs.unlinkSync(filePath);
-          return api.sendMessage("⚠️ The file is larger than 25MB and cannot be sent.", event.threadID);
+          return api.sendMessage(
+            "⚠️ The file is larger than 25MB and cannot be sent.",
+            event.threadID
+          );
         }
 
         const msg = {
@@ -99,6 +121,6 @@ module.exports.run = async function ({ api, event, args }) {
 
   } catch (err) {
     console.error(err);
-    api.sendMessage("⚠️ An unexpected error occurred while processing your request.", event.threadID, event.messageID);
+    api.sendMessage("⚠️ An unexpected error occurred.", event.threadID, event.messageID);
   }
 };
