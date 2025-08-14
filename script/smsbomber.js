@@ -1,10 +1,13 @@
 const axios = require("axios");
 
+const cooldowns = new Map(); // Store cooldowns for senderID and threadID
+const COOLDOWN_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 module.exports = {
   config: {
     name: "smsbomber",
-    version: "1.0.6",
-    author: "vernex + updated by Homer Rebatis",
+    version: "1.0.7",
+    author: "vernex + updated by Homer Rebatis + cooldown by ChatGPT",
     description: "Send SMS to PH numbers only using Haji Mix API",
     cooldowns: 10,
     dependencies: {
@@ -13,14 +16,27 @@ module.exports = {
   },
 
   run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
+    const { threadID, messageID, senderID } = event;
+
+    // 🔒 Check cooldown for both senderID and threadID
+    const cooldownKeySender = `sender_${senderID}`;
+    const cooldownKeyThread = `thread_${threadID}`;
+    const now = Date.now();
+
+    if (cooldowns.has(cooldownKeySender) && now - cooldowns.get(cooldownKeySender) < COOLDOWN_TIME) {
+      const timeLeft = Math.ceil((COOLDOWN_TIME - (now - cooldowns.get(cooldownKeySender))) / 1000);
+      return api.sendMessage(`⏳ Please wait ${timeLeft} seconds before using this command again.`, threadID, messageID);
+    }
+
+    if (cooldowns.has(cooldownKeyThread) && now - cooldowns.get(cooldownKeyThread) < COOLDOWN_TIME) {
+      const timeLeft = Math.ceil((COOLDOWN_TIME - (now - cooldowns.get(cooldownKeyThread))) / 1000);
+      return api.sendMessage(`⏳ This group/thread is on cooldown. Please wait ${timeLeft} seconds.`, threadID, messageID);
+    }
 
     // ✅ Restriction: Only allow command if bot is admin in group
     try {
       const threadInfo = await api.getThreadInfo(threadID);
       const botID = api.getCurrentUserID();
-
-      // If group chat, check if bot is admin
       if (threadInfo.isGroup) {
         const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
         if (!isBotAdmin) {
@@ -97,6 +113,10 @@ ${serviceStats}
       } catch (err) {
         messages.push(`⚠️ Failed to connect to Haji Mix API: ${err.message}`);
       }
+
+      // ✅ Set cooldown after execution
+      cooldowns.set(cooldownKeySender, now);
+      cooldowns.set(cooldownKeyThread, now);
 
       return api.sendMessage(messages.join("\n\n"), threadID, messageID);
 
