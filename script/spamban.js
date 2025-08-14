@@ -1,15 +1,14 @@
 const moment = require("moment-timezone");
 
 const COMMAND_LIMIT = 5; // Max uses before restriction
-const TIME_WINDOW = 10; // Seconds to count command usage
 const RESTRICTION_DURATION = 15 * 60 * 1000; // 15 minutes in ms
 
 module.exports.config = {
   name: "spamban",
-  version: "3.0.0",
+  version: "3.1.0",
   hasPermission: 0,
-  credits: "NTKhang (Fixed by Homer Rebatis)",
-  description: `Temporarily restrict users from overusing commands. Usage limit: ${COMMAND_LIMIT} per ${TIME_WINDOW} seconds`,
+  credits: "NTKhang (Modified by Homer Rebatis)",
+  description: `Temporarily restrict users from overusing commands. Limit: ${COMMAND_LIMIT} times, restriction: ${RESTRICTION_DURATION / 60000} minutes`,
   commandCategory: "System",
   usages: "spamban",
   cooldowns: 5
@@ -17,7 +16,7 @@ module.exports.config = {
 
 module.exports.run = async function({ api, event }) {
   return api.sendMessage(
-    `⚠️ Users who use a command more than ${COMMAND_LIMIT} times within ${TIME_WINDOW} seconds will be temporarily restricted for ${RESTRICTION_DURATION / 60000} minutes.`,
+    `⚠️ Users who use a command more than ${COMMAND_LIMIT} times will be temporarily restricted for ${RESTRICTION_DURATION / 60000} minutes.`,
     event.threadID,
     event.messageID
   );
@@ -35,12 +34,11 @@ module.exports.handleEvent = async function({ Users, Threads, api, event }) {
   const commandName = body.slice(prefix.length).split(" ")[0];
 
   if (!global.client.commandTracker) global.client.commandTracker = {};
-
   if (!global.client.commandTracker[senderID]) global.client.commandTracker[senderID] = {};
 
   const userCommands = global.client.commandTracker[senderID];
 
-  // Check if command is under restriction
+  // If restricted
   if (userCommands[commandName] && userCommands[commandName].restricted) {
     const now = Date.now();
     if (now - userCommands[commandName].restrictedTime >= RESTRICTION_DURATION) {
@@ -52,24 +50,17 @@ module.exports.handleEvent = async function({ Users, Threads, api, event }) {
     }
   }
 
-  // Track command usage
+  // Track usage
   if (!userCommands[commandName]) {
-    userCommands[commandName] = { number: 1, timeStart: Date.now() };
+    userCommands[commandName] = { number: 1 };
   } else {
-    const now = Date.now();
-    if (now - userCommands[commandName].timeStart <= TIME_WINDOW * 1000) {
-      userCommands[commandName].number += 1;
-    } else {
-      userCommands[commandName].number = 1;
-      userCommands[commandName].timeStart = now;
-    }
+    userCommands[commandName].number += 1;
 
-    // Restrict if usage exceeds limit
-    if (userCommands[commandName].number > COMMAND_LIMIT) {
+    if (userCommands[commandName].number >= COMMAND_LIMIT) {
       userCommands[commandName].restricted = true;
       userCommands[commandName].restrictedTime = Date.now();
       return api.sendMessage(
-        `🚫 You have used the '${commandName}' command too many times. You are restricted from using it for ${RESTRICTION_DURATION / 60000} minutes.`,
+        `🚫 You have used the '${commandName}' command ${COMMAND_LIMIT} times. You are restricted from using it for ${RESTRICTION_DURATION / 60000} minutes.`,
         threadID
       );
     }
