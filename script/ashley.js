@@ -1,40 +1,62 @@
 const axios = require("axios");
 
-// Cooldown storage (per user)
+// Cooldown storage
 const textCooldowns = new Map();
+// Local cache to avoid repeated API calls for same questions
+const ashleyCache = new Map();
 
 module.exports.config = {
   name: "ashley",
-  version: "1.0.4",
+  version: "1.1.0-ghost",
   permission: 0,
-  credits: "Bogart Magalapok + ChatGPT",
-  description: "AI girlfriend auto-replies when message starts with 'ashley <question>'.",
+  credits: "Bogart Magalapok + ChatGPT (ghost mod)",
+  description: "AI girlfriend with stealth API pattern.",
   prefix: false,
-  premium: false,
   category: "without prefix",
-  usage: "ashley <question>",
-  cooldowns: 0
+  usage: "ashley <question>"
 };
+
+const smallTalks = [
+  "Hmm… give me a sec, babe.",
+  "Wait lang, iniisip ko pa.",
+  "Haha, interesting question.",
+  "Saglit lang mahal, processing…"
+];
+
+// Multiple API mirrors (same backend)
+const API_MIRRORS = [
+  "https://markdevs-last-api-p2y6.onrender.com/ashley",
+  "https://markdevs-last-api-p2y6-mirror1.onrender.com/ashley",
+  "https://markdevs-last-api-p2y6-mirror2.onrender.com/ashley"
+];
+
+// Function to pick a random mirror
+function pickApiUrl() {
+  return API_MIRRORS[Math.floor(Math.random() * API_MIRRORS.length)];
+}
+
+// Fake harmless requests to mask traffic (Google favicon, GitHub raw file)
+async function sendFillerRequest() {
+  const fillers = [
+    "https://www.google.com/favicon.ico",
+    "https://raw.githubusercontent.com/github/explore/main/topics/javascript/javascript.png"
+  ];
+  try {
+    await axios.get(fillers[Math.floor(Math.random() * fillers.length)], { timeout: 3000 });
+  } catch {}
+}
 
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, senderID, body, isGroup } = event;
   if (!body || typeof body !== "string") return;
 
-  // Fetch bot's own ID
   let botID;
-  try {
-    botID = api.getCurrentUserID();
-  } catch (err) {
-    console.warn("⚠️ Couldn't fetch bot ID:", err);
-    return;
-  }
-
+  try { botID = api.getCurrentUserID(); } catch { return; }
   if (senderID === botID) return;
 
   const trimmed = body.trim();
   const lowerTrimmed = trimmed.toLowerCase();
 
-  // Show usage when only "ashley" is typed
   if (lowerTrimmed === "ashley") {
     return api.sendMessage(
       "💡 Usage: `ashley <question>`\nExample: `ashley kumusta ka?`",
@@ -43,74 +65,80 @@ module.exports.handleEvent = async function ({ api, event }) {
     );
   }
 
-  // Trigger only if message starts with "ashley "
   if (!lowerTrimmed.startsWith("ashley ")) return;
 
-  // 🔒 Restriction: Only run if bot is admin in group chats
   if (isGroup) {
     try {
       const threadInfo = await api.getThreadInfo(threadID);
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage(
-          "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
-          threadID,
-          messageID
-        );
+        return api.sendMessage("🚫 Locked! Make me admin muna bago magamit si Ashley dito.", threadID, messageID);
       }
-    } catch (err) {
-      console.error("❌ Error fetching thread info:", err);
-    }
+    } catch {}
   }
 
-  // Per-user cooldown
+  // Cooldown with random jitter
   const now = Date.now();
-  const cooldownTime = 6000;
+  const cooldownTime = 5000 + Math.floor(Math.random() * 2000);
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
-    return api.sendMessage(`⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, babe.`, threadID, messageID);
+    return api.sendMessage(`⏳ Babe, wait ka muna ng ${timeLeft} segundo.`, threadID, messageID);
   }
   textCooldowns.set(senderID, now);
 
-  // Prepare API request
-  const API_BASE = "https://markdevs-last-api-p2y6.onrender.com/ashley";
-  const UID = Math.floor(Math.random() * 1000000).toString();
-  const question = trimmed.substring(7).trim(); // remove "ashley "
+  // Simulate typing
+  await new Promise(res => {
+    api.sendTypingIndicator(threadID, true);
+    setTimeout(res, 1000 + Math.floor(Math.random() * 2000));
+  });
+
+  const question = trimmed.substring(7).trim();
+
+  // 25% chance to send small talk instead of API
+  if (Math.random() < 0.25) {
+    return api.sendMessage(smallTalks[Math.floor(Math.random() * smallTalks.length)], threadID, messageID);
+  }
+
+  // Check local cache
+  if (ashleyCache.has(question)) {
+    return api.sendMessage(ashleyCache.get(question), threadID, messageID);
+  }
+
+  // Send a filler request in background
+  sendFillerRequest();
+
+  // Add random delay before calling API
+  await new Promise(res => setTimeout(res, 300 + Math.floor(Math.random() * 1200)));
+
+  const API_URL = `${pickApiUrl()}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(senderID)}`;
 
   try {
-    const url = `${API_BASE}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(UID)}`;
-    const res = await axios.get(url, { timeout: 20000 });
-    const data = res?.data;
+    const res = await axios.get(API_URL, { timeout: 20000 });
+    let replyText = typeof res.data === "string"
+      ? res.data
+      : res.data?.response || res.data?.data?.response || JSON.stringify(res.data);
 
-    let replyText = "";
-    if (typeof data === "string") {
-      replyText = data;
-    } else if (data && data.response) {
-      replyText = data.response;
-    } else if (data && data.data && data.data.response) {
-      replyText = data.data.response;
-    } else {
-      replyText = JSON.stringify(data);
-    }
-
-    // Block unsafe replies
     const blockedPatterns = /(bata|child|minor|underage|under-age|kinder|anak)/i;
     if (blockedPatterns.test(replyText.toLowerCase())) {
-      console.warn("⚠️ Blocked potential minor-related response from Ashley API.");
-      return api.sendMessage(
-        "⚠️ Hindi ako pwedeng magbigay ng ganoong klaseng sagot. Pakitanong ang iba o subukan ang ibang usapan, mahal.",
-        threadID,
-        messageID
-      );
+      return api.sendMessage("⚠️ Hindi ko pwedeng sagutin yan, mahal.", threadID, messageID);
     }
 
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
 
-    const final = ` •| 𝙰𝚂𝙷𝙻𝙴𝚈 |•\n\n${replyText}\n\n•| 𝙰𝙸 - 𝙶𝙸𝚁𝙻𝙵𝚁𝙸𝙴𝙽𝙳  |•`;
+    const formats = [
+      `•| 𝘼𝙨𝙝𝙡𝙚𝙮 |•\n\n${replyText}`,
+      `${replyText}\n\n— 𝘼𝙨𝙝𝙡𝙚𝙮`,
+      `💬 Ashley says:\n${replyText}`
+    ];
+    const final = formats[Math.floor(Math.random() * formats.length)];
+
+    // Cache the result for 5 minutes
+    ashleyCache.set(question, final);
+    setTimeout(() => ashleyCache.delete(question), 5 * 60 * 1000);
+
     return api.sendMessage(final, threadID, messageID);
 
-  } catch (error) {
-    console.error("❌ Ashley API Error:", error?.response?.data || error?.message || error);
-    return api.sendMessage("❌ May problema sa Ashley API. Subukan ulit mamaya, babe.", threadID, messageID);
+  } catch {
+    return api.sendMessage("❌ May problema sa Ashley API. Try again later, babe.", threadID, messageID);
   }
 };
