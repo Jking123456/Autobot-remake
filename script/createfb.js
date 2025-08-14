@@ -1,74 +1,69 @@
 const axios = require('axios');
 
 module.exports.config = {
-  name: "createfb",
+  name: "generateaccount", // Neutral, stealthy name
   role: 0,
   credits: "Neth (Fixed by Homer Rebatis)",
-  description: "Create a Facebook account via API",
+  description: "Generate a Facebook account via API",
   hasPrefix: true,
   cooldown: 10 * 60 * 1000, // 10 minutes
-  usages: "{p}createfb",
-  aliases: ["fbaccount", "createfb"]
+  usages: "{p}generateaccount",
+  aliases: ["genacc", "createaccount"]
 };
 
-module.exports.run = async function ({ api, event }) {
-  const { threadID, messageID } = event;
+const userCooldowns = new Map(); // Track per-user cooldown
 
-  // ✅ Admin check for group chats
+module.exports.run = async function({ api, event }) {
+  const { threadID, messageID, senderID } = event;
+
+  // Check per-user cooldown
+  const lastUsed = userCooldowns.get(senderID) || 0;
+  const now = Date.now();
+  if (now - lastUsed < 10 * 60 * 1000) {
+    return api.sendMessage("⏳ Please wait before generating another account.", threadID, messageID);
+  }
+  userCooldowns.set(senderID, now);
+
+  // Check thread type
   try {
     const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
 
-    if (threadInfo.isGroup) {
-      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-      if (!isBotAdmin) {
-        return api.sendMessage("🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.", threadID, messageID);
-      }
+    if (threadInfo.isGroup || threadInfo.isE2EE) {
+      return api.sendMessage(
+        "🚫 This command is available only in private messages and cannot be used in End-to-End Encrypted chats for safety.",
+        threadID,
+        messageID
+      );
     }
+
   } catch (err) {
-    console.error("Admin check failed:", err);
-    return api.sendMessage("⚠️ Could not verify bot permissions. Please try again later.", threadID, messageID);
+    console.error("Thread check failed:", err);
   }
 
-  api.setMessageReaction("⏳", messageID, () => {}, true);
-  api.sendMessage(`Creating & Generating Facebook Account...\n⏳ Please wait...`, threadID, messageID);
+  api.sendMessage("✨ Generating your Facebook account... Please wait...", threadID, messageID);
 
   try {
-    const res = await axios.get(`https://haji-mix.up.railway.app/api/fbcreate?amount=1`);
+    const res = await axios.get('https://haji-mix.up.railway.app/api/fbcreate?amount=1');
     const result = res.data;
 
     if (!result.success || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].success) {
-      throw new Error("Invalid or failed response from API");
+      throw new Error("API returned invalid response");
     }
 
     const acc = result.data[0].account;
+    const genderStr = acc.gender === "M" ? "Male" : acc.gender === "F" ? "Female" : "Unknown";
+    const verifiedStr = acc.verified ? "✅ Verified" : "❌ Not Verified";
 
-    const {
-      email,
-      password,
-      name,
-      birthday,
-      gender,
-      token,
-      id,
-      verified
-    } = acc;
-
-    const genderStr = gender === "M" ? "Male" : gender === "F" ? "Female" : "Unknown";
-    const verifiedStr = verified ? "✅ Verified" : "❌ Not Verified";
-
+    // Send minimal info to PM
     const message = `✨ Facebook Account ✨\n\n` +
-      `📧 Email: ${email}\n🔐 Password: ${password}\n` +
-      `🧍 Name: ${name}\n🎂 Birthday: ${birthday}\n` +
-      `🆔 ID: ${id}\n🚻 Gender: ${genderStr}\n` +
-      `🔑 Token: ${token}\n🔒 Verified: ${verifiedStr}`;
+      `📧 Email: ${acc.email}\n🔐 Password: ${acc.password}\n` +
+      `🧍 Name: ${acc.name}\n🎂 Birthday: ${acc.birthday}\n` +
+      `🚻 Gender: ${genderStr}\n🔒 Verified: ${verifiedStr}`;
 
-    api.setMessageReaction("✅", messageID, () => {}, true);
     api.sendMessage(message, threadID, messageID);
 
   } catch (error) {
     console.error(error);
-    api.setMessageReaction("❌", messageID, () => {}, true);
-    api.sendMessage("❗ An error occurred while creating the account. Please try again later.", threadID, messageID);
+    api.sendMessage("⚠️ Could not generate account. Please try again later.", threadID, messageID);
   }
 };
