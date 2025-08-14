@@ -58,7 +58,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   if (!question && !imageUrl) return;
 
   const now = Date.now();
-  const cooldownTime = 10000;
+  const cooldownTime = 120000;
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
     return api.sendMessage(`⏳ Please wait ${timeLeft}s before asking again.`, threadID, messageID);
