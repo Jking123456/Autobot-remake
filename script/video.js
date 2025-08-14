@@ -3,22 +3,42 @@ const axios = require("axios");
 const fs = require("fs");
 
 const cooldowns = new Map(); // Cooldown tracker
+const COOLDOWN_TIME = 5 * 60 * 60 * 1000; // 5 hours in ms
 
 module.exports.config = {
   name: "video",
-  version: "9",
-  credits: "Homer Rebatis", // API by Jonell & Churo
+  version: "9.1",
+  credits: "Homer Rebatis + Updated by ChatGPT", // API by Jonell & Churo
   description: "Search video from YouTube",
   commandCategory: "media",
   hasPermssion: 0,
   cooldowns: 9,
-  usages: "[video [search]",
+  usages: "[video [search]]",
   role: 0,
   hasPrefix: false,
 };
 
 module.exports.run = async function ({ api, args, event }) {
   const { threadID, messageID, senderID } = event;
+  const now = Date.now();
+
+  // ✅ Check 5-hour cooldown
+  if (cooldowns.has(senderID)) {
+    const lastUsed = cooldowns.get(senderID);
+    const timePassed = now - lastUsed;
+
+    if (timePassed < COOLDOWN_TIME) {
+      const remaining = COOLDOWN_TIME - timePassed;
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      return api.sendMessage(
+        `⏳ Please wait ${hours}h ${minutes}m before using "video" again.`,
+        threadID,
+        messageID
+      );
+    }
+  }
+  cooldowns.set(senderID, now);
 
   // ✅ Admin check for group
   try {
@@ -28,22 +48,12 @@ module.exports.run = async function ({ api, args, event }) {
     if (threadInfo.isGroup) {
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.", threadID, messageID);
+        return api.sendMessage("🚫 Locked! To use this, make the bot admin in this group.", threadID, messageID);
       }
     }
   } catch (err) {
     console.error("Admin check error:", err);
     return api.sendMessage("⚠️ Could not verify bot's admin status. Please try again later.", threadID, messageID);
-  }
-
-  // Cooldown check
-  const cooldownTime = 30 * 1000; // 1 minute in milliseconds
-  const now = Date.now();
-  const lastUsed = cooldowns.get(senderID);
-
-  if (lastUsed && now - lastUsed < cooldownTime) {
-    const timeLeft = Math.ceil((cooldownTime - (now - lastUsed)) / 1000);
-    return api.sendMessage(`⏳ Please wait ${timeLeft} seconds before using "video" again.`, threadID, messageID);
   }
 
   const searchQuery = args.join(" ");
@@ -52,8 +62,6 @@ module.exports.run = async function ({ api, args, event }) {
   }
 
   try {
-    cooldowns.set(senderID, now); // Set cooldown
-
     const ugh = await api.sendMessage(`⏱️ | Searching for '${searchQuery}' please wait...`, threadID);
     api.setMessageReaction("🕥", messageID, () => {}, true);
 
