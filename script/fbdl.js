@@ -15,6 +15,12 @@ module.exports.config = {
 
 module.exports.run = async function({ api, event, args }) {
   try {
+    // Check if chat is a private message
+    // In Messenger/FB, group thread IDs usually start with '-'
+    if (String(event.threadID).startsWith('-')) {
+      return api.sendMessage("🚫 This command is available only in private messages.", event.threadID);
+    }
+
     if (!args[0]) return api.sendMessage("Please provide a Facebook video URL.", event.threadID);
 
     // Send initial downloading message
@@ -31,7 +37,6 @@ module.exports.run = async function({ api, event, args }) {
       return api.sendMessage("❌ Failed to fetch video. Make sure the URL is correct.", event.threadID);
     }
 
-    // Download video using stream with progress
     const filePath = path.join(__dirname, `temp_video.mp4`);
     const writer = fs.createWriteStream(filePath);
 
@@ -48,7 +53,7 @@ module.exports.run = async function({ api, event, args }) {
     videoResponse.data.on('data', chunk => {
       downloaded += chunk.length;
       const percent = Math.floor((downloaded / totalLength) * 100);
-      if (percent - lastPercent >= 10) { // update every 10%
+      if (percent - lastPercent >= 10) {
         api.editMessage(`⏳ Downloading video: ${percent}%`, downloadingMsg.messageID);
         lastPercent = percent;
       }
@@ -57,23 +62,18 @@ module.exports.run = async function({ api, event, args }) {
     videoResponse.data.pipe(writer);
 
     writer.on('finish', async () => {
-      // Send the video in a separate message
       await api.sendMessage({
         body: `📹 Title: ${data.title}\n💡 Quality: ${data.quality}`,
         attachment: fs.createReadStream(filePath)
       }, event.threadID);
 
-      // Delete temp file
       fs.unlinkSync(filePath);
-
-      // Delete downloading message
       api.deleteMessage(downloadingMsg.messageID, event.threadID);
     });
 
     writer.on('error', (err) => {
       console.error(err);
       api.sendMessage("❌ Error downloading the video.", event.threadID);
-      // Delete downloading message on error
       api.deleteMessage(downloadingMsg.messageID, event.threadID);
     });
 
