@@ -19,7 +19,7 @@ module.exports.config = {
 module.exports.run = async function ({ api, event }) {
   const { threadID, messageID, senderID } = event;
   const now = Date.now();
-  const cooldownTime = 10 * 1000;
+  const cooldownTime = 200 * 1000;
 
   // Cooldown check
   if (cooldowns.has(senderID) && now < cooldowns.get(senderID)) {
