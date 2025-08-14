@@ -5,20 +5,30 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "malupiton",
-  version: "1.0.5",
+  version: "1.1.0",
   permission: 0,
   credits: "You + ChatGPT",
-  description: "Bossing AI reply when message starts with 'malupiton <question>'.",
+  description: "Bossing AI reply when message starts with 'malupiton <question>'. Safe for Meta detection.",
   prefix: false,
   premium: false,
   category: "without prefix",
   usage: "malupiton <question>",
-  cooldowns: 0
+  cooldowns: 6 // in seconds
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, messageID, senderID, body, isGroup } = event;
+  const { threadID, messageID, senderID, body, isGroup, isE2EE } = event;
+
   if (!body || typeof body !== "string") return;
+
+  // 🚫 Check for E2EE threads
+  if (isE2EE) {
+    return api.sendMessage(
+      "🚫 This command cannot work in End-to-End Encrypted chats.",
+      threadID,
+      messageID
+    );
+  }
 
   let botID;
   try {
@@ -52,7 +62,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
       if (!botIsAdmin) {
         return api.sendMessage(
-          "🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.",
+          "🚫 Locked! Make the bot admin to use this command in the group.",
           threadID,
           messageID
         );
@@ -73,7 +83,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   if (textCooldowns.has(senderID) && now - textCooldowns.get(senderID) < cooldownTime) {
     const timeLeft = Math.ceil((cooldownTime - (now - textCooldowns.get(senderID))) / 1000);
     return api.sendMessage(
-      `⏳ Hoy, maghintay ka ng ${timeLeft} segundo muna bago magpadala ulit, Bossing.`,
+      `⏳ Wait ${timeLeft} second(s) before sending another question.`,
       threadID,
       messageID
     );
@@ -90,13 +100,18 @@ module.exports.handleEvent = async function ({ api, event }) {
     const res = await axios.get(url, { timeout: 20000 });
     const data = res?.data;
 
+    // Extract response safely
     let replyText = "";
     if (typeof data === "string") replyText = data;
     else if (data.response) replyText = data.response;
     else if (data.data && data.data.response) replyText = data.data.response;
     else replyText = JSON.stringify(data);
 
+    // Limit output length
     if (replyText.length > 1900) replyText = replyText.slice(0, 1900) + "\n\n... (trimmed)";
+
+    // Placeholder for content filtering (optional)
+    // replyText = filterUnsafeContent(replyText);
 
     const final = ` •| 𝙼𝙰𝙻𝚄𝙿𝙸𝚃𝙾𝙽  |•\n\n${replyText}\n\n•| 𝙾𝚆𝙽𝙴𝚁 : 𝙰𝙽𝙾𝙽𝚈𝙼𝙾𝚄𝚂 𝙶𝚄𝚈 |•`;
 
@@ -104,7 +119,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   } catch (error) {
     console.error("❌ Malupiton API Error:", error?.response?.data || error?.message || error);
     return api.sendMessage(
-      "❌ May problema sa Bossing API. Subukan ulit mamaya, Bossing.",
+      "❌ There was a problem with the Bossing API. Try again later.",
       threadID,
       messageID
     );
