@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-// Global toggle
+// Global toggle (owner can still turn on/off for themselves)
 let commandEnabled = true;
 
 // Owner UID
@@ -8,9 +8,9 @@ const OWNER_UID = "100044848836284";
 
 module.exports.config = {
   name: "pornsearch",
-  version: "1.0.2",
+  version: "1.0.3",
   hasPermssion: 0,
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + Updated by ChatGPT",
   description: "Search random Pornhub video from a search term",
   commandCategory: "adult",
   usages: "[search term] | on/off",
@@ -20,11 +20,16 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID } = event;
 
+  // Restrict command to OWNER_UID only
+  if (senderID !== OWNER_UID) {
+    return api.sendMessage("🚫 This command is only available to the bot owner.", threadID, messageID);
+  }
+
   // Owner control: on/off toggle
-  if (args.length === 1 && ["on", "off"].includes(args[0].toLowerCase()) && senderID === OWNER_UID) {
+  if (args.length === 1 && ["on", "off"].includes(args[0].toLowerCase())) {
     commandEnabled = args[0].toLowerCase() === "on";
     return api.sendMessage(
-      `✅ Pornsearch command is now ${commandEnabled ? "ENABLED" : "DISABLED"} globally.`,
+      `✅ Pornsearch command is now ${commandEnabled ? "ENABLED" : "DISABLED"} for the owner.`,
       threadID,
       messageID
     );
