@@ -34,7 +34,7 @@ module.exports.run = async function({ api, event }) {
   }
 
   // ⏳ Cooldown logic
-  const cooldownTime = 10 * 1000; // 1 minute
+  const cooldownTime = 120 * 1000; // 1 minute
   const now = Date.now();
   const lastUsed = cooldowns.get(senderID);
 
