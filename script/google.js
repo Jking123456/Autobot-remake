@@ -1,18 +1,16 @@
-// google.js
-// Search via https://rapido.zetsu.xyz/api/google?q=
-// Author: Homer Rebatis
-// Credits: Pedro Pendoko
-
 const axios = require("axios");
+
+const userCooldowns = {}; // per-user cooldown
+const COOLDOWN_DURATION = 5 * 1000; // 5 seconds per user
 
 module.exports.config = {
   name: "google",
-  version: "1.0.3",
-  role: 0, // Everyone can use, but restricted by admin & E2EE checks
+  version: "1.1.0",
+  role: 0,
   hasPrefix: true,
   aliases: ["g", "search"],
-  description: "Search Google and return the top results.",
-  usage: "google <query>\n\nExamples:\n• google goat bot commands\n• g how to center a div",
+  description: "Search Google and return the top results (safe with cooldown).",
+  usage: "google <query>\nExamples:\n• google goat bot commands\n• g how to center a div",
   credits: "Homer Rebatis"
 };
 
@@ -20,23 +18,33 @@ module.exports.run = onStart;
 module.exports.onStart = onStart;
 
 async function onStart({ api, event, args }) {
-  const threadID = event.threadID;
-  const messageID = event.messageID;
+  const { threadID, messageID, senderID } = event;
 
-  // 🔒 E2EE detection
+  // ✅ Cooldown per user
+  if (userCooldowns[senderID]) {
+    const remaining = COOLDOWN_DURATION - (Date.now() - userCooldowns[senderID]);
+    if (remaining > 0) {
+      return api.sendMessage(
+        `⏳ Please wait ${(remaining / 1000).toFixed(1)} seconds before searching again.`,
+        threadID,
+        messageID
+      );
+    }
+  }
+
+  // E2EE detection
   try {
     const threadInfo = await api.getThreadInfo(threadID);
     if (!threadInfo.adminIDs || threadInfo.adminIDs.length === 0) {
       return api.sendMessage(
         "🔒 This conversation is in **End-to-End Encryption** mode.\n" +
-        "Messenger bots cannot work here.\n\n" +
-        "➡ Please switch to a normal (non-secret) chat to use this command.",
+        "Messenger bots cannot work here.\n➡ Please switch to a normal (non-secret) chat to use this command.",
         threadID,
         messageID
       );
     }
 
-    // 🔑 Bot admin restriction (only for groups)
+    // Bot admin restriction in groups
     if (threadInfo.isGroup) {
       const botID = api.getCurrentUserID();
       const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
@@ -50,8 +58,7 @@ async function onStart({ api, event, args }) {
     }
   } catch (err) {
     return api.sendMessage(
-      "⚠️ Unable to verify chat or admin status.\n" +
-      "Make sure the bot is admin and not in an encrypted conversation.",
+      "⚠️ Unable to verify chat or admin status.\nMake sure the bot is admin and not in an encrypted conversation.",
       threadID,
       messageID
     );
@@ -69,10 +76,10 @@ async function onStart({ api, event, args }) {
 
   let placeholder;
   try {
-    // Step 1: Send "typing..." placeholder message
+    // Placeholder message
     placeholder = await api.sendMessage("⌛ Searching Google...", threadID);
 
-    // Step 2: Call search API
+    // Call search API
     const url = "https://rapido.zetsu.xyz/api/google?q=" + encodeURIComponent(query);
     const { data } = await axios.get(url, { timeout: 20000 });
 
@@ -80,10 +87,9 @@ async function onStart({ api, event, args }) {
       return api.editMessage(`🔍 No results found for: “${query}”`, placeholder.messageID);
     }
 
-    // Step 3: Format top 8 results
+    // Format top 8 results
     const results = data.results.slice(0, 8);
-    const lines = [];
-    lines.push(`🔎 Google results for: “${query}”\n`);
+    const lines = [`🔎 Google results for: “${query}”\n`];
 
     for (let i = 0; i < results.length; i++) {
       const r = results[i] || {};
@@ -101,15 +107,17 @@ async function onStart({ api, event, args }) {
 
     lines.push("\n💡 Tip: Use quotes or site: to refine your search.\nExample:\n• google site:github.com goat bot facebook\n• google \"goat bot\" admin commands");
 
-    // Step 4: Edit placeholder with results
     api.editMessage(lines.join("\n"), placeholder.messageID);
+
+    // ✅ Set cooldown
+    userCooldowns[senderID] = Date.now();
 
   } catch (err) {
     api.editMessage(
       "❌ Error fetching results.\n" +
-        (err?.response?.status
-          ? `Status: ${err.response.status}`
-          : err?.code || err?.message || "Unknown error"),
+      (err?.response?.status
+        ? `Status: ${err.response.status}`
+        : err?.code || err?.message || "Unknown error"),
       placeholder?.messageID || messageID
     );
   }
