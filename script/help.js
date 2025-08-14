@@ -1,6 +1,6 @@
 module.exports.config = {
   name: 'help',
-  version: '1.0.1',
+  version: '1.1.0',
   role: 0,
   hasPrefix: true,
   aliases: ['info'],
@@ -11,11 +11,24 @@ module.exports.config = {
 
 module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
   const input = args.join(' ');
+
   try {
+    // Check if bot is admin in this group
+    const threadInfo = await api.getThreadInfo(event.threadID);
+    const botID = api.getCurrentUserID();
+    const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+
+    if (!botIsAdmin) {
+      return api.sendMessage(
+        "⚠️ I need to be an admin in this group to show all commands. This restriction is for anti-detection and anti-spamming purposes. Please promote me to admin first.",
+        event.threadID,
+        event.messageID
+      );
+    }
+
     const eventCommands = enableCommands[1].handleEvent;
     const commands = enableCommands[0].commands;
 
-    // Anti-spam and admin-lock notice
     const notice = `⚠️ NOTICE:
 This bot has an anti-spamming system. Abusing commands may result in temporary restrictions.
 🔒 Some commands are locked — to unlock them, make the bot an admin in this group.
@@ -77,16 +90,7 @@ This bot has an anti-spamming system. Abusing commands may result in temporary r
     } else {
       const command = [...Utils.handleEvent, ...Utils.commands].find(([key]) => key.includes(input?.toLowerCase()))?.[1];
       if (command) {
-        const {
-          name,
-          version,
-          role,
-          aliases = [],
-          description,
-          usage,
-          credits,
-          cooldown,
-        } = command;
+        const { name, version, role, aliases = [], description, usage, credits, cooldown } = command;
 
         const roleMessage = role !== undefined ? (
           role === 0 ? 'User' :
