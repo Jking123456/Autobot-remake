@@ -1,5 +1,8 @@
 const axios = require("axios");
 
+const cooldowns = new Map(); // Store cooldowns per senderID
+const ONE_DAY = 24 * 60 * 60 * 1000; // 1 day in ms
+
 module.exports.config = {
   name: "userinfo",
   version: "2.1",
@@ -8,15 +11,34 @@ module.exports.config = {
   aliases: ["spy", "whoishe", "whoisshe", "whoami", "stalk"],
   description: "View user profile and information",
   usage: "[reply/tag/uid]",
-  credits: "Homer Rebatis",
+  credits: "Homer Rebatis + Updated by ChatGPT",
   cooldowns: 5,
   commandCategory: "info"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   const { senderID, messageID, messageReply, mentions, threadID } = event;
+  const now = Date.now();
 
-  // ✅ Restrict command usage in group chats if bot is not admin
+  // Check 1-day cooldown
+  if (cooldowns.has(senderID)) {
+    const lastUsed = cooldowns.get(senderID);
+    const timePassed = now - lastUsed;
+
+    if (timePassed < ONE_DAY) {
+      const remaining = ONE_DAY - timePassed;
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      return api.sendMessage(
+        `⏳ You can use this command again in ${hours}h ${minutes}m.`,
+        threadID,
+        messageID
+      );
+    }
+  }
+  cooldowns.set(senderID, now);
+
+  // Restrict command usage in group chats if bot is not admin
   if (threadID != senderID) {
     try {
       const threadInfo = await api.getThreadInfo(threadID);
@@ -40,7 +62,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
   }
 
-  // ✅ Get UID from args or reply/tag
+  // Get UID from args or reply/tag
   let uid =
     args[0]?.match(/^\d+$/)?.[0] ||
     args[0]?.match(/profile\.php\?id=(\d+)/)?.[1] ||
@@ -69,7 +91,6 @@ module.exports.run = async function ({ api, event, args }) {
 
     const profileUrl = `https://facebook.com/${info.vanity || uid}`;
 
-    // ✅ Use custom profile picture API
     const avatarUrl = `https://kaiz-apis.gleeze.com/api/facebookpfp?uid=${uid}&apikey=12417c89-ac72-4c8e-a174-9ee378771b24`;
 
     const response = await axios({
