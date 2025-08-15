@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 // Cooldown & session storage
-const cooldowns = new Map();
+const cooldowns = new Map(); // key: `${threadID}_${senderID}`
 const sessions = new Map();
 
 // Typing messages
@@ -21,8 +21,28 @@ const userAgents = [
   "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
 ];
 
-// Human-like typing delay
-function randomTypingIndicator(api, threadID) {
+// ✅ Per-user cooldown check
+function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
+  const key = `${threadID}_${senderID}`;
+  const now = Date.now();
+  if (cooldowns.has(key) && now - cooldowns.get(key) < cooldownMs) {
+    return true;
+  }
+  cooldowns.set(key, now);
+  return false;
+}
+
+// ✅ Human-like typing
+function startTyping(api, threadID) {
+  api.sendTypingIndicator(threadID, true);
+}
+
+function stopTyping(api, threadID) {
+  api.sendTypingIndicator(threadID, false);
+}
+
+// Random thinking message
+function randomThinkingMessage(api, threadID) {
   const msg = typingMessages[Math.floor(Math.random() * typingMessages.length)];
   return new Promise(resolve => {
     api.sendMessage(msg, threadID, (err, info) => {
@@ -32,7 +52,7 @@ function randomTypingIndicator(api, threadID) {
   });
 }
 
-// Style switcher
+// Style switcher (fixed syntax)
 function formatWithStyle(text) {
   const styles = [
     () => `Here’s what I found:\n\n${text}`,
@@ -46,7 +66,7 @@ function formatWithStyle(text) {
 
 module.exports.config = {
   name: "ai",
-  version: "1.0.0",
+  version: "1.1.0",
   permission: 0,
   credits: "Your Name",
   description: "LLaMA AI chat with reply-only mode and image understanding",
@@ -70,16 +90,15 @@ module.exports.handleEvent = async function({ api, event }) {
 
   const session = sessions.get(threadID) || { lastBotMsgID: null };
 
-  // Cooldown check
-  const now = Date.now();
-  if (cooldowns.has(threadID) && now - cooldowns.get(threadID) < 5000) {
-    return api.sendMessage("⏳ Wait 5s before next question.", threadID, messageID);
+  // ✅ Cooldown per user
+  if (isOnCooldown(threadID, senderID)) {
+    return api.sendMessage("⏳ Please wait 5s before asking again.", threadID, messageID);
   }
 
   // Reset command
   if (lowerTrimmed === "reset") {
     sessions.delete(threadID);
-    return api.sendMessage("✅ Conversation reset. Type `ai <question>` to start again.", threadID, messageID);
+    return api.sendMessage("✅ Conversation reset. Type ai <question> to start again.", threadID, messageID);
   }
 
   // If in session → must reply to last bot message
@@ -90,10 +109,10 @@ module.exports.handleEvent = async function({ api, event }) {
     return;
   }
 
-  // Start new session: must use `ai` or reply to image with `ai`
+  // Start new session
   if (!lowerTrimmed.startsWith("ai ") && !repliedImage) return;
 
-  let question = trimmed.startsWith("ai ") ? trimmed.slice(4).trim() : "";
+  let question = trimmed.startsWith("ai ") ? trimmed.slice(3).trim() : "";
   let imageUrl = null;
 
   if (repliedImage) {
@@ -107,11 +126,13 @@ module.exports.handleEvent = async function({ api, event }) {
 };
 
 async function processQuestion(api, threadID, senderID, question, imageUrl, session) {
-  cooldowns.set(threadID, Date.now());
-  const tempMsgID = await randomTypingIndicator(api, threadID);
+  startTyping(api, threadID); // Show typing bubble
+  const tempMsgID = await randomThinkingMessage(api, threadID);
 
   try {
     let result;
+    const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+
     if (imageUrl) {
       const params = new URLSearchParams({
         q: question,
@@ -120,30 +141,33 @@ async function processQuestion(api, threadID, senderID, question, imageUrl, sess
         apikey: "25644cdb-f51e-43f1-894a-ec718918e649"
       });
       const res = await axios.get(`https://kaiz-apis.gleeze.com/api/gemini-vision?${params}`, {
-        headers: { "User-Agent": userAgents[Math.floor(Math.random() * userAgents.length)] },
+        headers: { "User-Agent": userAgent },
         timeout: 20000
       });
       result = res?.data?.response || "⚠️ No response from AI.";
     } else {
       const res = await axios.get(`https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(question)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`, {
-        headers: { "User-Agent": userAgents[Math.floor(Math.random() * userAgents.length)] },
+        headers: { "User-Agent": userAgent },
         timeout: 20000
       });
       result = res?.data?.response || "⚠️ No response from AI.";
     }
 
-    const styledOutput = formatWithStyle(result);
-    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";
+    const styledOutput = formatWithStyle(result);  
+    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";  
 
-    const brandedMessage =
-      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•`;
+    const brandedMessage =  
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•`;  
 
-    setTimeout(() => {
-      api.editMessage(brandedMessage, tempMsgID);
-      sessions.set(threadID, { lastBotMsgID: tempMsgID });
+    setTimeout(() => {  
+      api.editMessage(brandedMessage, tempMsgID);  
+      sessions.set(threadID, { lastBotMsgID: tempMsgID });  
     }, 5000);
+
   } catch (err) {
     api.editMessage("❌ Error processing your request.", tempMsgID);
+  } finally {
+    stopTyping(api, threadID); // Stop typing bubble
   }
 }
 
