@@ -2,49 +2,27 @@ const axios = require('axios');
 
 module.exports.config = {
   name: 'tempmail',
-  version: '1.0.5',
+  version: '1.0.4',
   role: 0,
   hasPrefix: false,
   aliases: ['tempmail'],
   description: 'Generate a temporary email or check inbox messages automatically.',
   usage: 'temp gen | temp inbox',
   credits: 'Developer',
-  cooldown: 300, // 5 minutes in seconds
+  cooldown: 3,
 };
 
 // Store tokens per user
 const userEmails = {};
-const cooldowns = new Map();
 
-module.exports.run = async function({ api, event, args, getThreadInfo }) {
+module.exports.run = async function({ api, event, args }) {
   const subCommand = args[0];
   const senderId = event.senderID;
-  const threadId = event.threadID;
-  const isGroup = event.isGroup;
-
-  // Check cooldown
-  const lastUsed = cooldowns.get(senderId) || 0;
-  const now = Date.now();
-  if (now - lastUsed < 5 * 60 * 1000) { // 5 minutes
-    return api.sendMessage(`⏳ Please wait ${Math.ceil((5*60*1000 - (now - lastUsed))/1000)} seconds before using this command again.`, threadId, event.messageID);
-  }
-
-  // Restriction for group chats
-  if (isGroup) {
-    const threadInfo = await getThreadInfo(threadId);
-    const botID = api.getCurrentUserID();
-    if (!threadInfo.adminIDs.some(admin => admin.id == botID)) {
-      return api.sendMessage('🚫Command Lock! to use this command, promote me as admin this group.', threadId, event.messageID);
-    }
-  }
-
-  cooldowns.set(senderId, now);
-
   const apiGen = 'https://haji-mix.up.railway.app/api/tempgen';
   const apiInbox = 'https://haji-mix.up.railway.app/api/tempinbox?token=';
 
   const waitingMsg = '⌛ Please wait...';
-  api.sendMessage(waitingMsg, threadId, async (err, info) => {
+  api.sendMessage(waitingMsg, event.threadID, async (err, info) => {
     if (err) return;
 
     try {
