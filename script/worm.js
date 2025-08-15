@@ -1,3 +1,5 @@
+const COMMAND_ENABLED = false; // 🔴 Change to true to enable the command
+
 const axios = require('axios');
 
 module.exports.config = {
@@ -13,9 +15,17 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event, args }) {
+    if (!COMMAND_ENABLED) {
+        return api.sendMessage(
+            "⚠️ This command is temporarily disabled. Please try again later.",
+            event.threadID,
+            event.messageID
+        );
+    }
+
     const command = args[0];
     const restArgs = args.slice(1);
-    
+
     if (!command) {
         return api.sendMessage("Please provide a command or question!", event.threadID, event.messageID);
     }
@@ -43,7 +53,7 @@ module.exports.run = async function ({ api, event, args }) {
 
         try {
             const response = await axios.get(apiUrl, { responseType: 'text' });
-            const answer = response.data; // Plain text from your API
+            const answer = response.data;
 
             api.sendMessage(
                 `•| WORM CHATGPT |•\n\n` +
