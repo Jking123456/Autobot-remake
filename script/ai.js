@@ -32,9 +32,12 @@ function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   return false;
 }
 
-// ✅ Human-like typing
-function startTyping(api, threadID) {
-  api.sendTypingIndicator(threadID, true);
+// ✅ Typing loop to keep Messenger bubble alive
+function startTypingLoop(api, threadID) {
+  const intervalID = setInterval(() => {
+    api.sendTypingIndicator(threadID, true);
+  }, 3000); // refresh typing every 3s
+  return intervalID;
 }
 
 function stopTyping(api, threadID) {
@@ -52,7 +55,7 @@ function randomThinkingMessage(api, threadID) {
   });
 }
 
-// Style switcher (fixed syntax)
+// Style switcher
 function formatWithStyle(text) {
   const styles = [
     () => `Here’s what I found:\n\n${text}`,
@@ -126,10 +129,17 @@ module.exports.handleEvent = async function({ api, event }) {
 };
 
 async function processQuestion(api, threadID, senderID, question, imageUrl, session) {
-  startTyping(api, threadID); // Show typing bubble
-  const tempMsgID = await randomThinkingMessage(api, threadID);
+  // Start continuous typing
+  const typingInterval = startTypingLoop(api, threadID);
 
   try {
+    // Random pre-delay before "Thinking..."
+    const preDelay = Math.floor(Math.random() * 3000) + 2000; // 2–5s
+    await new Promise(res => setTimeout(res, preDelay));
+
+    // Send random thinking message
+    const tempMsgID = await randomThinkingMessage(api, threadID);
+
     let result;
     const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
@@ -153,21 +163,24 @@ async function processQuestion(api, threadID, senderID, question, imageUrl, sess
       result = res?.data?.response || "⚠️ No response from AI.";
     }
 
-    const styledOutput = formatWithStyle(result);  
-    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";  
+    const styledOutput = formatWithStyle(result);
+    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";
+    const brandedMessage =
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•`;
 
-    const brandedMessage =  
-      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•`;  
-
-    setTimeout(() => {  
-      api.editMessage(brandedMessage, tempMsgID);  
-      sessions.set(threadID, { lastBotMsgID: tempMsgID });  
-    }, 5000);
+    // Random final delay before sending final answer
+    const finalDelay = Math.floor(Math.random() * 3000) + 3000; // 3–6s
+    setTimeout(() => {
+      api.editMessage(brandedMessage, tempMsgID);
+      sessions.set(threadID, { lastBotMsgID: tempMsgID });
+    }, finalDelay);
 
   } catch (err) {
-    api.editMessage("❌ Error processing your request.", tempMsgID);
+    api.sendMessage("❌ Error processing your request.", threadID);
   } finally {
-    stopTyping(api, threadID); // Stop typing bubble
+    // Stop typing bubble
+    clearInterval(typingInterval);
+    stopTyping(api, threadID);
   }
 }
 
