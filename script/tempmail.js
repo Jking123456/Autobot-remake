@@ -14,7 +14,7 @@ module.exports.run = async function({ api, event, args }) {
   const command = args[0]?.toLowerCase();
 
   if (!command) {
-    return api.sendMessage("❌ Invalid command. Use:\n- temp gen\n- temp inbox", event.threadID);
+    return api.sendMessage("❌ Invalid command. Use:\n- tempmail gen\n- tempmail inbox", event.threadID);
   }
 
   // Generate temporary email
