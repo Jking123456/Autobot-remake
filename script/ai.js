@@ -72,14 +72,14 @@ module.exports.handleEvent = async function({ api, event }) {
 
   // Cooldown check
   const now = Date.now();
-  if (cooldowns.has(threadID) && now - cooldowns.get(threadID) < 5000) {
-    return api.sendMessage("⏳ Wait 5s before next question.", threadID, messageID);
+  if (cooldowns.has(threadID) && now - cooldowns.get(threadID) < 120000) {
+    return api.sendMessage("⏳ Wait 1 minute before next question.", threadID, messageID);
   }
 
   // Reset command
   if (lowerTrimmed === "reset") {
     sessions.delete(threadID);
-    return api.sendMessage("✅ Conversation reset. Type `gpt <question>` to start again.", threadID, messageID);
+    return api.sendMessage("✅ Conversation reset. Type `ai <question>` to start again.", threadID, messageID);
   }
 
   // If in session → must reply to last bot message
@@ -90,7 +90,7 @@ module.exports.handleEvent = async function({ api, event }) {
     return;
   }
 
-  // Start new session: must use `gpt` or reply to image with `gpt`
+  // Start new session: must use `ai` or reply to image with `ai`
   if (!lowerTrimmed.startsWith("ai ") && !repliedImage) return;
 
   let question = trimmed.startsWith("ai ") ? trimmed.slice(4).trim() : "";
