@@ -86,7 +86,7 @@ module.exports.handleEvent = async function({ api, event }) {
   if (session.lastBotMsgID) {
     const isReply = messageReply && messageReply.messageID === session.lastBotMsgID;
     if (!isReply) return;
-    await processQuestion(api, threadID, trimmed, repliedImage ? messageReply.attachments[0].url : null, session);
+    await processQuestion(api, threadID, senderID, trimmed, repliedImage ? messageReply.attachments[0].url : null, session);
     return;
   }
 
@@ -103,10 +103,10 @@ module.exports.handleEvent = async function({ api, event }) {
 
   if (!question && !imageUrl) return;
 
-  await processQuestion(api, threadID, question, imageUrl, session);
+  await processQuestion(api, threadID, senderID, question, imageUrl, session);
 };
 
-async function processQuestion(api, threadID, question, imageUrl, session) {
+async function processQuestion(api, threadID, senderID, question, imageUrl, session) {
   cooldowns.set(threadID, Date.now());
   const tempMsgID = await randomTypingIndicator(api, threadID);
 
@@ -133,8 +133,13 @@ async function processQuestion(api, threadID, question, imageUrl, session) {
     }
 
     const styledOutput = formatWithStyle(result);
+    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";
+
+    const brandedMessage =
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•`;
+
     setTimeout(() => {
-      api.editMessage(styledOutput, tempMsgID);
+      api.editMessage(brandedMessage, tempMsgID);
       sessions.set(threadID, { lastBotMsgID: tempMsgID });
     }, 5000);
   } catch (err) {
