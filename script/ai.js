@@ -5,7 +5,7 @@ const textCooldowns = new Map();
 
 module.exports.config = {
   name: "ai",
-  version: "3.1.0",
+  version: "3.1.1",
   permission: 0,
   credits: "Homer Rebatis (Stealth + Style Switch + Humanizer API)",
   description: "Stealth AI reply with human-like typing, style switching, and humanizer API.",
@@ -118,7 +118,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   }
   textCooldowns.set(senderID, now);
 
-  const TEXT_API = "https://betadash-api-swordslush.vercel.app/gpt4";
+  const TEXT_API = "https://markdevs-last-api-p2y6.onrender.com/metav2";
   const IMAGE_API = "https://kaiz-apis.gleeze.com/api/gemini-vision";
   const IMAGE_API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
   const UID = Math.floor(Math.random() * 1000000).toString();
@@ -141,11 +141,21 @@ module.exports.handleEvent = async function ({ api, event }) {
       });
       result = res?.data?.response || "⚠️ No response from assistant.";
     } else {
-      const res = await axios.get(`${TEXT_API}?ask=${encodeURIComponent(question)}`, {
+      // New TEXT API request
+      const params = new URLSearchParams({
+        prompt: question,
+        uid: UID
+      });
+      const res = await axios.get(`${TEXT_API}?${params.toString()}`, {
         headers: { "User-Agent": randomUA },
         timeout: 20000
       });
-      result = res?.data?.content || "⚠️ No response from assistant.";
+
+      if (res?.data?.status) {
+        result = res.data.response || "⚠️ No response from assistant.";
+      } else {
+        result = "⚠️ AI failed to respond.";
+      }
     }
 
     // Pass AI result through humanizer API
