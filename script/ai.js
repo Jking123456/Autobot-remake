@@ -72,8 +72,8 @@ module.exports.handleEvent = async function({ api, event }) {
 
   // Cooldown check
   const now = Date.now();
-  if (cooldowns.has(threadID) && now - cooldowns.get(threadID) < 120000) {
-    return api.sendMessage("⏳ Wait 2 minutes before next question.", threadID, messageID);
+  if (cooldowns.has(threadID) && now - cooldowns.get(threadID) < 5000) {
+    return api.sendMessage("⏳ Wait 5s before next question.", threadID, messageID);
   }
 
   // Reset command
