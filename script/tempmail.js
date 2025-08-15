@@ -1,75 +1,82 @@
-const axios = require('axios');
+const axios = require("axios");
+
+let currentTempMail = null; // Store current temp email and token
 
 module.exports.config = {
-  name: 'tempmail',
-  version: '1.0.4',
-  role: 0,
-  hasPrefix: false,
-  aliases: ['tempmail'],
-  description: 'Generate a temporary email or check inbox messages automatically.',
-  usage: 'temp gen | temp inbox',
-  credits: 'Developer',
-  cooldown: 3,
+  name: "tempmail",
+  version: "1.1.0",
+  description: "Generate temporary emails and check inbox (admin only)",
+  cooldowns: 10,
+  permissions: 0
 };
 
-// Store tokens per user
-const userEmails = {};
+module.exports.run = async function({ api, event, args, Users }) {
+  const command = args[0]?.toLowerCase();
 
-module.exports.run = async function({ api, event, args }) {
-  const subCommand = args[0];
-  const senderId = event.senderID;
-  const apiGen = 'https://haji-mix.up.railway.app/api/tempgen';
-  const apiInbox = 'https://haji-mix.up.railway.app/api/tempinbox?token=';
+  // Check if the command is used in a group
+  if (event.isGroup) {
+    try {
+      const botInfo = await api.getUserInfo(event.selfID);
+      const groupAdmins = await api.getThreadInfo(event.threadID);
 
-  const waitingMsg = '⌛ Please wait...';
-  api.sendMessage(waitingMsg, event.threadID, async (err, info) => {
-    if (err) return;
+      const botIsAdmin = groupAdmins.adminIDs.some(admin => admin.id === event.selfID);
+
+      if (!botIsAdmin) {
+        return api.sendMessage(
+          "❌ I must be an admin in this group to use temp mail commands.",
+          event.threadID
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ Failed to check admin status.", event.threadID);
+    }
+  }
+
+  if (command === "gen") {
+    try {
+      const response = await axios.get("https://haji-mix.up.railway.app/api/tempgen");
+      const data = response.data;
+
+      currentTempMail = {
+        email: data.email,
+        token: data.token
+      };
+
+      return api.sendMessage(
+        `✅ Temporary Email Generated:\n\nEmail: ${data.email}\nToken: ${data.token}`,
+        event.threadID
+      );
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ Failed to generate temp email.", event.threadID);
+    }
+  } else if (command === "inbox") {
+    if (!currentTempMail) {
+      return api.sendMessage("❌ No temp email generated yet. Use 'temp gen' first.", event.threadID);
+    }
 
     try {
-      // Generate new email
-      if (subCommand === 'gen') {
-        const { data } = await axios.get(apiGen);
-        if (!data.email || !data.token) {
-          return api.editMessage('❌ Error: Could not generate email.', info.messageID);
-        }
+      const inboxResponse = await axios.get(
+        `https://haji-mix.up.railway.app/api/tempinbox?token=${currentTempMail.token}`
+      );
+      const messages = inboxResponse.data;
 
-        // Save the token for this user
-        userEmails[senderId] = {
-          email: data.email,
-          token: data.token
-        };
-
-        const message = `📩 Email: ${data.email}\n\n🔎 Check inbox anytime: temp inbox`;
-        return api.editMessage(message, info.messageID);
-
-      } 
-      // Check inbox automatically for the last generated email
-      else if (subCommand === 'inbox' || !subCommand) {
-        const userData = userEmails[senderId];
-        if (!userData) {
-          return api.editMessage('❌ No email found. Generate one first using "temp gen".', info.messageID);
-        }
-
-        const { data } = await axios.get(`${apiInbox}${encodeURIComponent(userData.token)}`);
-
-        if (!data.emails || data.emails.length === 0) {
-          return api.editMessage(`📭 No messages yet for your temporary email (${userData.email}).`, info.messageID);
-        }
-
-        let inboxText = `📬 Inbox for ${userData.email}:\n`;
-        data.emails.forEach(msg => {
-          inboxText += `\n📑 Title: ${msg.subject}\n✉️ Body: ${msg.body_text}\n----------------------------`;
-        });
-
-        return api.editMessage(inboxText, info.messageID);
-
-      } else {
-        return api.editMessage('Usage:\n• temp gen\n• temp inbox', info.messageID);
+      if (!messages || messages.length === 0) {
+        return api.sendMessage("📭 No message received yet.", event.threadID);
       }
 
-    } catch (error) {
-      console.error('Temp command error:', error.message);
-      return api.editMessage('❌ Error: Can’t connect to Tempmail API.', info.messageID);
+      let inboxText = "📬 Inbox Messages:\n\n";
+      messages.forEach((msg, index) => {
+        inboxText += `${index + 1}. From: ${msg.from}\n   Subject: ${msg.subject}\n   Body: ${msg.body}\n\n`;
+      });
+
+      return api.sendMessage(inboxText, event.threadID);
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ Failed to fetch inbox messages.", event.threadID);
     }
-  });
+  } else {
+    return api.sendMessage("❌ Invalid command. Use:\n- temp gen\n- temp inbox", event.threadID);
+  }
 };
