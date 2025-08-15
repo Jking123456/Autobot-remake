@@ -3,8 +3,8 @@ const axios = require("axios");
 let currentTempMail = null; // Store current temp email and token
 
 module.exports.config = {
-  name: "temp", // Users type 'temp gen' or 'temp inbox'
-  version: "1.3.0",
+  name: "tempmail", // Users type 'tempmail gen' or 'tempmail inbox'
+  version: "1.4.0",
   description: "Generate temporary emails and check inbox",
   cooldowns: 10,
   permissions: 0
@@ -13,8 +13,12 @@ module.exports.config = {
 module.exports.run = async function({ api, event, args }) {
   const command = args[0]?.toLowerCase();
 
-  if (!command) {
-    return api.sendMessage("❌ Invalid command. Use:\n- tempmail gen\n- tempmail inbox", event.threadID);
+  // If no command or typo, show usage
+  if (!command || (command !== "gen" && command !== "inbox")) {
+    return api.sendMessage(
+      "❌ Invalid command.\n\nUsage:\n- tempmail gen\n- tempmail inbox",
+      event.threadID
+    );
   }
 
   // Generate temporary email
@@ -41,7 +45,7 @@ module.exports.run = async function({ api, event, args }) {
   // Fetch inbox messages
   else if (command === "inbox") {
     if (!currentTempMail) {
-      return api.sendMessage("❌ No temp email generated yet. Use 'temp gen' first.", event.threadID);
+      return api.sendMessage("❌ No temp email generated yet. Use 'tempmail gen' first.", event.threadID);
     }
 
     try {
@@ -65,10 +69,5 @@ module.exports.run = async function({ api, event, args }) {
       console.error(err);
       return api.sendMessage("❌ Failed to fetch inbox messages.", event.threadID);
     }
-  } 
-
-  // Invalid command
-  else {
-    return api.sendMessage("❌ Invalid command. Use:\n- temp gen\n- temp inbox", event.threadID);
   }
 };
