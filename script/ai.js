@@ -32,16 +32,18 @@ function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   return false;
 }
 
-// ✅ Typing loop to keep Messenger bubble alive
-function startTypingLoop(api, threadID) {
-  const intervalID = setInterval(() => {
-    api.sendTypingIndicator(threadID, true);
-  }, 3000); // refresh typing every 3s
+// ✅ Typing loop using proper fbchat-api style
+function startTypingLoop(api, threadID, isGroup) {
+  const keepTyping = () => api.sendTypingIndicator(threadID, () => {}, isGroup);
+  keepTyping(); // start immediately
+  const intervalID = setInterval(keepTyping, 5000); // refresh every 5s
   return intervalID;
 }
 
-function stopTyping(api, threadID) {
-  api.sendTypingIndicator(threadID, false);
+function stopTypingLoop(api, threadID, intervalID, isGroup) {
+  clearInterval(intervalID);
+  const endTyping = api.sendTypingIndicator(threadID, () => {}, isGroup);
+  endTyping(); // stops the indicator
 }
 
 // Random thinking message
@@ -69,18 +71,18 @@ function formatWithStyle(text) {
 
 module.exports.config = {
   name: "ai",
-  version: "1.1.0",
+  version: "1.1.1",
   permission: 0,
   credits: "Your Name",
   description: "LLaMA AI chat with reply-only mode and image understanding",
   prefix: false,
   category: "without prefix",
-  usage: "gpt <question> or reply to an image with your question",
+  usage: "ai <question> or reply to an image with your question",
   cooldowns: 0
 };
 
 module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply } = event;
+  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
   if (!body && !(messageReply && messageReply.attachments.length > 0)) return;
 
   let botID;
@@ -108,7 +110,7 @@ module.exports.handleEvent = async function({ api, event }) {
   if (session.lastBotMsgID) {
     const isReply = messageReply && messageReply.messageID === session.lastBotMsgID;
     if (!isReply) return;
-    await processQuestion(api, threadID, senderID, trimmed, repliedImage ? messageReply.attachments[0].url : null, session);
+    await processQuestion(api, threadID, senderID, trimmed, repliedImage ? messageReply.attachments[0].url : null, session, isGroup);
     return;
   }
 
@@ -125,12 +127,12 @@ module.exports.handleEvent = async function({ api, event }) {
 
   if (!question && !imageUrl) return;
 
-  await processQuestion(api, threadID, senderID, question, imageUrl, session);
+  await processQuestion(api, threadID, senderID, question, imageUrl, session, isGroup);
 };
 
-async function processQuestion(api, threadID, senderID, question, imageUrl, session) {
+async function processQuestion(api, threadID, senderID, question, imageUrl, session, isGroup) {
   // Start continuous typing
-  const typingInterval = startTypingLoop(api, threadID);
+  const typingInterval = startTypingLoop(api, threadID, isGroup);
 
   try {
     // Random pre-delay before "Thinking..."
@@ -179,8 +181,7 @@ async function processQuestion(api, threadID, senderID, question, imageUrl, sess
     api.sendMessage("❌ Error processing your request.", threadID);
   } finally {
     // Stop typing bubble
-    clearInterval(typingInterval);
-    stopTyping(api, threadID);
+    stopTypingLoop(api, threadID, typingInterval, isGroup);
   }
 }
 
