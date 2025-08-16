@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "ai",
-  version: "2.1.0",
+  version: "2.0.0",
   hasPermssion: 0,
   credits: "Homer Rebatis",
   description: "AI Chatbot with reply system (anti-meta detection)",
@@ -14,7 +14,7 @@ module.exports.config = {
 
 let sessions = {}; // per-user session tracking
 
-// --- USER-AGENTS + HEADER RANDOMIZATION ---
+// --- USER-AGENTS + HEADERS RANDOMIZATION ---
 const userAgents = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
@@ -23,56 +23,24 @@ const userAgents = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; rv:126.0) Gecko/20100101 Firefox/126.0",
 ];
 
-const headerPresets = [
-  {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "Connection": "keep-alive",
-    "Referer": "https://www.google.com/",
-  },
-  {
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-GB,en;q=0.8",
-    "Connection": "keep-alive",
-    "Origin": "https://www.facebook.com",
-    "Referer": "https://m.facebook.com/",
-  },
-  {
-    "Accept": "*/*",
-    "Accept-Language": "en;q=0.5",
-    "Accept-Encoding": "gzip, deflate, br",
-    "DNT": "1",
-    "Upgrade-Insecure-Requests": "1",
-  },
+const extraHeaders = [
+  { "Accept-Language": "en-US,en;q=0.9" },
+  { "Cache-Control": "no-cache" },
+  { "Pragma": "no-cache" },
+  { "Accept-Encoding": "gzip, deflate, br" },
+  { "Connection": "keep-alive" },
 ];
-
-// Shuffle headers object order for randomness
-function shuffleObject(obj) {
-  const keys = Object.keys(obj).sort(() => Math.random() - 0.5);
-  const shuffled = {};
-  keys.forEach((k) => (shuffled[k] = obj[k]));
-  return shuffled;
-}
 
 function getAxiosConfig() {
   const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
-  const headerSet = headerPresets[Math.floor(Math.random() * headerPresets.length)];
+  const header = extraHeaders[Math.floor(Math.random() * extraHeaders.length)];
+
   return {
     headers: {
       "User-Agent": ua,
-      ...shuffleObject(headerSet),
+      ...header,
     },
-    timeout: 15000, // avoid hanging forever
   };
-}
-
-// --- Delay utility to simulate "human typing" ---
-function randomDelay(min = 1000, max = 4000) {
-  return new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min)
-  );
 }
 
 // --- MAIN FUNCTION ---
@@ -92,9 +60,9 @@ module.exports.run = async function ({ api, event, args }) {
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
+    // React with ⌛ to show "thinking"
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
-    await randomDelay(); // randomized delay before request
     const response = await axios.get(apiUrl, getAxiosConfig());
     const answer = response.data.response;
 
@@ -102,7 +70,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply without 'ai' to continue conversation)`,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚠/𝚘 '𝚊𝚒' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎 𝚌𝚘𝚗𝚟𝚎𝚛𝚜𝚊𝚝𝚒𝚘𝚗)`,
         event.threadID,
         (err, info) => {
           if (!err) {
@@ -113,15 +81,69 @@ module.exports.run = async function ({ api, event, args }) {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
+            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
         event.messageID
       );
-    }, 2000 + Math.random() * 2000); // variable delay in reply
+    }, 5000);
   } catch (error) {
-    console.error("AI API Error:", error.message);
-    api.sendMessage("❌ Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
+    console.error(error);
+    api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
+    api.setMessageReaction("❌", event.messageID, () => {}, true);
+  }
+};
+
+module.exports.handleEvent = async function ({ api, event }) {
+  const userId = event.senderID;
+  if (!sessions[userId]) return;
+  if (event.messageReply?.messageID !== sessions[userId].messageID) return;
+
+  const userMessage = event.body?.trim();
+  if (!userMessage) return;
+
+  if (userMessage.toLowerCase() === "reset") {
+    delete sessions[userId];
+    return api.sendMessage("✅ Session has been reset.", event.threadID, event.messageID);
+  }
+
+  const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
+    userMessage
+  )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
+
+  try {
+    // React ⌛ while waiting
+    api.setMessageReaction("⌛", event.messageID, () => {}, true);
+
+    const response = await axios.get(apiUrl, getAxiosConfig());
+    const answer = response.data.response;
+
+    if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
+
+    setTimeout(() => {
+      api.sendMessage(
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 "𝚛𝚎𝚜𝚎𝚝" 𝚝𝚘 𝚛𝚎𝚜𝚎𝚝 𝚜𝚎𝚜𝚜𝚒𝚘𝚗)`,
+        event.threadID,
+        (err, info) => {
+          if (!err) {
+            sessions[userId] = {
+              messageID: info.messageID,
+              threadID: event.threadID,
+              timeout: setTimeout(() => {
+                delete sessions[userId];
+              }, 15 * 60 * 1000),
+            };
+            // Change reaction to 🟢 when done
+            api.setMessageReaction("🟢", event.messageID, () => {}, true);
+          }
+        },
+        event.messageID
+      );
+    }, 5000);
+  } catch (error) {
+    console.error(error);
+    api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
 };
