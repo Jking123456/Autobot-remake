@@ -1,14 +1,13 @@
 const axios = require("axios");
 
-// Store sessions per user
 let sessions = {};
 
 module.exports.config = {
     name: "ai",
-    version: "2.2.0",
+    version: "2.5.0",
     hasPermssion: 0,
     credits: "Jay + Modified",
-    description: "AI with threaded replies, session reset & random delay",
+    description: "AI with threaded replies, session reset & random delay (LLaMA 3 API)",
     usePrefix: true,
     commandCategory: "AI",
     usages: "[question|block <fb user id>]",
@@ -19,6 +18,9 @@ module.exports.config = {
 function getRandomDelay() {
     return Math.floor(Math.random() * (7000 - 3000 + 1)) + 3000; 
 }
+
+const API_KEY = "25644cdb-f51e-43f1-894a-ec718918e649";
+const BASE_URL = "https://kaiz-apis.gleeze.com/api/llama3-turbo";
 
 module.exports.run = async function ({ api, event, args }) {
     const command = args[0];
@@ -47,7 +49,7 @@ module.exports.run = async function ({ api, event, args }) {
     // AI SESSION HANDLER
     const userId = event.senderID;
     const question = args.join(" ");
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(question)}&uid=${userId}&webSearch=off`;
+    const apiUrl = `${BASE_URL}?ask=${encodeURIComponent(question)}&uid=${userId}&apikey=${API_KEY}`;
 
     if (!question) {
         return api.sendMessage("You don't have a question!", event.threadID, event.messageID);
@@ -55,14 +57,16 @@ module.exports.run = async function ({ api, event, args }) {
 
     try {
         const response = await axios.get(apiUrl);
-        const answer = response.data.response;
 
-        // Clear old session if exists
-        if (sessions[userId]) {
-            clearTimeout(sessions[userId].timeout);
+        if (!response.data || !response.data.response) {
+            console.error("Invalid API response:", response.data);
+            return api.sendMessage("⚠️ API returned an unexpected response. Please try again later.", event.threadID, event.messageID);
         }
 
-        // Create new session
+        const answer = response.data.response;
+
+        if (sessions[userId]) clearTimeout(sessions[userId].timeout);
+
         sessions[userId] = {
             lastMessageID: null,
             timeout: setTimeout(() => {
@@ -70,23 +74,20 @@ module.exports.run = async function ({ api, event, args }) {
             }, 15 * 60 * 1000) // auto reset after 15 minutes
         };
 
-        // Random delay
         setTimeout(() => {
             api.sendMessage(
-                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${question}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n(Reply "reset" to reset session)`,
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply "reset" to reset session)`,
                 event.threadID,
                 (err, info) => {
-                    if (!err) {
-                        sessions[userId].lastMessageID = info.messageID;
-                    }
+                    if (!err) sessions[userId].lastMessageID = info.messageID;
                 },
                 event.messageID
             );
         }, getRandomDelay());
 
     } catch (error) {
-        console.error(error);
-        api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
+        console.error("API Request Failed:", error?.response?.data || error.message || error);
+        api.sendMessage("⚠️ UEP MAIN BOT cannot connect to the AI API right now.", event.threadID, event.messageID);
     }
 };
 
@@ -94,49 +95,48 @@ module.exports.run = async function ({ api, event, args }) {
 module.exports.handleReply = async function ({ api, event }) {
     const userId = event.senderID;
 
-    // Check if user has active session & reply is under bot’s message
     if (!sessions[userId] || sessions[userId].lastMessageID !== event.messageReply?.messageID) {
         return;
     }
 
     const userMessage = event.body.trim();
 
-    // RESET SESSION
     if (userMessage.toLowerCase() === "reset") {
         clearTimeout(sessions[userId].timeout);
         delete sessions[userId];
         return api.sendMessage("✅ Your AI session has been reset.", event.threadID, event.messageID);
     }
 
-    // Continue AI conversation
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(userMessage)}&uid=${userId}&webSearch=off`;
+    const apiUrl = `${BASE_URL}?ask=${encodeURIComponent(userMessage)}&uid=${userId}&apikey=${API_KEY}`;
 
     try {
         const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.response) {
+            console.error("Invalid API response:", response.data);
+            return api.sendMessage("⚠️ API returned an unexpected response. Please try again later.", event.threadID, event.messageID);
+        }
+
         const answer = response.data.response;
 
-        // Reset session timer
         clearTimeout(sessions[userId].timeout);
         sessions[userId].timeout = setTimeout(() => {
             delete sessions[userId];
         }, 15 * 60 * 1000);
 
-        // Random delay
         setTimeout(() => {
             api.sendMessage(
-                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${userMessage}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n(Reply "reset" to reset session)`,
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply "reset" to reset session)`,
                 event.threadID,
                 (err, info) => {
-                    if (!err) {
-                        sessions[userId].lastMessageID = info.messageID;
-                    }
+                    if (!err) sessions[userId].lastMessageID = info.messageID;
                 },
                 event.messageID
             );
         }, getRandomDelay());
 
     } catch (error) {
-        console.error(error);
-        api.sendMessage("⚠️ Error while processing AI response.", event.threadID, event.messageID);
+        console.error("API Request Failed:", error?.response?.data || error.message || error);
+        api.sendMessage("⚠️ UEP MAIN BOT cannot connect to the AI API right now.", event.threadID, event.messageID);
     }
 };
