@@ -1,152 +1,142 @@
 const axios = require("axios");
 
-// Cooldowns & sessions
-const cooldowns = new Map(); 
-const sessions = new Map();  
-
-// Thinking placeholders
-const thinkingMessages = [
-  "💭 Thinking...",
-  "⏳ Just a sec...",
-  "🤔 Processing...",
-  "💬 Typing...",
-  "📡 Connecting..."
-];
-
-// User agents
-const userAgents = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-  "Mozilla/5.0 (Linux; Android 10)",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
-];
-
-// Config
-const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-
-// Cooldown check
-function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
-  const key = `${threadID}_${senderID}`;
-  const now = Date.now();
-  if (cooldowns.has(key) && now - cooldowns.get(key) < cooldownMs) {
-    return true;
-  }
-  cooldowns.set(key, now);
-  return false;
-}
-
-// Send random "thinking..." under user’s message
-function randomThinking(api, threadID, replyToID) {
-  const msg = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
-  return new Promise(resolve => {
-    api.sendMessage({ body: msg, replyToMessageID: replyToID }, threadID, (err, info) => {
-      if (err) return;
-      resolve(info.messageID);
-    });
-  });
-}
+// Store sessions per user
+let sessions = {};
 
 module.exports.config = {
-  name: "ai",
-  version: "1.5.0",
-  permission: 0,
-  credits: "UEP Goat Bot (ChatGPT enhanced)",
-  description: "Messenger-style AI that replies under user’s message (with auto reset)",
-  prefix: false,
-  category: "without prefix",
-  usage: "ai <your message>",
-  cooldowns: 0
+    name: "ai",
+    version: "2.2.0",
+    hasPermssion: 0,
+    credits: "Jay + Modified",
+    description: "AI with threaded replies, session reset & random delay",
+    usePrefix: true,
+    commandCategory: "AI",
+    usages: "[question|block <fb user id>]",
+    cooldowns: 5
 };
 
-module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply } = event;
-  if (!body) return;
-
-  // Ignore self
-  let botID;
-  try { botID = api.getCurrentUserID(); } catch { return; }
-  if (senderID === botID) return;
-
-  const text = body.trim();
-  const lower = text.toLowerCase();
-
-  const sessionKey = `${threadID}_${senderID}`;
-  let session = sessions.get(sessionKey);
-
-  // Clean expired session
-  if (session && Date.now() - session.lastActive > SESSION_TIMEOUT) {
-    sessions.delete(sessionKey);
-    session = null;
-  }
-
-  // Cooldown
-  if (isOnCooldown(threadID, senderID)) {
-    return api.sendMessage({ body: "⏳ Please wait 5s before asking again.", replyToMessageID: messageID }, threadID);
-  }
-
-  // Reset
-  if (lower === "reset") {
-    sessions.delete(sessionKey);
-    return api.sendMessage({ body: "✅ Conversation reset. Type ai <message> to start again.", replyToMessageID: messageID }, threadID);
-  }
-
-  // If user is replying to bot → continue convo under their *original* message
-  if (session && messageReply && messageReply.messageID === session.lastBotMsgID) {
-    return processAI(api, threadID, senderID, text, sessionKey, session.originalUserMsgID);
-  }
-
-  // Start only if user types "ai ..."
-  if (!lower.startsWith("ai ")) return;
-  const question = text.slice(3).trim();
-  if (!question) return;
-
-  // Save this user’s original message ID
-  return processAI(api, threadID, senderID, question, sessionKey, messageID, true);
-};
-
-async function processAI(api, threadID, senderID, prompt, sessionKey, replyMsgID, isNew = false) {
-  try {
-    // Show thinking...
-    const thinkingMsgID = await randomThinking(api, threadID, replyMsgID);
-    const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
-
-    // Call API
-    const res = await axios.get(
-      `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(prompt)}&uid=${senderID}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`,
-      { headers: { "User-Agent": userAgent }, timeout: 20000 }
-    );
-
-    const answer = res?.data?.response || "⚠️ No response from AI.";
-    const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";
-
-    const branded =
-`🤖 **UEP MAIN BOT**
-━━━━━━━━━━━━━━━
-${answer}
-━━━━━━━━━━━━━━━
-ask by : **${userName}**
-🔄 Reply "reset" anytime to reset conversation.
-💡 Reply to this message to continue.`;
-
-    // Send final reply under the *user’s original message*
-    api.sendMessage({ body: branded, replyToMessageID: replyMsgID }, threadID, (err, info) => {
-      if (!err) {
-        sessions.set(sessionKey, { 
-          lastBotMsgID: info.messageID,
-          originalUserMsgID: isNew ? replyMsgID : sessions.get(sessionKey)?.originalUserMsgID || replyMsgID,
-          lastActive: Date.now()
-        });
-      }
-    });
-
-    // Delete "thinking..." if possible
-    if (typeof api.unsendMessage === "function") {
-      api.unsendMessage(thinkingMsgID);
-    }
-  } catch (e) {
-    console.error("AI Error:", e);
-    api.sendMessage({ body: "❌ Error getting response from AI.", replyToMessageID: replyMsgID }, threadID);
-  }
+// Helper function: random delay between 3s–7s
+function getRandomDelay() {
+    return Math.floor(Math.random() * (7000 - 3000 + 1)) + 3000; 
 }
 
-module.exports.run = () => {};
+module.exports.run = async function ({ api, event, args }) {
+    const command = args[0];
+    const restArgs = args.slice(1);
+
+    if (!command) {
+        return api.sendMessage("Please provide a command or question!", event.threadID, event.messageID);
+    }
+
+    // BLOCK COMMAND
+    if (command.toLowerCase() === "block") {
+        const userId = restArgs[0];
+        if (!userId) {
+            return api.sendMessage("Please provide a Facebook user ID to block!", event.threadID, event.messageID);
+        }
+
+        try {
+            await api.blockUser(userId);
+            return api.sendMessage(`User with ID ${userId} has been blocked.`, event.threadID, event.messageID);
+        } catch (error) {
+            console.error(error);
+            return api.sendMessage("Failed to block the user. Please try again.", event.threadID, event.messageID);
+        }
+    }
+
+    // AI SESSION HANDLER
+    const userId = event.senderID;
+    const question = args.join(" ");
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(question)}&uid=${userId}&webSearch=off`;
+
+    if (!question) {
+        return api.sendMessage("You don't have a question!", event.threadID, event.messageID);
+    }
+
+    try {
+        const response = await axios.get(apiUrl);
+        const answer = response.data.response;
+
+        // Clear old session if exists
+        if (sessions[userId]) {
+            clearTimeout(sessions[userId].timeout);
+        }
+
+        // Create new session
+        sessions[userId] = {
+            lastMessageID: null,
+            timeout: setTimeout(() => {
+                delete sessions[userId];
+            }, 15 * 60 * 1000) // auto reset after 15 minutes
+        };
+
+        // Random delay
+        setTimeout(() => {
+            api.sendMessage(
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${question}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n(Reply "reset" to reset session)`,
+                event.threadID,
+                (err, info) => {
+                    if (!err) {
+                        sessions[userId].lastMessageID = info.messageID;
+                    }
+                },
+                event.messageID
+            );
+        }, getRandomDelay());
+
+    } catch (error) {
+        console.error(error);
+        api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
+    }
+};
+
+// HANDLE REPLIES
+module.exports.handleReply = async function ({ api, event }) {
+    const userId = event.senderID;
+
+    // Check if user has active session & reply is under bot’s message
+    if (!sessions[userId] || sessions[userId].lastMessageID !== event.messageReply?.messageID) {
+        return;
+    }
+
+    const userMessage = event.body.trim();
+
+    // RESET SESSION
+    if (userMessage.toLowerCase() === "reset") {
+        clearTimeout(sessions[userId].timeout);
+        delete sessions[userId];
+        return api.sendMessage("✅ Your AI session has been reset.", event.threadID, event.messageID);
+    }
+
+    // Continue AI conversation
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o?ask=${encodeURIComponent(userMessage)}&uid=${userId}&webSearch=off`;
+
+    try {
+        const response = await axios.get(apiUrl);
+        const answer = response.data.response;
+
+        // Reset session timer
+        clearTimeout(sessions[userId].timeout);
+        sessions[userId].timeout = setTimeout(() => {
+            delete sessions[userId];
+        }, 15 * 60 * 1000);
+
+        // Random delay
+        setTimeout(() => {
+            api.sendMessage(
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n𝗤𝘂𝗲𝘀𝘁𝗶𝗼𝗻 : ${userMessage}\n\n𝗔𝗻𝘀𝘄𝗲𝗿 : ${answer}\n\n(Reply "reset" to reset session)`,
+                event.threadID,
+                (err, info) => {
+                    if (!err) {
+                        sessions[userId].lastMessageID = info.messageID;
+                    }
+                },
+                event.messageID
+            );
+        }, getRandomDelay());
+
+    } catch (error) {
+        console.error(error);
+        api.sendMessage("⚠️ Error while processing AI response.", event.threadID, event.messageID);
+    }
+};
