@@ -32,11 +32,11 @@ function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   return false;
 }
 
-// Send random "thinking..." message
-function randomThinking(api, threadID, messageID) {
+// Send random "thinking..." reply under user’s message
+function randomThinking(api, threadID, replyToID) {
   const msg = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
   return new Promise(resolve => {
-    api.sendMessage(msg, threadID, (err, info) => {
+    api.sendMessage({ body: msg, replyTo: replyToID }, threadID, (err, info) => {
       if (err) return;
       resolve(info.messageID);
     });
@@ -45,10 +45,10 @@ function randomThinking(api, threadID, messageID) {
 
 module.exports.config = {
   name: "ai",
-  version: "1.2.0",
+  version: "1.2.1",
   permission: 0,
-  credits: "UEP Goat Bot",
-  description: "UEP Main Bot AI (Messenger-style)",
+  credits: "UEP Goat Bot (fixed by ChatGPT)",
+  description: "UEP Main Bot AI (Messenger-style conversational)",
   prefix: false,
   category: "without prefix",
   usage: "ai <your message>",
@@ -72,13 +72,13 @@ module.exports.handleEvent = async function({ api, event }) {
 
   // Cooldown
   if (isOnCooldown(threadID, senderID)) {
-    return api.sendMessage("⏳ Please wait 5s before asking again.", threadID, messageID);
+    return api.sendMessage({ body: "⏳ Please wait 5s before asking again.", replyTo: messageID }, threadID);
   }
 
   // Reset
   if (lower === "reset") {
     sessions.delete(sessionKey);
-    return api.sendMessage("✅ Conversation reset. Type ai <message> to start again.", threadID, messageID);
+    return api.sendMessage({ body: "✅ Conversation reset. Type ai <message> to start again.", replyTo: messageID }, threadID);
   }
 
   // If replying to bot’s last message → continue conversation
@@ -121,13 +121,13 @@ ask by : **${userName}**
 🔄 Reply "reset" anytime to reset conversation.
 💡 Reply to this message to continue.`;
 
-    // Edit placeholder → final bot reply
+    // Edit placeholder → final bot reply (under user message)
     api.editMessage(branded, thinkingMsgID, () => {
       sessions.set(sessionKey, { lastBotMsgID: thinkingMsgID });
     });
   } catch (e) {
     console.error("AI Error:", e);
-    api.sendMessage("❌ Error getting response from AI.", threadID, replyMsgID);
+    api.sendMessage({ body: "❌ Error getting response from AI.", replyTo: replyMsgID }, threadID);
   }
 }
 
