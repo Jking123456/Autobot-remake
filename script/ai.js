@@ -31,16 +31,51 @@ const extraHeaders = [
   { "Connection": "keep-alive" },
 ];
 
+// --- PROXY LIST (trimmed for brevity, add all your proxies here) ---
+const proxies = [
+  "212.16.77.50:3128",
+  "27.79.223.199:16000",
+  "27.71.139.254:16000",
+  "159.203.61.169:3128",
+  "198.199.86.11:8080",
+  "128.199.202.122:8080",
+  "138.68.60.8:80",
+  "173.209.63.67:8226",
+  "85.119.120.55:8080",
+  "47.74.157.194:80",
+  // ... continue with the rest of your proxy list ...
+  "185.216.105.10:6587",
+];
+
+// --- GET RANDOM CONFIG WITH PROXY ---
 function getAxiosConfig() {
   const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
   const header = extraHeaders[Math.floor(Math.random() * extraHeaders.length)];
+  const proxyString = proxies[Math.floor(Math.random() * proxies.length)];
+  let [host, port] = proxyString.split(":");
 
   return {
     headers: {
       "User-Agent": ua,
       ...header,
     },
+    proxy: {
+      host,
+      port: parseInt(port, 10),
+    },
+    timeout: 15000, // prevent hanging forever
   };
+}
+
+// --- AXIOS REQUEST WITH RETRIES ---
+async function fetchWithRetries(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await axios.get(url, getAxiosConfig());
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+    }
+  }
 }
 
 // --- MAIN FUNCTION ---
@@ -60,10 +95,9 @@ module.exports.run = async function ({ api, event, args }) {
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
-    // React with ⌛ to show "thinking"
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
-    const response = await axios.get(apiUrl, getAxiosConfig());
+    const response = await fetchWithRetries(apiUrl);
     const answer = response.data.response;
 
     if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
@@ -81,7 +115,6 @@ module.exports.run = async function ({ api, event, args }) {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
-            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
@@ -113,10 +146,9 @@ module.exports.handleEvent = async function ({ api, event }) {
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
-    // React ⌛ while waiting
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
-    const response = await axios.get(apiUrl, getAxiosConfig());
+    const response = await fetchWithRetries(apiUrl);
     const answer = response.data.response;
 
     if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
@@ -134,7 +166,6 @@ module.exports.handleEvent = async function ({ api, event }) {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
-            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
