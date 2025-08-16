@@ -1,11 +1,11 @@
 const axios = require("axios");
 
-// Cooldown & session storage
-const cooldowns = new Map(); // key: `${threadID}_${senderID}`
-const sessions = new Map();  // key: `${threadID}_${senderID}`
+// Cooldowns & sessions
+const cooldowns = new Map(); 
+const sessions = new Map();  
 
-// Typing messages
-const typingMessages = [
+// Thinking placeholders
+const thinkingMessages = [
   "💭 Thinking...",
   "⏳ Just a sec...",
   "🤔 Processing...",
@@ -13,7 +13,7 @@ const typingMessages = [
   "📡 Connecting..."
 ];
 
-// Rotate user agents
+// User agents
 const userAgents = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
@@ -21,7 +21,7 @@ const userAgents = [
   "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
 ];
 
-// ✅ Per-user cooldown check
+// Cooldown check
 function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   const key = `${threadID}_${senderID}`;
   const now = Date.now();
@@ -32,23 +32,9 @@ function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   return false;
 }
 
-// ✅ Typing loop
-function startTypingLoop(api, threadID, isGroup) {
-  const keepTyping = () => api.sendTypingIndicator(threadID, () => {}, isGroup);
-  keepTyping();
-  const intervalID = setInterval(keepTyping, 5000);
-  return intervalID;
-}
-
-function stopTypingLoop(api, threadID, intervalID, isGroup) {
-  clearInterval(intervalID);
-  const endTyping = api.sendTypingIndicator(threadID, () => {}, isGroup);
-  endTyping();
-}
-
-// Random thinking message
-function randomThinkingMessage(api, threadID) {
-  const msg = typingMessages[Math.floor(Math.random() * typingMessages.length)];
+// Send random "thinking..." message
+function randomThinking(api, threadID, messageID) {
+  const msg = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
   return new Promise(resolve => {
     api.sendMessage(msg, threadID, (err, info) => {
       if (err) return;
@@ -57,162 +43,91 @@ function randomThinkingMessage(api, threadID) {
   });
 }
 
-// Style switcher
-function formatWithStyle(text) {
-  const styles = [
-    () => `Here’s what I found:\n\n${text}`,
-    () => `Oh hey! So basically, ${text.toLowerCase()}`,
-    () => `✨ ${text} ✨`,
-    () => `📌 Quick breakdown:\n- ${text.replace(/\. /g, "\n- ")}`,
-    () => `${text.split(".")[0]}.`
-  ];
-  return styles[Math.floor(Math.random() * styles.length)]();
-}
-
 module.exports.config = {
   name: "ai",
-  version: "1.3.0",
+  version: "1.2.0",
   permission: 0,
-  credits: "Your Name (patched with bot-to-bot fix)",
-  description: "LLaMA AI chat with reply-only mode and image understanding",
+  credits: "UEP Goat Bot",
+  description: "UEP Main Bot AI (Messenger-style)",
   prefix: false,
   category: "without prefix",
-  usage: "ai <question> or reply to an image with your question",
+  usage: "ai <your message>",
   cooldowns: 0
 };
 
 module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
-  if (!body && !(messageReply && messageReply.attachments.length > 0)) return;
+  const { threadID, messageID, senderID, body, messageReply } = event;
+  if (!body) return;
 
-  // ✅ Ignore self
+  // Ignore self
   let botID;
   try { botID = api.getCurrentUserID(); } catch { return; }
   if (senderID === botID) return;
 
-  // ✅ Ignore known bot accounts
-  const ignoredBots = ["100084522156424", "61578917862800"]; // add other bot IDs here
-  if (ignoredBots.includes(senderID)) {
-    console.log("⚠️ Ignored bot reply (known bot ID)");
-    return;
-  }
+  const text = body.trim();
+  const lower = text.toLowerCase();
 
-  // ✅ Optional: ignore accounts with "bot" in their name
-  try {
-    const userInfo = await api.getUserInfo(senderID);
-    const senderName = userInfo[senderID]?.name || "";
-    if (senderName.toLowerCase().includes("bot")) {
-      console.log("⚠️ Ignored bot reply (name contains 'bot')");
-      return;
-    }
-  } catch (e) {}
-
-  const trimmed = (body || "").trim();
-  const lowerTrimmed = trimmed.toLowerCase();
-  const repliedImage = messageReply && messageReply.attachments.length > 0 && messageReply.attachments[0].type === "photo";
-
-  // ✅ Per-user session
   const sessionKey = `${threadID}_${senderID}`;
   const session = sessions.get(sessionKey) || { lastBotMsgID: null };
 
-  // ✅ Cooldown check
+  // Cooldown
   if (isOnCooldown(threadID, senderID)) {
     return api.sendMessage("⏳ Please wait 5s before asking again.", threadID, messageID);
   }
 
-  // Reset command
-  if (lowerTrimmed === "reset") {
+  // Reset
+  if (lower === "reset") {
     sessions.delete(sessionKey);
-    return api.sendMessage("✅ Conversation reset. Type ai <question> to start again.", threadID, messageID);
+    return api.sendMessage("✅ Conversation reset. Type ai <message> to start again.", threadID, messageID);
   }
 
-  // ✅ Only reply if same user continues the bot's thread
+  // If replying to bot’s last message → continue conversation
   if (session.lastBotMsgID) {
     const isReply = messageReply && messageReply.messageID === session.lastBotMsgID;
     const isSameUser = messageReply && messageReply.senderID === senderID;
-    if (!isReply || !isSameUser) return; // ignore unrelated or bot replies
-
-    await processQuestion(
-      api,
-      threadID,
-      senderID,
-      trimmed,
-      repliedImage ? messageReply.attachments[0].url : null,
-      session,
-      isGroup
-    );
-    return;
+    if (isReply && isSameUser) {
+      return processAI(api, threadID, senderID, text, sessionKey, messageID);
+    }
   }
 
-  // ✅ Start new session (only with prefix or image)
-  if (!lowerTrimmed.startsWith("ai ") && !repliedImage) return;
+  // Start only if user types "ai ..."
+  if (!lower.startsWith("ai ")) return;
+  const question = text.slice(3).trim();
+  if (!question) return;
 
-  let question = trimmed.startsWith("ai ") ? trimmed.slice(3).trim() : "";
-  let imageUrl = null;
-
-  if (repliedImage) {
-    imageUrl = messageReply.attachments[0].url;
-    if (!question) question = "What's in this image?";
-  }
-
-  if (!question && !imageUrl) return;
-
-  await processQuestion(api, threadID, senderID, question, imageUrl, session, isGroup);
+  return processAI(api, threadID, senderID, question, sessionKey, messageID);
 };
 
-async function processQuestion(api, threadID, senderID, question, imageUrl, session, isGroup) {
-  const sessionKey = `${threadID}_${senderID}`;
-  const typingInterval = startTypingLoop(api, threadID, isGroup);
-
+async function processAI(api, threadID, senderID, prompt, sessionKey, replyMsgID) {
   try {
-    const preDelay = Math.floor(Math.random() * 3000) + 2000;
-    await new Promise(res => setTimeout(res, preDelay));
-
-    const tempMsgID = await randomThinkingMessage(api, threadID);
-
-    let result;
+    const thinkingMsgID = await randomThinking(api, threadID, replyMsgID);
     const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    if (imageUrl) {
-      const params = new URLSearchParams({
-        q: question,
-        uid: Math.floor(Math.random() * 1000000).toString(),
-        imageUrl: imageUrl,
-        apikey: "25644cdb-f51e-43f1-894a-ec718918e649"
-      });
-      const res = await axios.get(`https://kaiz-apis.gleeze.com/api/gemini-vision?${params}`, {
-        headers: { "User-Agent": userAgent },
-        timeout: 20000
-      });
-      result = res?.data?.response || "⚠️ No response from AI.";
-    } else {
-      const res = await axios.get(`https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(question)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`, {
-        headers: { "User-Agent": userAgent },
-        timeout: 20000
-      });
-      result = res?.data?.response || "⚠️ No response from AI.";
-    }
+    // Call API
+    const res = await axios.get(
+      `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(prompt)}&uid=${senderID}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`,
+      { headers: { "User-Agent": userAgent }, timeout: 20000 }
+    );
 
-    const styledOutput = formatWithStyle(result);
+    const answer = res?.data?.response || "⚠️ No response from AI.";
     const userName = (await api.getUserInfo(senderID))[senderID]?.name || "Unknown User";
 
-    // ✅ Added instructions at the bottom
-    const brandedMessage =
-      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${styledOutput}\n\n` +
-      `•| 𝚄𝚜𝚎𝚛 𝚠𝚑𝚘 𝚊𝚜𝚔 : ${userName} |•\n\n` +
-      `💡 To continue, please reply directly to this message.\n` +
-      `🔄 Type "reset" anytime to reset the conversation.`;
+    const branded =
+`🤖 **UEP MAIN BOT**
+━━━━━━━━━━━━━━━
+${answer}
+━━━━━━━━━━━━━━━
+ask by : **${userName}**
+🔄 Reply "reset" anytime to reset conversation.
+💡 Reply to this message to continue.`;
 
-    const finalDelay = Math.floor(Math.random() * 3000) + 3000;
-    setTimeout(() => {
-      api.editMessage(brandedMessage, tempMsgID);
-      sessions.set(sessionKey, { lastBotMsgID: tempMsgID }); // ✅ store per user
-    }, finalDelay);
-
-  } catch (err) {
-    api.sendMessage("❌ Error processing your request.", threadID);
-  } finally {
-    stopTypingLoop(api, threadID, typingInterval, isGroup);
+    // Edit placeholder → final bot reply
+    api.editMessage(branded, thinkingMsgID, () => {
+      sessions.set(sessionKey, { lastBotMsgID: thinkingMsgID });
+    });
+  } catch (e) {
+    console.error("AI Error:", e);
+    api.sendMessage("❌ Error getting response from AI.", threadID, replyMsgID);
   }
 }
 
