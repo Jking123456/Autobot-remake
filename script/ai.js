@@ -21,6 +21,9 @@ const userAgents = [
   "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
 ];
 
+// Config
+const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
 // Cooldown check
 function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   const key = `${threadID}_${senderID}`;
@@ -32,11 +35,11 @@ function isOnCooldown(threadID, senderID, cooldownMs = 5000) {
   return false;
 }
 
-// Send random "thinking..." reply under user’s message
+// Send random "thinking..." under user’s message
 function randomThinking(api, threadID, replyToID) {
   const msg = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
   return new Promise(resolve => {
-    api.sendMessage({ body: msg, replyTo: replyToID }, threadID, (err, info) => {
+    api.sendMessage({ body: msg, replyToMessageID: replyToID }, threadID, (err, info) => {
       if (err) return;
       resolve(info.messageID);
     });
@@ -45,10 +48,10 @@ function randomThinking(api, threadID, replyToID) {
 
 module.exports.config = {
   name: "ai",
-  version: "1.2.1",
+  version: "1.5.0",
   permission: 0,
-  credits: "UEP Goat Bot (fixed by ChatGPT)",
-  description: "UEP Main Bot AI (Messenger-style conversational)",
+  credits: "UEP Goat Bot (ChatGPT enhanced)",
+  description: "Messenger-style AI that replies under user’s message (with auto reset)",
   prefix: false,
   category: "without prefix",
   usage: "ai <your message>",
@@ -68,26 +71,28 @@ module.exports.handleEvent = async function({ api, event }) {
   const lower = text.toLowerCase();
 
   const sessionKey = `${threadID}_${senderID}`;
-  const session = sessions.get(sessionKey) || { lastBotMsgID: null };
+  let session = sessions.get(sessionKey);
+
+  // Clean expired session
+  if (session && Date.now() - session.lastActive > SESSION_TIMEOUT) {
+    sessions.delete(sessionKey);
+    session = null;
+  }
 
   // Cooldown
   if (isOnCooldown(threadID, senderID)) {
-    return api.sendMessage({ body: "⏳ Please wait 5s before asking again.", replyTo: messageID }, threadID);
+    return api.sendMessage({ body: "⏳ Please wait 5s before asking again.", replyToMessageID: messageID }, threadID);
   }
 
   // Reset
   if (lower === "reset") {
     sessions.delete(sessionKey);
-    return api.sendMessage({ body: "✅ Conversation reset. Type ai <message> to start again.", replyTo: messageID }, threadID);
+    return api.sendMessage({ body: "✅ Conversation reset. Type ai <message> to start again.", replyToMessageID: messageID }, threadID);
   }
 
-  // If replying to bot’s last message → continue conversation
-  if (session.lastBotMsgID) {
-    const isReply = messageReply && messageReply.messageID === session.lastBotMsgID;
-    const isSameUser = messageReply && messageReply.senderID === senderID;
-    if (isReply && isSameUser) {
-      return processAI(api, threadID, senderID, text, sessionKey, messageID);
-    }
+  // If user is replying to bot → continue convo under their *original* message
+  if (session && messageReply && messageReply.messageID === session.lastBotMsgID) {
+    return processAI(api, threadID, senderID, text, sessionKey, session.originalUserMsgID);
   }
 
   // Start only if user types "ai ..."
@@ -95,11 +100,13 @@ module.exports.handleEvent = async function({ api, event }) {
   const question = text.slice(3).trim();
   if (!question) return;
 
-  return processAI(api, threadID, senderID, question, sessionKey, messageID);
+  // Save this user’s original message ID
+  return processAI(api, threadID, senderID, question, sessionKey, messageID, true);
 };
 
-async function processAI(api, threadID, senderID, prompt, sessionKey, replyMsgID) {
+async function processAI(api, threadID, senderID, prompt, sessionKey, replyMsgID, isNew = false) {
   try {
+    // Show thinking...
     const thinkingMsgID = await randomThinking(api, threadID, replyMsgID);
     const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
@@ -121,13 +128,24 @@ ask by : **${userName}**
 🔄 Reply "reset" anytime to reset conversation.
 💡 Reply to this message to continue.`;
 
-    // Edit placeholder → final bot reply (under user message)
-    api.editMessage(branded, thinkingMsgID, () => {
-      sessions.set(sessionKey, { lastBotMsgID: thinkingMsgID });
+    // Send final reply under the *user’s original message*
+    api.sendMessage({ body: branded, replyToMessageID: replyMsgID }, threadID, (err, info) => {
+      if (!err) {
+        sessions.set(sessionKey, { 
+          lastBotMsgID: info.messageID,
+          originalUserMsgID: isNew ? replyMsgID : sessions.get(sessionKey)?.originalUserMsgID || replyMsgID,
+          lastActive: Date.now()
+        });
+      }
     });
+
+    // Delete "thinking..." if possible
+    if (typeof api.unsendMessage === "function") {
+      api.unsendMessage(thinkingMsgID);
+    }
   } catch (e) {
     console.error("AI Error:", e);
-    api.sendMessage({ body: "❌ Error getting response from AI.", replyTo: replyMsgID }, threadID);
+    api.sendMessage({ body: "❌ Error getting response from AI.", replyToMessageID: replyMsgID }, threadID);
   }
 }
 
