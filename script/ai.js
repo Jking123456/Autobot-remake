@@ -71,9 +71,9 @@ function formatWithStyle(text) {
 
 module.exports.config = {
   name: "ai",
-  version: "1.2.0",
+  version: "1.3.0",
   permission: 0,
-  credits: "Your Name",
+  credits: "Your Name (patched with bot-to-bot fix)",
   description: "LLaMA AI chat with reply-only mode and image understanding",
   prefix: false,
   category: "without prefix",
@@ -85,19 +85,37 @@ module.exports.handleEvent = async function({ api, event }) {
   const { threadID, messageID, senderID, body, messageReply, isGroup } = event;
   if (!body && !(messageReply && messageReply.attachments.length > 0)) return;
 
+  // ✅ Ignore self
   let botID;
   try { botID = api.getCurrentUserID(); } catch { return; }
   if (senderID === botID) return;
+
+  // ✅ Ignore known bot accounts
+  const ignoredBots = ["100084522156424", "61578917862800"]; // add other bot IDs here
+  if (ignoredBots.includes(senderID)) {
+    console.log("⚠️ Ignored bot reply (known bot ID)");
+    return;
+  }
+
+  // ✅ Optional: ignore accounts with "bot" in their name
+  try {
+    const userInfo = await api.getUserInfo(senderID);
+    const senderName = userInfo[senderID]?.name || "";
+    if (senderName.toLowerCase().includes("bot")) {
+      console.log("⚠️ Ignored bot reply (name contains 'bot')");
+      return;
+    }
+  } catch (e) {}
 
   const trimmed = (body || "").trim();
   const lowerTrimmed = trimmed.toLowerCase();
   const repliedImage = messageReply && messageReply.attachments.length > 0 && messageReply.attachments[0].type === "photo";
 
-  // ✅ Use per-thread + per-user session key
+  // ✅ Per-user session
   const sessionKey = `${threadID}_${senderID}`;
   const session = sessions.get(sessionKey) || { lastBotMsgID: null };
 
-  // ✅ Cooldown per user
+  // ✅ Cooldown check
   if (isOnCooldown(threadID, senderID)) {
     return api.sendMessage("⏳ Please wait 5s before asking again.", threadID, messageID);
   }
@@ -108,15 +126,25 @@ module.exports.handleEvent = async function({ api, event }) {
     return api.sendMessage("✅ Conversation reset. Type ai <question> to start again.", threadID, messageID);
   }
 
-  // ✅ Only continue if same user replies to bot's last message
+  // ✅ Only reply if same user continues the bot's thread
   if (session.lastBotMsgID) {
     const isReply = messageReply && messageReply.messageID === session.lastBotMsgID;
-    if (!isReply) return; // ignore unrelated messages
-    await processQuestion(api, threadID, senderID, trimmed, repliedImage ? messageReply.attachments[0].url : null, session, isGroup);
+    const isSameUser = messageReply && messageReply.senderID === senderID;
+    if (!isReply || !isSameUser) return; // ignore unrelated or bot replies
+
+    await processQuestion(
+      api,
+      threadID,
+      senderID,
+      trimmed,
+      repliedImage ? messageReply.attachments[0].url : null,
+      session,
+      isGroup
+    );
     return;
   }
 
-  // Start new session
+  // ✅ Start new session (only with prefix or image)
   if (!lowerTrimmed.startsWith("ai ") && !repliedImage) return;
 
   let question = trimmed.startsWith("ai ") ? trimmed.slice(3).trim() : "";
