@@ -4,7 +4,7 @@ let sessions = {};
 
 module.exports.config = {
     name: "ai",
-    version: "2.5.0",
+    version: "3.0.0",
     hasPermssion: 0,
     credits: "Jay + Modified",
     description: "AI with threaded replies, session reset & random delay (LLaMA 3 API)",
@@ -76,10 +76,12 @@ module.exports.run = async function ({ api, event, args }) {
 
         setTimeout(() => {
             api.sendMessage(
-                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply "reset" to reset session)`,
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}`,
                 event.threadID,
                 (err, info) => {
-                    if (!err) sessions[userId].lastMessageID = info.messageID;
+                    if (!err) {
+                        sessions[userId].lastMessageID = info.messageID;
+                    }
                 },
                 event.messageID
             );
@@ -95,12 +97,14 @@ module.exports.run = async function ({ api, event, args }) {
 module.exports.handleReply = async function ({ api, event }) {
     const userId = event.senderID;
 
+    // Only continue if reply is under the bot's last message
     if (!sessions[userId] || sessions[userId].lastMessageID !== event.messageReply?.messageID) {
         return;
     }
 
     const userMessage = event.body.trim();
 
+    // Reset session if "reset"
     if (userMessage.toLowerCase() === "reset") {
         clearTimeout(sessions[userId].timeout);
         delete sessions[userId];
@@ -126,7 +130,7 @@ module.exports.handleReply = async function ({ api, event }) {
 
         setTimeout(() => {
             api.sendMessage(
-                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply "reset" to reset session)`,
+                `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}`,
                 event.threadID,
                 (err, info) => {
                     if (!err) sessions[userId].lastMessageID = info.messageID;
