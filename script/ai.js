@@ -1,12 +1,5 @@
 const axios = require("axios");
 
-// --- PROXY LIST ---
-const proxies = [
-  { host: "104.207.32.238", port: 3128 },
-  { host: "45.76.186.44", port: 8080 },
-  { host: "195.154.255.194", port: 8000 },
-];
-
 module.exports.config = {
   name: "ai",
   version: "2.0.0",
@@ -38,19 +31,15 @@ const extraHeaders = [
   { "Connection": "keep-alive" },
 ];
 
-// --- AXIOS CONFIG BUILDER WITH ROTATION ---
 function getAxiosConfig() {
   const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
   const header = extraHeaders[Math.floor(Math.random() * extraHeaders.length)];
-  const proxy = proxies[Math.floor(Math.random() * proxies.length)];
 
   return {
     headers: {
       "User-Agent": ua,
       ...header,
     },
-    proxy, // rotate proxy
-    timeout: 15000, // fail fast if proxy is dead
   };
 }
 
@@ -71,6 +60,7 @@ module.exports.run = async function ({ api, event, args }) {
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
+    // React with ⌛ to show "thinking"
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
     const response = await axios.get(apiUrl, getAxiosConfig());
@@ -80,7 +70,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply without 'ai' to continue conversation)`,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚠/𝚘 '𝚊𝚒' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎 𝚌𝚘𝚗𝚟𝚎𝚛𝚜𝚊𝚝𝚒𝚘𝚗)`,
         event.threadID,
         (err, info) => {
           if (!err) {
@@ -91,6 +81,7 @@ module.exports.run = async function ({ api, event, args }) {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
+            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
@@ -98,13 +89,12 @@ module.exports.run = async function ({ api, event, args }) {
       );
     }, 5000);
   } catch (error) {
-    console.error("AI Error:", error.message || error);
+    console.error(error);
     api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
 };
 
-// --- HANDLE REPLIES / CONVERSATION ---
 module.exports.handleEvent = async function ({ api, event }) {
   const userId = event.senderID;
   if (!sessions[userId]) return;
@@ -123,6 +113,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
+    // React ⌛ while waiting
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
     const response = await axios.get(apiUrl, getAxiosConfig());
@@ -132,7 +123,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(Reply \"reset\" to reset session)`,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 "𝚛𝚎𝚜𝚎𝚝" 𝚝𝚘 𝚛𝚎𝚜𝚎𝚝 𝚜𝚎𝚜𝚜𝚒𝚘𝚗)`,
         event.threadID,
         (err, info) => {
           if (!err) {
@@ -143,6 +134,7 @@ module.exports.handleEvent = async function ({ api, event }) {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
+            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
@@ -150,7 +142,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       );
     }, 5000);
   } catch (error) {
-    console.error("AI Error:", error.message || error);
+    console.error(error);
     api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
