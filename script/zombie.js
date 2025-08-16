@@ -1,60 +1,105 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+const axios = require('axios');
+const fs = require('fs-extra');
+
+const cooldowns = new Map(); // cooldown map per senderID
 
 module.exports.config = {
-    name: "zombie",
-    version: "1.3.1",
-    hasPermssion: 0,
-    credits: "Who's Deku (Optimized by Homer Rebatis)",
-    description: "Transform an image into a zombie",
-    commandCategory: "image",
-    usages: "[reply to image]",
-    cooldowns: 2,
+  name: "zombie",
+  version: "1.0.0",
+  role: 0,
+  credits: "Homer Rebatis",
+  aliases: [],
+  usages: "< Facebook UID >",
+  cooldown: 2,
 };
 
-module.exports.run = async function ({ api, event }) {
-    const { threadID, messageID } = event;
+// Pick random element from array
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
-    // ✅ Admin Check
-    try {
-        const threadInfo = await api.getThreadInfo(threadID);
-        const botID = api.getCurrentUserID();
+module.exports.run = async ({ api, event, args }) => {
+  const { threadID, messageID, senderID } = event;
+  const uid = args[0];
+  const filePath = __dirname + `/cache/zombie-${Date.now()}.png`;
 
-        if (threadInfo.isGroup) {
-            const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
-            if (!isBotAdmin) {
-                return api.sendMessage("🚫 𝐋𝐨𝐜𝐤𝐞𝐝 ! 𝐭𝐨 𝐮𝐬𝐞 𝐭𝐡𝐢𝐬, 𝐦𝐚𝐤𝐞 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐚𝐝𝐦𝐢𝐧 𝐢𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩.", threadID, messageID);
-            }
-        }
-    } catch (error) {
-        console.error("⚠️ Admin check failed:", error);
-        return api.sendMessage("⚠️ Failed to verify admin status. Please try again later.", threadID, messageID);
+  // ✅ Restrict to admin-only in groups
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+
+    if (threadInfo.isGroup) {
+      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      if (!isBotAdmin) {
+        return api.sendMessage("🚫 Bot must be an admin to run this command in a group.", threadID, messageID);
+      }
     }
+  } catch (err) {
+    console.error("Admin check failed:", err);
+    return api.sendMessage("⚠️ Couldn't verify bot permissions. Please try again later.", threadID, messageID);
+  }
 
-    if (event.type !== "message_reply" || event.messageReply.attachments.length === 0) {
-        return api.sendMessage("⚠️ Please reply to an image.", threadID, messageID);
+  // ⏳ Cooldown check (1 min)
+  const now = Date.now();
+  if (cooldowns.has(senderID)) {
+    const elapsed = now - cooldowns.get(senderID);
+    if (elapsed < 60 * 1000) {
+      const waitTime = Math.ceil((60 * 1000 - elapsed) / 1000);
+      return api.sendMessage(`⏳ Please wait ${waitTime} second(s) before using this again.`, threadID, messageID);
     }
+  }
 
-    const imageUrl = event.messageReply.attachments[0].url;
+  if (!uid || isNaN(uid)) {
+    return api.sendMessage("❌ Please provide a valid Facebook UID.\nExample: zombie 100044848836284", threadID, messageID);
+  }
 
-    try {
-        api.sendMessage("🧟 Generating zombie image, please wait...", threadID, messageID);
+  try {
+    cooldowns.set(senderID, now);
 
-        const response = await axios.get(
-            `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`,
-            { responseType: "arraybuffer" }
-        );
+    // Simulate human typing
+    api.sendTypingIndicator(threadID, true);
 
-        const imgPath = path.join(__dirname, "cache", `zombie_${Date.now()}.jpg`);
-        fs.writeFileSync(imgPath, response.data);
+    // Random delay before intro (1–3 sec)
+    const delay = Math.floor(Math.random() * 2000) + 1000;
+    await new Promise(resolve => setTimeout(resolve, delay));
 
-        return api.sendMessage({ attachment: fs.createReadStream(imgPath) }, threadID, () => {
-            fs.unlinkSync(imgPath); // cleanup
-        }, messageID);
+    // Random intro messages
+    const introMsgs = [
+      "🧟‍♂️ Summoning the undead...",
+      "⚰️ Digging up something creepy...",
+      "🩸 Brewing your zombie transformation...",
+      "💀 Hold tight, your zombie version is coming..."
+    ];
+    api.sendMessage(pickRandom(introMsgs), threadID, messageID);
 
-    } catch (err) {
-        console.error(err);
-        return api.sendMessage(`❌ Error: ${err.message}`, threadID, messageID);
-    }
+    // Fetch zombie image
+    const imageUrl = `https://api-canvass.vercel.app/zombie?userid=${uid}`;
+    const imageBuffer = (await axios.get(imageUrl, { responseType: "arraybuffer" })).data;
+    fs.writeFileSync(filePath, Buffer.from(imageBuffer));
+
+    // Short delay before sending result
+    const resultDelay = Math.floor(Math.random() * 1500) + 500;
+    await new Promise(resolve => setTimeout(resolve, resultDelay));
+
+    // Random result messages
+    const resultMsgs = [
+      `🧟 Finished! Here’s the zombie version of UID: ${uid}`,
+      `💀 All done! Your undead self is ready for UID: ${uid}`,
+      `⚰️ Zombie transformation complete for UID: ${uid}`,
+      `🩸 Here’s your terrifying zombie form for UID: ${uid}`
+    ];
+
+    api.sendMessage({
+      body: pickRandom(resultMsgs),
+      attachment: fs.createReadStream(filePath)
+    }, threadID, () => fs.unlinkSync(filePath), messageID);
+
+    api.sendTypingIndicator(threadID, false);
+
+  } catch (error) {
+    console.error(error);
+    api.sendMessage(`❌ Error fetching zombie image: ${error.message}`, threadID, messageID);
+    api.sendTypingIndicator(threadID, false);
+  }
 };
+
