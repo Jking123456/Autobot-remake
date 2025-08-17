@@ -4,7 +4,7 @@ module.exports.config = {
   name: "freesms2",
   version: "1.0.0",
   role: 0,
-  credits: "Marjhun Baylon + Aligno Akoeh",
+  credits: "Homer Rebatis",
   description: "Send free SMS via FreeTextPH API",
   hasPrefix: false,
   aliases: ["fsms", "sms2"],
@@ -17,8 +17,8 @@ module.exports.run = async function({ api, event, args }) {
   try {
     if (args.length < 2) {
       return api.sendMessage(
-        "❌ Usage: freesms2 <number> | <message>\n\n📌 Example:\n" +
-        "freesms2 09123456789 | Hello, this is a test message.",
+        "❌ Usage: freesms <number> | <message>\n\n📌 Example:\n" +
+        "freesms 09123456789 | Hello, this is a test message.",
         event.threadID,
         event.messageID
       );
