@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "freesms2",
-  version: "1.2.0",
+  version: "1.0.0",
   role: 0,
   credits: "Marjhun Baylon + Aligno Akoeh",
   description: "Send free SMS via FreeTextPH API",
@@ -36,9 +36,6 @@ module.exports.run = async function({ api, event, args }) {
       );
     }
 
-    // React ⌛ while processing
-    api.setMessageReaction("⌛", event.messageID, () => {}, true);
-
     // Send request to API
     const res = await axios.post("https://freetextph.up.railway.app/send", {
       number,
@@ -47,37 +44,21 @@ module.exports.run = async function({ api, event, args }) {
 
     const data = res.data;
 
-    // Random delay between 5–7 seconds
-    const delay = Math.floor(Math.random() * 2000) + 5000; // 5000–7000 ms
-
-    setTimeout(() => {
-      if (data.success) {
-        // React 🟢 success
-        api.setMessageReaction("🟢", event.messageID, () => {}, true);
-
-        api.sendMessage(
-          `✅ SMS Sent Successfully!\n\n📱 To: ${number}\n💬 Message: ${message}\n\n📝 Status: ${data.message}\n📊 Limit Remaining: ${data.data.limit}\n⏳ Send Delay: ${data.data.sendDelay}s`,
-          event.threadID,
-          event.messageID
-        );
-      } else {
-        // React 🔴 error
-        api.setMessageReaction("🔴", event.messageID, () => {}, true);
-
-        api.sendMessage(
-          `❌ Failed to send SMS.\nReason: ${data.message || "Unknown error"}`,
-          event.threadID,
-          event.messageID
-        );
-      }
-    }, delay);
-
+    if (data.success) {
+      return api.sendMessage(
+        `✅ SMS Sent Successfully!\n\n📱 To: ${number}\n💬 Message: ${message}\n\n📝 Status: ${data.message}\n📊 Limit Remaining: ${data.data.limit}\n⏳ Send Delay: ${data.data.sendDelay}s`,
+        event.threadID,
+        event.messageID
+      );
+    } else {
+      return api.sendMessage(
+        `❌ Failed to send SMS.\nReason: ${data.message || "Unknown error"}`,
+        event.threadID,
+        event.messageID
+      );
+    }
   } catch (err) {
     console.error(err);
-
-    // React 🔴 error
-    api.setMessageReaction("🔴", event.messageID, () => {}, true);
-
     return api.sendMessage(
       "🚨 Error: Could not connect to FreeTextPH API.",
       event.threadID,
