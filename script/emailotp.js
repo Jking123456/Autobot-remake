@@ -1,4 +1,4 @@
-// file: emailotp.js
+// file: emailotp-cloud.js
 const cloudscraper = require("cloudscraper");
 
 function randomOtp(n = 6) {
@@ -8,39 +8,54 @@ function randomOtp(n = 6) {
 }
 
 module.exports.config = {
-  name: "emailotp",
-  version: "2.0.0",
+  name: "emailotpcloud",
+  version: "1.1.0",
   role: 0,
   credits: "Homer Rebatis",
-  description: "Send OTP via API (Cloudflare bypass)",
+  description: "Send multiple OTPs using Cloudscraper (Cloudflare bypass)",
   hasPrefix: false,
-  aliases: ["eotp"],
+  aliases: ["eotpcloud", "otpcloud"],
   cooldown: 30,
-  usages: "[email]",
-  commandCategory: "testing"
+  usages: "[email] [count]",
+  commandCategory: "utility"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   if (args.length < 1) {
     return api.sendMessage(
-      "❌ Usage: emailotp <email>",
+      "❌ Usage: emailotpcloud <email> [count]\n\n📌 Example:\nemailotpcloud test@mail.com 10",
       event.threadID,
       event.messageID
     );
   }
 
   const toEmail = args[0].trim().toLowerCase();
-  await api.sendMessage(`⌛ Sending OTPs to ${toEmail}...`, event.threadID, event.messageID);
+  const count = parseInt(args[1]) || 10;
+
+  await api.sendMessage(
+    `⌛ Sending ${count} OTPs to ${toEmail} (using Cloudscraper)...`,
+    event.threadID,
+    event.messageID
+  );
 
   let success = 0, failed = 0;
 
-  for (let i = 0; i < 10; i++) { // change 10 → 100 if you want
+  for (let i = 0; i < count; i++) {
     const otp = randomOtp(6);
-    const url = `https://dz24.online/verification.php?otp=${otp}&to=${encodeURIComponent(toEmail)}&i=${i+1}`;
+    const url = `https://dz24.online/verification.php?otp=${otp}&to=${encodeURIComponent(toEmail)}&i=1`;
 
     try {
-      const body = await cloudscraper.get(url);
-      if (body.includes("OTP sent successfully")) {
+      const res = await cloudscraper.get({
+        uri: url,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
+          "Referer": "https://dz24.online/",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        },
+        resolveWithFullResponse: false
+      });
+
+      if (res && res.toLowerCase().includes("successfully")) {
         success++;
       } else {
         failed++;
@@ -48,6 +63,9 @@ module.exports.run = async function ({ api, event, args }) {
     } catch (err) {
       failed++;
     }
+
+    // small delay (1–2s) to reduce rate-limit
+    await new Promise(r => setTimeout(r, 1500));
   }
 
   return api.sendMessage(
