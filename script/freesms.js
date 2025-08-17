@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 module.exports.config = {
-  name: "freesms2",
+  name: "freesms",
   version: "1.0.0",
   role: 0,
   credits: "Homer Rebatis",
