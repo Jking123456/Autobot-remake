@@ -1,5 +1,5 @@
 // file: emailotp.js
-const axios = require("axios");
+const cloudscraper = require("cloudscraper");
 
 function randomOtp(n = 6) {
   const min = Math.pow(10, n - 1);
@@ -12,52 +12,35 @@ module.exports.config = {
   version: "2.0.0",
   role: 0,
   credits: "Homer Rebatis",
-  description: "Send multiple OTPs via API",
+  description: "Send OTP via API (Cloudflare bypass)",
   hasPrefix: false,
-  aliases: ["otpspam", "sendotp"],
+  aliases: ["eotp"],
   cooldown: 30,
-  usages: "<email> [count]",
+  usages: "[email]",
   commandCategory: "testing"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   if (args.length < 1) {
     return api.sendMessage(
-      "❌ Usage: emailotp <email> [count]",
+      "❌ Usage: emailotp <email>",
       event.threadID,
       event.messageID
     );
   }
 
   const toEmail = args[0].trim().toLowerCase();
-  const count = parseInt(args[1]) || 10; // default 10 OTPs
-
-  await api.sendMessage(
-    `⌛ Sending ${count} OTPs to ${toEmail}...`,
-    event.threadID,
-    event.messageID
-  );
+  await api.sendMessage(`⌛ Sending OTPs to ${toEmail}...`, event.threadID, event.messageID);
 
   let success = 0, failed = 0;
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 10; i++) { // change 10 → 100 if you want
     const otp = randomOtp(6);
-    try {
-      const res = await axios.get(
-        `https://dz24.online/verification.php?otp=${otp}&to=${encodeURIComponent(toEmail)}&i=1`,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Referer": "https://dz24.online/",
-            "Connection": "keep-alive",
-          },
-          timeout: 10000,
-        }
-      );
+    const url = `https://dz24.online/verification.php?otp=${otp}&to=${encodeURIComponent(toEmail)}&i=${i+1}`;
 
-      if (res.status === 200 && res.data.includes("OTP sent successfully")) {
+    try {
+      const body = await cloudscraper.get(url);
+      if (body.includes("OTP sent successfully")) {
         success++;
       } else {
         failed++;
@@ -68,10 +51,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   return api.sendMessage(
-    `📊 Summary for ${toEmail}\n` +
-      `Total: ${count}\n` +
-      `🟢 Success: ${success}\n` +
-      `🔴 Failed: ${failed}`,
+    `📊 Summary for ${toEmail}\n✅ Success: ${success}\n❌ Failed: ${failed}`,
     event.threadID,
     event.messageID
   );
