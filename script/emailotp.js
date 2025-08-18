@@ -9,10 +9,10 @@ function randomOtp(n = 6) {
 
 module.exports.config = {
   name: "emailotpcloud",
-  version: "1.2.0",
+  version: "1.3.0",
   role: 0,
   credits: "Homer Rebatis",
-  description: "Send multiple OTPs using Cloudscraper (POST mode, Cloudflare bypass)",
+  description: "Send multiple OTPs using Cloudscraper (POST mode, with logging)",
   hasPrefix: false,
   aliases: ["eotpcloud", "otpcloud"],
   cooldown: 30,
@@ -54,11 +54,15 @@ module.exports.run = async function ({ api, event, args }) {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
           "Referer": "https://dz24.online/",
+          "Origin": "https://dz24.online",
           "Content-Type": "application/x-www-form-urlencoded",
           "Accept": "*/*"
         },
         resolveWithFullResponse: false
       });
+
+      // 🔍 Debug log
+      console.log(`[${i + 1}/${count}] Response:`, res);
 
       if (res && res.toLowerCase().includes("successfully")) {
         success++;
@@ -67,9 +71,10 @@ module.exports.run = async function ({ api, event, args }) {
       }
     } catch (err) {
       failed++;
+      console.log(`[${i + 1}/${count}] Error:`, err.message || err);
     }
 
-    // small delay (1–2s) to reduce rate-limit
+    // small delay
     await new Promise(r => setTimeout(r, 1500));
   }
 
