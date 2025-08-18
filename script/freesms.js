@@ -37,7 +37,7 @@ module.exports.run = async function({ api, event, args }) {
     }
 
     // Send request to API
-    const res = await axios.post("https://freetextph.up.railway.app/send", {
+    const res = await axios.post("https://freetextph.up.railway.app/oten", {
       number,
       message
     });
