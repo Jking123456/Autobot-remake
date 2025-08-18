@@ -9,10 +9,10 @@ function randomOtp(n = 6) {
 
 module.exports.config = {
   name: "emailotpcloud",
-  version: "1.1.0",
+  version: "1.2.0",
   role: 0,
   credits: "Homer Rebatis",
-  description: "Send multiple OTPs using Cloudscraper (Cloudflare bypass)",
+  description: "Send multiple OTPs using Cloudscraper (POST mode, Cloudflare bypass)",
   hasPrefix: false,
   aliases: ["eotpcloud", "otpcloud"],
   cooldown: 30,
@@ -33,7 +33,7 @@ module.exports.run = async function ({ api, event, args }) {
   const count = parseInt(args[1]) || 10;
 
   await api.sendMessage(
-    `⌛ Sending ${count} OTPs to ${toEmail} (using Cloudscraper)...`,
+    `⌛ Sending ${count} OTPs to ${toEmail} (using Cloudscraper POST)...`,
     event.threadID,
     event.messageID
   );
@@ -42,15 +42,20 @@ module.exports.run = async function ({ api, event, args }) {
 
   for (let i = 0; i < count; i++) {
     const otp = randomOtp(6);
-    const url = `https://dz24.online/verification.php?otp=${otp}&to=${encodeURIComponent(toEmail)}&i=1`;
 
     try {
-      const res = await cloudscraper.get({
-        uri: url,
+      const res = await cloudscraper.post({
+        uri: "https://dz24.online/verification.php",
+        form: {
+          otp: otp,
+          to: toEmail,
+          i: 1
+        },
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36",
           "Referer": "https://dz24.online/",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "*/*"
         },
         resolveWithFullResponse: false
       });
