@@ -60,7 +60,7 @@ function checkGroupLimit(threadID) {
   }
 
   // Block if already 15 uses
-  if (group.count >= 15) {
+  if (group.count >= 5) {
     return false; // block silently
   }
 
@@ -74,8 +74,8 @@ function incrementUsage(threadID) {
 }
 
 function getRemaining(threadID) {
-  if (!groupUsage[threadID]) return 15;
-  return 15 - groupUsage[threadID].count;
+  if (!groupUsage[threadID]) return 5;
+  return 5 - groupUsage[threadID].count;
 }
 
 // --- MAIN FUNCTION ---
