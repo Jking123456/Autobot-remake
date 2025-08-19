@@ -9,8 +9,25 @@ module.exports.config = {
   credits: 'Homer Rebatis + Modified by GPT-5',
 };
 
+let groupUsage = {}; // Track help command usage per group
+
 module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
   const input = args.join(' ');
+  const threadId = event.threadID;
+
+  // ✅ Limit: 3 uses per group per 24h
+  if (!groupUsage[threadId]) {
+    groupUsage[threadId] = { count: 0, timeout: null };
+  }
+  if (groupUsage[threadId].count >= 3) {
+    return; // ❌ Silent, no response after 3rd use
+  }
+  groupUsage[threadId].count++;
+  if (!groupUsage[threadId].timeout) {
+    groupUsage[threadId].timeout = setTimeout(() => {
+      delete groupUsage[threadId];
+    }, 24 * 60 * 60 * 1000); // reset after 24h
+  }
 
   try {
     // Check if bot is admin in this group
