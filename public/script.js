@@ -96,7 +96,7 @@ async function State() {
 
 function showResult(message) {
   const resultContainer = document.getElementById('result');
-  resultContainer.innerHTML = `<h5>${message}</h5>`;
+  resultContainer.innerHTML = `<h2>${message}</h2>`;
   resultContainer.style.display = 'block';
 }
 async function commandList() {
