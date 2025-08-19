@@ -2,10 +2,10 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "ai",
-  version: "2.0.0",
+  version: "2.2.0",
   hasPermssion: 0,
-  credits: "Homer Rebatis",
-  description: "AI Chatbot with reply system (anti-meta detection)",
+  credits: "Homer Rebatis + Edited",
+  description: "AI Chatbot with reply system (15 uses per group every 24h)",
   usePrefix: true,
   commandCategory: "AI",
   usages: "[question]",
@@ -13,6 +13,7 @@ module.exports.config = {
 };
 
 let sessions = {}; // per-user session tracking
+let groupUsage = {}; // { threadID: { count: number, resetTime: timestamp } }
 
 // --- USER-AGENTS + HEADERS RANDOMIZATION ---
 const userAgents = [
@@ -43,45 +44,79 @@ function getAxiosConfig() {
   };
 }
 
+// --- Check usage & reset logic ---
+function checkGroupLimit(threadID) {
+  const now = Date.now();
+  if (!groupUsage[threadID]) {
+    groupUsage[threadID] = { count: 0, resetTime: now + 24 * 60 * 60 * 1000 };
+  }
+
+  const group = groupUsage[threadID];
+
+  // Reset if 24h passed
+  if (now > group.resetTime) {
+    groupUsage[threadID] = { count: 0, resetTime: now + 24 * 60 * 60 * 1000 };
+    return true;
+  }
+
+  // Block if already 15 uses
+  if (group.count >= 15) {
+    return false; // block silently
+  }
+
+  return true;
+}
+
+function incrementUsage(threadID) {
+  if (groupUsage[threadID]) {
+    groupUsage[threadID].count++;
+  }
+}
+
+function getRemaining(threadID) {
+  if (!groupUsage[threadID]) return 15;
+  return 15 - groupUsage[threadID].count;
+}
+
 // --- MAIN FUNCTION ---
 module.exports.run = async function ({ api, event, args }) {
   const question = args.join(" ");
-  if (!question) {
-    return api.sendMessage(
-      "Please provide a question! Example: ai what is love?",
-      event.threadID,
-      event.messageID
-    );
-  }
+  if (!question) return;
 
+  const threadID = event.threadID;
   const userId = event.senderID;
+
+  // Check if group can still use AI
+  if (!checkGroupLimit(threadID)) return; // silently ignore
+
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     question
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
-    // React with ⌛ to show "thinking"
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
     const response = await axios.get(apiUrl, getAxiosConfig());
     const answer = response.data.response;
 
+    incrementUsage(threadID);
+    const remaining = getRemaining(threadID);
+
     if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚠/𝚘 '𝚊𝚒' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎 𝚌𝚘𝚗𝚟𝚎𝚛𝚜𝚊𝚝𝚒𝚘𝚗)`,
-        event.threadID,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/15\n\n(𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚠/𝚘 '𝚊𝚒' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎 𝚌𝚘𝚗𝚟𝚎𝚛𝚜𝚊𝚝𝚒𝚘𝚗)`,
+        threadID,
         (err, info) => {
           if (!err) {
             sessions[userId] = {
               messageID: info.messageID,
-              threadID: event.threadID,
+              threadID: threadID,
               timeout: setTimeout(() => {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
-            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
@@ -90,13 +125,13 @@ module.exports.run = async function ({ api, event, args }) {
     }, 5000);
   } catch (error) {
     console.error(error);
-    api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
   const userId = event.senderID;
+  const threadID = event.threadID;
   if (!sessions[userId]) return;
   if (event.messageReply?.messageID !== sessions[userId].messageID) return;
 
@@ -105,36 +140,40 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   if (userMessage.toLowerCase() === "reset") {
     delete sessions[userId];
-    return api.sendMessage("✅ Session has been reset.", event.threadID, event.messageID);
+    return api.sendMessage("✅ Session has been reset.", threadID, event.messageID);
   }
+
+  // Check if group can still use AI
+  if (!checkGroupLimit(threadID)) return; // silently ignore
 
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     userMessage
   )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
-    // React ⌛ while waiting
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
 
     const response = await axios.get(apiUrl, getAxiosConfig());
     const answer = response.data.response;
 
+    incrementUsage(threadID);
+    const remaining = getRemaining(threadID);
+
     if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n(𝚁𝚎𝚙𝚕𝚢 "𝚛𝚎𝚜𝚎𝚝" 𝚝𝚘 𝚛𝚎𝚜𝚎𝚝 𝚜𝚎𝚜𝚜𝚒𝚘𝚗)`,
-        event.threadID,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/15\n\n(𝚁𝚎𝚙𝚕𝚢 "𝚛𝚎𝚜𝚎𝚝" 𝚝𝚘 𝚛𝚎𝚜𝚎𝚝 𝚜𝚎𝚜𝚜𝚒𝚘𝚗)`,
+        threadID,
         (err, info) => {
           if (!err) {
             sessions[userId] = {
               messageID: info.messageID,
-              threadID: event.threadID,
+              threadID: threadID,
               timeout: setTimeout(() => {
                 delete sessions[userId];
               }, 15 * 60 * 1000),
             };
-            // Change reaction to 🟢 when done
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
         },
@@ -143,7 +182,6 @@ module.exports.handleEvent = async function ({ api, event }) {
     }, 5000);
   } catch (error) {
     console.error(error);
-    api.sendMessage("Unexpected error from UEP MAIN BOT.", event.threadID, event.messageID);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
 };
