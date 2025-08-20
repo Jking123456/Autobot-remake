@@ -5,11 +5,10 @@ const express = require('express');
 const app = express();
 const chalk = require('chalk');
 const bodyParser = require('body-parser');
+const script = path.join(__dirname, 'script');
 const cron = require('node-cron');
 
-// ================== CORE UTILS ==================
-const script = path.join(__dirname, 'script');
-const config = fs.existsSync('./data/config.json')
+const config = fs.existsSync('./data') && fs.existsSync('./data/config.json')
   ? JSON.parse(fs.readFileSync('./data/config.json', 'utf8'))
   : createConfig();
 
@@ -20,8 +19,10 @@ const Utils = {
   cooldowns: new Map(),
 };
 
-// ================== COMMAND LOADER ==================
+// ✅ Fixed Command Loader
 function loadCommands() {
+  let count = 0;
+
   fs.readdirSync(script).forEach((file) => {
     const scripts = path.join(script, file);
     const stats = fs.statSync(scripts);
@@ -32,250 +33,366 @@ function loadCommands() {
 
     for (const f of files) {
       try {
-        const { config, run, handleEvent } = require(f);
-        if (!config) continue;
+        const cmdFile = require(f);
+        const cfg = (cmdFile.config || {});
+        const name = (cfg.name || path.basename(f, '.js')).toLowerCase();
 
-        const {
-          name = '',
-          role = 0,
-          version = '1.0.0',
-          hasPrefix = true,
-          aliases = [],
-          description = '',
-          usage = '',
-          credits = '',
-          cooldown = 5,
-        } = Object.fromEntries(
-          Object.entries(config).map(([k, v]) => [k.toLowerCase(), v])
-        );
+        const commandObj = {
+          name,
+          role: cfg.role || 0,
+          version: cfg.version || '1.0.0',
+          hasPrefix: cfg.hasPrefix !== false,
+          aliases: (cfg.aliases || []).map(a => a.toLowerCase()).concat(name),
+          description: cfg.description || '',
+          usage: cfg.usage || '',
+          credits: cfg.credits || '',
+          cooldown: cfg.cooldown || 5,
+          run: cmdFile.run || null,
+          handleEvent: cmdFile.handleEvent || null,
+        };
 
-        const allAliases = [...new Set([name, ...(aliases || [])])];
-
-        if (run) {
-          Utils.commands.set(name.toLowerCase(), {
-            name,
-            run,
-            role,
-            aliases: allAliases,
-            description,
-            usage,
-            version,
-            hasPrefix,
-            credits,
-            cooldown,
-          });
+        // Save under each alias
+        for (const alias of commandObj.aliases) {
+          Utils.commands.set(alias, commandObj);
         }
-        if (handleEvent) {
-          Utils.handleEvent.set(name.toLowerCase(), {
-            name,
-            handleEvent,
-            role,
-            description,
-            usage,
-            version,
-            hasPrefix,
-            credits,
-            cooldown,
-          });
+
+        if (commandObj.handleEvent) {
+          Utils.handleEvent.set(name, commandObj);
         }
+
+        count++;
       } catch (err) {
-        console.error(chalk.red(`❌ Failed to load ${file}: ${err.message}`));
+        console.error(chalk.red(`❌ Failed to load ${f}: ${err.message}`));
       }
     }
   });
-  console.log(chalk.green(`✅ Commands Loaded: ${Utils.commands.size}`));
+
+  console.log(chalk.green(`✅ Commands Loaded: ${count}`));
 }
+
+// ✅ Simplified Command Resolver
+function getCommand(cmd) {
+  if (!cmd) return null;
+  return Utils.commands.get(cmd.toLowerCase()) || null;
+}
+
+// Run command loader
 loadCommands();
 
-// ================== EXPRESS SETUP ==================
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(express.json());
 
+// Routes
+const routes = [
+  { path: '/', file: 'index.html' },
+  { path: '/step_by_step_guide', file: 'guide.html' },
+  { path: '/online_user', file: 'online.html' },
+];
+
+routes.forEach(route => {
+  app.get(route.path, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', route.file));
+  });
+});
+
 app.get('/info', (req, res) => {
-  const data = Array.from(Utils.account.values());
+  const data = Array.from(Utils.account.values()).map(account => ({
+    name: account.name,
+    profileUrl: account.profileUrl,
+    thumbSrc: account.thumbSrc,
+    time: account.time
+  }));
   res.json(data);
 });
 
 app.get('/commands', (req, res) => {
-  res.json({
-    commands: [...Utils.commands.values()].map((c) => c.name),
-    handleEvent: [...Utils.handleEvent.values()].map((c) => c.name),
-  });
+  const commands = [...new Set([...Utils.commands.values()].map(cmd => cmd.name))];
+  const handleEvent = [...Utils.handleEvent.values()].map(cmd => cmd.name);
+  res.json({ commands, handleEvent });
 });
 
+// Login route
 app.post('/login', async (req, res) => {
   const { state, commands, prefix, admin } = req.body;
   try {
     if (!state) throw new Error('Missing app state data');
-    const cUser = state.find((i) => i.key === 'c_user');
-    if (!cUser) throw new Error('Invalid app state data');
-
-    if (Utils.account.get(cUser.value)) {
-      return res.status(400).json({
-        error: false,
-        message: 'Already logged in',
-        user: Utils.account.get(cUser.value),
-      });
+    const cUser = state.find(item => item.key === 'c_user');
+    if (cUser) {
+      const existingUser = Utils.account.get(cUser.value);
+      if (existingUser) {
+        console.log(`User ${cUser.value} is already logged in`);
+        return res.status(400).json({
+          error: false,
+          message: "Active user session detected; already logged in",
+          user: existingUser
+        });
+      } else {
+        try {
+          await accountLogin(state, commands, prefix, [admin]);
+          res.status(200).json({
+            success: true,
+            message: 'Authentication process completed successfully; login achieved.'
+          });
+        } catch (error) {
+          console.error(error);
+          res.status(400).json({ error: true, message: error.message });
+        }
+      }
+    } else {
+      return res.status(400).json({ error: true, message: "Invalid appstate data" });
     }
-
-    await accountLogin(state, commands, prefix, [admin]);
-    res.json({ success: true, message: 'Login successful' });
-  } catch (err) {
-    res.status(400).json({ error: true, message: err.message });
+  } catch (error) {
+    return res.status(400).json({ error: true, message: "Invalid appstate data" });
   }
 });
 
-app.listen(3000, () =>
-  console.log(chalk.yellow(`🌐 Server running at http://localhost:3000`))
-);
+app.listen(3000, () => {
+  console.log(`Server is running at http://localhost:5000`);
+});
 
-// ================== BOT LOGIN & HANDLER ==================
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
+
+// =================== LOGIN HANDLER ===================
 async function accountLogin(state, enableCommands = [], prefix, admin = []) {
   return new Promise((resolve, reject) => {
-    login({ appState: state }, async (err, api) => {
-      if (err) return reject(err);
+    login({ appState: state }, async (error, api) => {
+      if (error) return reject(error);
+
+      const userid = await api.getCurrentUserID();
+      addThisUser(userid, enableCommands, state, prefix, admin);
 
       try {
-        const userId = await api.getCurrentUserID();
-        addThisUser(userId, enableCommands, state, prefix, admin);
+        const userInfo = await api.getUserInfo(userid);
+        if (!userInfo || !userInfo[userid]) throw new Error('Account locked/suspended');
 
-        const info = await api.getUserInfo(userId);
-        const { name, profileUrl, thumbSrc } = info[userId] || {};
-        if (!name) throw new Error('Account may be locked or suspended');
+        const { name, profileUrl, thumbSrc } = userInfo[userid];
+        let time = (JSON.parse(fs.readFileSync('./data/history.json', 'utf-8'))
+          .find(user => user.userid === userid) || {}).time || 0;
 
-        Utils.account.set(userId, { name, profileUrl, thumbSrc, time: 0 });
-        console.log(chalk.blue(`🔵 Logged in as ${name}`));
+        Utils.account.set(userid, { name, profileUrl, thumbSrc, time });
 
-        // Update timer
-        setInterval(() => {
-          const acc = Utils.account.get(userId);
-          if (acc) acc.time++;
+        const intervalId = setInterval(() => {
+          try {
+            const account = Utils.account.get(userid);
+            if (!account) throw new Error('Account not found');
+            Utils.account.set(userid, { ...account, time: account.time + 1 });
+          } catch (error) {
+            clearInterval(intervalId);
+          }
         }, 1000);
-
-        api.setOptions(config[0].fcaOption);
-
-        api.listenMqtt(async (err, event) => {
-          if (err) return console.error(chalk.red('❌ Listen error'), err);
-
-          handleEvent(api, event, { userId, enableCommands, prefix, admin });
-        });
-
-        resolve();
-      } catch (e) {
-        reject(e);
+      } catch (error) {
+        return reject(error);
       }
+
+      api.setOptions(config[0].fcaOption);
+
+      try {
+        api.listenMqtt(async (error, event) => {
+          if (error) return console.error('API Listen Error:', error);
+
+          let database = fs.existsSync('./data/database.json')
+            ? JSON.parse(fs.readFileSync('./data/database.json', 'utf8'))
+            : createDatabase();
+
+          let data = Array.isArray(database)
+            ? database.find(item => Object.keys(item)[0] === event?.threadID)
+            : {};
+
+          let adminIDS = data ? database : createThread(event.threadID, api);
+
+          let blacklist = (JSON.parse(fs.readFileSync('./data/history.json', 'utf-8'))
+            .find(b => b.userid === userid) || {}).blacklist || [];
+
+          let hasPrefix = (event.body && getCommand(event.body.trim().split(/ +/).shift())?.hasPrefix === false)
+            ? '' : prefix;
+
+          let [command, ...args] = ((event.body || '').trim().toLowerCase().startsWith(hasPrefix?.toLowerCase())
+            ? (event.body || '').trim().substring(hasPrefix?.length).trim().split(/\s+/)
+            : []);
+
+          const cmdObj = getCommand(command);
+
+          // Permissions
+          if (cmdObj?.name) {
+            const role = cmdObj.role ?? 0;
+            const isAdmin = config?.[0]?.masterKey?.admin?.includes(event.senderID) || admin.includes(event.senderID);
+            const isThreadAdmin = isAdmin || ((Array.isArray(adminIDS)
+              ? adminIDS.find(a => Object.keys(a)[0] === event.threadID)
+              : {})?.[event.threadID] || []).some(a => a.id === event.senderID);
+
+            if ((role == 1 && !isAdmin) || (role == 2 && !isThreadAdmin) || (role == 3 && !isAdmin)) {
+              api.sendMessage(`You don't have permission to use this command.`, event.threadID, event.messageID);
+              return;
+            }
+          }
+
+          // Blacklist check
+          if (cmdObj?.name && blacklist.includes(event.senderID)) {
+            api.sendMessage("🚫 You are banned from using this bot.", event.threadID, event.messageID);
+            return;
+          }
+
+          // Cooldown
+          if (cmdObj?.name) {
+            const now = Date.now();
+            const senderKey = `${event.senderID}_${cmdObj.name}_${userid}`;
+            const sender = Utils.cooldowns.get(senderKey);
+            const delay = cmdObj.cooldown ?? 0;
+
+            if (!sender || (now - sender.timestamp) >= delay * 1000) {
+              Utils.cooldowns.set(senderKey, { timestamp: now, command: cmdObj.name });
+            } else {
+              return; // Silent ignore
+            }
+          }
+
+          // Invalid commands
+          if (event.body && !cmdObj && event.body.toLowerCase().startsWith(prefix.toLowerCase())) {
+            api.sendMessage(`❌ Unknown command. Use ${prefix}help to see available commands.`, event.threadID, event.messageID);
+            return;
+          }
+
+          // Run commands
+          if (cmdObj?.run) {
+            try {
+              await cmdObj.run({ api, event, args, enableCommands, admin, prefix, blacklist, Utils });
+            } catch (err) {
+              console.error(`❌ Error in command '${cmdObj.name}':`, err.message);
+            }
+          }
+
+          // Handle events
+          for (const { handleEvent, name } of Utils.handleEvent.values()) {
+            if (handleEvent && name &&
+              ((enableCommands[1]?.handleEvent || []).includes(name) ||
+               (enableCommands[0]?.commands || []).includes(name))) {
+              handleEvent({ api, event, enableCommands, admin, prefix, blacklist });
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error outside listen loop', userid);
+        Utils.account.delete(userid);
+        deleteThisUser(userid);
+      }
+
+      resolve();
     });
   });
 }
 
-async function handleEvent(api, event, ctx) {
-  try {
-    const { userId, enableCommands, prefix, admin } = ctx;
-    const { body, threadID, senderID } = event;
-
-    if (!body) return;
-    const text = body.trim().toLowerCase();
-
-    // Detect command
-    const isCmd = text.startsWith(prefix.toLowerCase());
-    const [cmdName, ...args] = isCmd
-      ? text.substring(prefix.length).split(/\s+/)
-      : [];
-
-    const cmd = getCommand(cmdName);
-
-    // Invalid command
-    if (isCmd && !cmd) {
-      return api.sendMessage(
-        `❌ Unknown command '${cmdName}'. Use ${prefix}help.`,
-        threadID
-      );
-    }
-
-    // Permission check
-    if (cmd) {
-      const role = cmd.role || 0;
-      const isAdmin =
-        config?.[0]?.masterKey?.admin?.includes(senderID) ||
-        admin.includes(senderID);
-      if ((role === 1 && !isAdmin)) {
-        return api.sendMessage(
-          `⚠️ You don't have permission to use this command.`,
-          threadID
-        );
-      }
-
-      // Cooldown check
-      const key = `${senderID}_${cmd.name}_${userId}`;
-      const now = Date.now();
-      const last = Utils.cooldowns.get(key);
-      if (last && now - last < cmd.cooldown * 1000) return;
-      Utils.cooldowns.set(key, now);
-
-      // Run command
-      try {
-        await cmd.run({ api, event, args, prefix, admin, Utils });
-      } catch (e) {
-        console.error(chalk.red(`❌ Error in command ${cmd.name}:`), e);
-        api.sendMessage(`⚠️ Error running command ${cmd.name}`, threadID);
-      }
-    }
-  } catch (e) {
-    console.error(chalk.red('❌ Event handler error:'), e);
-  }
+// =================== HELPERS ===================
+async function deleteThisUser(userid) {
+  const configFile = './data/history.json';
+  let config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  const sessionFile = path.join('./data/session', `${userid}.json`);
+  const index = config.findIndex(item => item.userid === userid);
+  if (index !== -1) config.splice(index, 1);
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+  try { fs.unlinkSync(sessionFile); } catch {}
 }
 
-// ================== HELPERS ==================
-function getCommand(name) {
-  if (!name) return null;
-  name = name.toLowerCase();
-  for (const cmd of Utils.commands.values()) {
-    if (cmd.name.toLowerCase() === name || cmd.aliases.includes(name)) {
-      return cmd;
-    }
-  }
-  return null;
+async function addThisUser(userid, enableCommands, state, prefix, admin, blacklist) {
+  const configFile = './data/history.json';
+  const sessionFolder = './data/session';
+  const sessionFile = path.join(sessionFolder, `${userid}.json`);
+  if (fs.existsSync(sessionFile)) return;
+  const config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  config.push({ userid, prefix: prefix || "", admin: admin || [], blacklist: blacklist || [], enableCommands, time: 0 });
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+  fs.writeFileSync(sessionFile, JSON.stringify(state));
 }
 
-function addThisUser(userid, enableCommands, state, prefix, admin) {
-  const historyFile = './data/history.json';
-  const sessionFile = `./data/session/${userid}.json`;
+async function main() {
+  const empty = require('fs-extra');
+  const cacheFile = './script/cache';
+  if (!fs.existsSync(cacheFile)) fs.mkdirSync(cacheFile);
+  const configFile = './data/history.json';
+  if (!fs.existsSync(configFile)) fs.writeFileSync(configFile, '[]', 'utf-8');
+  const config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+  const sessionFolder = path.join('./data/session');
+  if (!fs.existsSync(sessionFolder)) fs.mkdirSync(sessionFolder);
+  const adminOfConfig = fs.existsSync('./data') && fs.existsSync('./data/config.json')
+    ? JSON.parse(fs.readFileSync('./data/config.json', 'utf8'))
+    : createConfig();
 
-  if (!fs.existsSync('./data/session')) fs.mkdirSync('./data/session');
-  if (!fs.existsSync(historyFile)) fs.writeFileSync(historyFile, '[]');
-
-  const history = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
-  if (!fs.existsSync(sessionFile)) {
-    history.push({
-      userid,
-      prefix,
-      admin,
-      enableCommands,
-      time: 0,
+  cron.schedule(`*/${adminOfConfig[0].masterKey.restartTime} * * * *`, async () => {
+    const history = JSON.parse(fs.readFileSync('./data/history.json', 'utf-8'));
+    history.forEach(user => {
+      if (!user || typeof user !== 'object') process.exit(1);
+      if (isNaN(user.time)) process.exit(1);
+      const update = Utils.account.get(user.userid);
+      if (update) user.time = update.time;
     });
-    fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
-    fs.writeFileSync(sessionFile, JSON.stringify(state, null, 2));
-  }
+    await empty.emptyDir(cacheFile);
+    fs.writeFileSync('./data/history.json', JSON.stringify(history, null, 2));
+    process.exit(1);
+  });
+
+  try {
+    for (const file of fs.readdirSync(sessionFolder)) {
+      const filePath = path.join(sessionFolder, file);
+      try {
+        const { enableCommands, prefix, admin, blacklist } = config.find(item => item.userid === path.parse(file).name) || {};
+        const state = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        if (enableCommands) await accountLogin(state, enableCommands, prefix, admin, blacklist);
+      } catch (error) {
+        deleteThisUser(path.parse(file).name);
+      }
+    }
+  } catch {}
 }
 
 function createConfig() {
-  const cfg = [
-    {
-      masterKey: { admin: [], devMode: false, restartTime: 15 },
-      fcaOption: {
-        forceLogin: true,
-        listenEvents: true,
-        logLevel: 'silent',
-        updatePresence: true,
-        selfListen: true,
-        online: true,
-        autoMarkDelivery: false,
-        autoMarkRead: false,
-      },
+  const config = [{
+    masterKey: {
+      admin: [],
+      devMode: false,
+      database: false,
+      restartTime: 15,
     },
-  ];
-  if (!fs.existsSync('./data')) fs.mkdirSync('./data');
-  fs.writeFileSync('./data/config.json', JSON.stringify(cfg, null, 2));
-  return cfg;
+    fcaOption: {
+      forceLogin: true,
+      listenEvents: true,
+      logLevel: "silent",
+      updatePresence: true,
+      selfListen: true,
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64",
+      online: true,
+      autoMarkDelivery: false,
+      autoMarkRead: false
+    }
+  }];
+  const dataFolder = './data';
+  if (!fs.existsSync(dataFolder)) fs.mkdirSync(dataFolder);
+  fs.writeFileSync('./data/config.json', JSON.stringify(config, null, 2));
+  return config;
 }
+
+async function createThread(threadID, api) {
+  try {
+    const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
+    let threadInfo = await api.getThreadInfo(threadID);
+    let adminIDs = threadInfo ? threadInfo.adminIDs : [];
+    const data = {};
+    data[threadID] = adminIDs;
+    database.push(data);
+    fs.writeFileSync('./data/database.json', JSON.stringify(database, null, 2), 'utf-8');
+    return database;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function createDatabase() {
+  const data = './data';
+  const database = './data/database.json';
+  if (!fs.existsSync(data)) fs.mkdirSync(data, { recursive: true });
+  if (!fs.existsSync(database)) fs.writeFileSync(database, JSON.stringify([]));
+  return database;
+}
+
+main();
