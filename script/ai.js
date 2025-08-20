@@ -2,18 +2,19 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "ai",
-  version: "2.2.0",
+  version: "2.3.0",
   hasPermssion: 0,
-  credits: "Homer Rebatis + Edited",
-  description: "AI Chatbot with reply system (15 uses per group every 24h)",
+  credits: "Homer Rebatis + Edited by Aligno",
+  description: "AI Chatbot with reply system (5 uses per group every 24h)",
   usePrefix: true,
   commandCategory: "AI",
   usages: "[question]",
-  cooldowns: 10,
+  cooldowns: 0, // 🔥 no more cooldown text from framework
 };
 
-let sessions = {}; // per-user session tracking
-let groupUsage = {}; // { threadID: { count: number, resetTime: timestamp } }
+let sessions = {};       // per-user session tracking
+let groupUsage = {};     // { threadID: { count, resetTime } }
+let userCooldowns = {};  // per-user cooldown tracking
 
 // --- USER-AGENTS + HEADERS RANDOMIZATION ---
 const userAgents = [
@@ -36,15 +37,10 @@ function getAxiosConfig() {
   const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
   const header = extraHeaders[Math.floor(Math.random() * extraHeaders.length)];
 
-  return {
-    headers: {
-      "User-Agent": ua,
-      ...header,
-    },
-  };
+  return { headers: { "User-Agent": ua, ...header } };
 }
 
-// --- Check usage & reset logic ---
+// --- GROUP LIMIT ---
 function checkGroupLimit(threadID) {
   const now = Date.now();
   if (!groupUsage[threadID]) {
@@ -52,30 +48,36 @@ function checkGroupLimit(threadID) {
   }
 
   const group = groupUsage[threadID];
-
-  // Reset if 24h passed
   if (now > group.resetTime) {
     groupUsage[threadID] = { count: 0, resetTime: now + 24 * 60 * 60 * 1000 };
     return true;
   }
 
-  // Block if already 15 uses
-  if (group.count >= 5) {
-    return false; // block silently
-  }
-
+  if (group.count >= 5) return false; // block silently
   return true;
 }
 
 function incrementUsage(threadID) {
-  if (groupUsage[threadID]) {
-    groupUsage[threadID].count++;
-  }
+  if (groupUsage[threadID]) groupUsage[threadID].count++;
 }
 
 function getRemaining(threadID) {
   if (!groupUsage[threadID]) return 5;
   return 5 - groupUsage[threadID].count;
+}
+
+// --- USER COOLDOWN ---
+function checkUserCooldown(userId) {
+  const now = Date.now();
+  if (!userCooldowns[userId]) {
+    userCooldowns[userId] = now;
+    return true;
+  }
+  if (now - userCooldowns[userId] < 5000) {
+    return false; // 5s cooldown
+  }
+  userCooldowns[userId] = now;
+  return true;
 }
 
 // --- MAIN FUNCTION ---
@@ -86,8 +88,8 @@ module.exports.run = async function ({ api, event, args }) {
   const threadID = event.threadID;
   const userId = event.senderID;
 
-  // Check if group can still use AI
-  if (!checkGroupLimit(threadID)) return; // silently ignore
+  if (!checkGroupLimit(threadID)) return;       // group limit
+  if (!checkUserCooldown(userId)) return;       // user spam block
 
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     question
@@ -106,16 +108,14 @@ module.exports.run = async function ({ api, event, args }) {
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚝𝚑𝚒𝚜 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚠/𝚘 '𝚊𝚒' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎 𝚌𝚘𝚗𝚟𝚎𝚛𝚜𝚊𝚝𝚒𝚘𝚗)`,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(𝚁𝚎𝚙𝚕𝚢 w/o 'ai' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎)`,
         threadID,
         (err, info) => {
           if (!err) {
             sessions[userId] = {
               messageID: info.messageID,
-              threadID: threadID,
-              timeout: setTimeout(() => {
-                delete sessions[userId];
-              }, 15 * 60 * 1000),
+              threadID,
+              timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
             };
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
@@ -129,6 +129,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 };
 
+// --- HANDLE REPLIES ---
 module.exports.handleEvent = async function ({ api, event }) {
   const userId = event.senderID;
   const threadID = event.threadID;
@@ -143,8 +144,8 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage("✅ Session has been reset.", threadID, event.messageID);
   }
 
-  // Check if group can still use AI
-  if (!checkGroupLimit(threadID)) return; // silently ignore
+  if (!checkGroupLimit(threadID)) return;   // group limit
+  if (!checkUserCooldown(userId)) return;   // user spam block
 
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     userMessage
@@ -163,16 +164,14 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     setTimeout(() => {
       api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(𝚁𝚎𝚙𝚕𝚢 "𝚛𝚎𝚜𝚎𝚝" 𝚝𝚘 𝚛𝚎𝚜𝚎𝚝 𝚜𝚎𝚜𝚜𝚒𝚘𝚗)`,
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(Reply "reset" to reset session)`,
         threadID,
         (err, info) => {
           if (!err) {
             sessions[userId] = {
               messageID: info.messageID,
-              threadID: threadID,
-              timeout: setTimeout(() => {
-                delete sessions[userId];
-              }, 15 * 60 * 1000),
+              threadID,
+              timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
             };
             api.setMessageReaction("🟢", event.messageID, () => {}, true);
           }
