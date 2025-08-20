@@ -14,8 +14,8 @@ const Utils = new Object({
   handleEvent: new Map(),
   account: new Map(),
   cooldowns: new Map(),
-  spamCounter: new Map(), // Track spam counts
-  bannedUsers: new Set(), // Track banned users to block responses
+  spamCounter: new Map(),
+  bannedUsers: new Set(),
 });
 
 // === Load commands dynamically ===
@@ -189,7 +189,7 @@ async function accountLogin(state, enableCommands = [], prefix, admin = []) {
                 blacklist.push(event.senderID);
                 userData.blacklist = blacklist;
                 fs.writeFileSync('./data/history.json', JSON.stringify(history, null, 2));
-                Utils.bannedUsers.add(event.senderID); // cache ban
+                Utils.bannedUsers.add(event.senderID);
                 api.sendMessage("⚠️ You have been banned for spamming commands too many times.", event.threadID, event.messageID);
               }
               return;
@@ -306,7 +306,22 @@ async function main() {
       const filePath = path.join(sessionFolder, file);
       try {
         const { enableCommands, prefix, admin, blacklist } = config.find(item => item.userid === path.parse(file).name) || {};
-        const state = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+
+        let raw = fs.readFileSync(filePath, 'utf-8');
+        let state;
+
+        try {
+          state = JSON.parse(raw);
+          if (!Array.isArray(state)) {
+            state = Object.entries(state).map(([key, value]) => ({ key, value, domain: "facebook.com", path: "/", hostOnly: false }));
+          }
+        } catch (e) {
+          state = raw.split(";").map(c => {
+            let [key, value] = c.trim().split("=");
+            return { key, value, domain: "facebook.com", path: "/", hostOnly: false };
+          });
+        }
+
         if (enableCommands) await accountLogin(state, enableCommands, prefix, admin, blacklist);
       } catch (error) {
         deleteThisUser(path.parse(file).name);
