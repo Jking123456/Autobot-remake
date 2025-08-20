@@ -9,7 +9,7 @@ module.exports.config = {
   usePrefix: true,
   commandCategory: "AI",
   usages: "[question]",
-  cooldowns: 0, // 🔥 no more cooldown text from framework
+  
 };
 
 let sessions = {};       // per-user session tracking
