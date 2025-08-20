@@ -1,6 +1,6 @@
 module.exports.config = {
   name: 'help',
-  version: '1.1.0',
+  version: '1.2.0',
   role: 0,
   hasPrefix: true,
   aliases: ['info'],
@@ -9,25 +9,16 @@ module.exports.config = {
   credits: 'Homer Rebatis + Modified by GPT-5',
 };
 
-let groupUsage = {}; // Track help command usage per group
+let dailyUsage = {}; // ✅ Track usage per group (help OR prefix) once per 24h
 
 module.exports.run = async function({ api, event, enableCommands, args, Utils, prefix }) {
   const input = args.join(' ');
   const threadId = event.threadID;
 
-  // ✅ Limit: 3 uses per group per 24h
-  if (!groupUsage[threadId]) {
-    groupUsage[threadId] = { count: 0, timeout: null };
-  }
-  if (groupUsage[threadId].count >= 3) {
-    return; // ❌ Silent, no response after 3rd use
-  }
-  groupUsage[threadId].count++;
-  if (!groupUsage[threadId].timeout) {
-    groupUsage[threadId].timeout = setTimeout(() => {
-      delete groupUsage[threadId];
-    }, 24 * 60 * 60 * 1000); // reset after 24h
-  }
+  // ✅ Allow only once per 24h per group
+  if (dailyUsage[threadId]) return;
+  dailyUsage[threadId] = true;
+  setTimeout(() => delete dailyUsage[threadId], 24 * 60 * 60 * 1000);
 
   try {
     // Check if bot is admin in this group
@@ -139,8 +130,19 @@ This bot has an anti-spamming system. Abusing commands may result in temporary r
 
 module.exports.handleEvent = async function({ api, event, prefix }) {
   const { threadID, messageID, body } = event;
-  if (body?.toLowerCase().startsWith('prefix')) {
-    const message = prefix ? `This is my prefix: ${prefix}` : "Sorry, I don't have a prefix.";
-    api.sendMessage(message, threadID, messageID);
+
+  if (body?.toLowerCase().trim() === 'prefix') {
+    // ✅ Allow only once per 24h per group (shared with help command)
+    if (!dailyUsage[threadID]) {
+      dailyUsage[threadID] = true;
+
+      api.sendMessage(`This is my prefix: ${prefix}`, threadID, messageID);
+
+      // Reset after 24h
+      setTimeout(() => {
+        delete dailyUsage[threadID];
+      }, 24 * 60 * 60 * 1000);
+    }
+    // Else: Silent (no reply)
   }
 };
