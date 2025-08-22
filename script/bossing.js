@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "bossing",
-  version: "1.0.3-ghost",
+  version: "1.0.5-ghost",
   permission: 0,
   credits: "Bogart Magalapok + ChatGPT (ghost mod)",
   description: "Bossing AI auto-reply bot (DM only, pure API).",
@@ -11,17 +11,8 @@ module.exports.config = {
   usage: "Just DM me anything"
 };
 
-// API mirrors
-const API_MIRRORS = [
-  "https://markdevs-last-api-p2y6.onrender.com/bossing",
-  "https://markdevs-last-api-p2y6-mirror1.onrender.com/bossing",
-  "https://markdevs-last-api-p2y6-mirror2.onrender.com/bossing"
-];
-
-// Function to pick a random mirror
-function pickApiUrl() {
-  return API_MIRRORS[Math.floor(Math.random() * API_MIRRORS.length)];
-}
+// Single API endpoint
+const API_URL = "https://markdevs-last-api-p2y6.onrender.com/bossing";
 
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, senderID, body, isGroup } = event;
@@ -43,17 +34,23 @@ module.exports.handleEvent = async function ({ api, event }) {
     setTimeout(res, 500 + Math.floor(Math.random() * 1000));
   });
 
-  const API_URL = `${pickApiUrl()}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(senderID)}`;
-
   try {
-    const res = await axios.get(API_URL, { timeout: 20000 });
+    const res = await axios.get(
+      `${API_URL}?prompt=${encodeURIComponent(question)}&uid=${encodeURIComponent(senderID)}`,
+      { timeout: 15000 }
+    );
+
     let replyText = res.data?.response || res.data?.data?.response || JSON.stringify(res.data);
 
-    if (replyText.length > 1800) replyText = replyText.slice(0, 1800) + "\n\n... (trimmed)";
+    if (replyText && typeof replyText === "string") {
+      if (replyText.length > 1800) replyText = replyText.slice(0, 1800) + "\n\n... (trimmed)";
+      return api.sendMessage(replyText, threadID, messageID);
+    }
 
-    return api.sendMessage(replyText, threadID, messageID);
+    return api.sendMessage("❌ Walang valid response si Bossing.", threadID, messageID);
 
-  } catch {
+  } catch (err) {
+    console.error("Bossing API error:", err.message || err);
     return api.sendMessage("❌ Error sa Bossing API. Try ulit mamaya.", threadID, messageID);
   }
 };
