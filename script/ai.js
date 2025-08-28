@@ -2,14 +2,13 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "ai",
-  version: "2.3.0",
+  version: "3.0.0",
   hasPermssion: 0,
-  credits: "Homer Rebatis + Edited by Aligno",
-  description: "AI Chatbot with reply system (5 uses per group every 24h)",
-  usePrefix: true,
+  credits: "Homer Rebatis + Edited by Aligno + Modified by ChatGPT",
+  description: "AI Chatbot (triggered when bot is mentioned)",
+  usePrefix: false,
   commandCategory: "AI",
-  usages: "[question]",
-  
+  usages: "Mention the bot with your question",
 };
 
 let sessions = {};       // per-user session tracking
@@ -36,7 +35,6 @@ const extraHeaders = [
 function getAxiosConfig() {
   const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
   const header = extraHeaders[Math.floor(Math.random() * extraHeaders.length)];
-
   return { headers: { "User-Agent": ua, ...header } };
 }
 
@@ -73,27 +71,27 @@ function checkUserCooldown(userId) {
     userCooldowns[userId] = now;
     return true;
   }
-  if (now - userCooldowns[userId] < 5000) {
-    return false; // 5s cooldown
-  }
+  if (now - userCooldowns[userId] < 5000) return false; // 5s cooldown
   userCooldowns[userId] = now;
   return true;
 }
 
-// --- MAIN FUNCTION ---
-module.exports.run = async function ({ api, event, args }) {
-  const question = args.join(" ");
+// --- MAIN HANDLER ---
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, senderID, body, mentions } = event;
+
+  // Only trigger if the bot is mentioned
+  if (!mentions || !mentions[api.getCurrentUserID()]) return;
+
+  const question = body.replace(/@\S+/g, "").trim(); // remove mention text
   if (!question) return;
 
-  const threadID = event.threadID;
-  const userId = event.senderID;
-
-  if (!checkGroupLimit(threadID)) return;       // group limit
-  if (!checkUserCooldown(userId)) return;       // user spam block
+  if (!checkGroupLimit(threadID)) return;
+  if (!checkUserCooldown(senderID)) return;
 
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     question
-  )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
+  )}&uid=${senderID}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
@@ -104,35 +102,34 @@ module.exports.run = async function ({ api, event, args }) {
     incrementUsage(threadID);
     const remaining = getRemaining(threadID);
 
-    if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
+    if (sessions[senderID]?.timeout) clearTimeout(sessions[senderID].timeout);
 
-    setTimeout(() => {
-      api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(𝚁𝚎𝚙𝚕𝚢 w/o 'ai' 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎)`,
-        threadID,
-        (err, info) => {
-          if (!err) {
-            sessions[userId] = {
-              messageID: info.messageID,
-              threadID,
-              timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
-            };
-            api.setMessageReaction("🟢", event.messageID, () => {}, true);
-          }
-        },
-        event.messageID
-      );
-    }, 5000);
+    api.sendMessage(
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(Reply "reset" to reset session)`,
+      threadID,
+      (err, info) => {
+        if (!err) {
+          sessions[senderID] = {
+            messageID: info.messageID,
+            threadID,
+            timeout: setTimeout(() => delete sessions[senderID], 15 * 60 * 1000),
+          };
+          api.setMessageReaction("🟢", event.messageID, () => {}, true);
+        }
+      },
+      event.messageID
+    );
   } catch (error) {
     console.error(error);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
   }
 };
 
-// --- HANDLE REPLIES ---
-module.exports.handleEvent = async function ({ api, event }) {
+// --- REPLIES ---
+module.exports.handleReply = async function ({ api, event }) {
   const userId = event.senderID;
   const threadID = event.threadID;
+
   if (!sessions[userId]) return;
   if (event.messageReply?.messageID !== sessions[userId].messageID) return;
 
@@ -144,12 +141,12 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage("✅ Session has been reset.", threadID, event.messageID);
   }
 
-  if (!checkGroupLimit(threadID)) return;   // group limit
-  if (!checkUserCooldown(userId)) return;   // user spam block
+  if (!checkGroupLimit(threadID)) return;
+  if (!checkUserCooldown(userId)) return;
 
   const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
     userMessage
-  )}&uid=5&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
+  )}&uid=${userId}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
 
   try {
     api.setMessageReaction("⌛", event.messageID, () => {}, true);
@@ -162,23 +159,21 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
 
-    setTimeout(() => {
-      api.sendMessage(
-        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(Reply "reset" to reset session)`,
-        threadID,
-        (err, info) => {
-          if (!err) {
-            sessions[userId] = {
-              messageID: info.messageID,
-              threadID,
-              timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
-            };
-            api.setMessageReaction("🟢", event.messageID, () => {}, true);
-          }
-        },
-        event.messageID
-      );
-    }, 5000);
+    api.sendMessage(
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(Reply "reset" to reset session)`,
+      threadID,
+      (err, info) => {
+        if (!err) {
+          sessions[userId] = {
+            messageID: info.messageID,
+            threadID,
+            timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
+          };
+          api.setMessageReaction("🟢", event.messageID, () => {}, true);
+        }
+      },
+      event.messageID
+    );
   } catch (error) {
     console.error(error);
     api.setMessageReaction("❌", event.messageID, () => {}, true);
