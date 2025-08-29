@@ -86,6 +86,25 @@ module.exports.handleEvent = async function ({ api, event }) {
   const question = body.replace(/@\S+/g, "").trim(); // remove mention text
   if (!question) return;
 
+  // --- SPECIAL CASE: if someone asks who the creator is ---
+  const lowerQ = question.toLowerCase();
+  if (
+    lowerQ.includes("who created you") ||
+    lowerQ.includes("who made you") ||
+    lowerQ.includes("sino gumawa sayo") ||
+    lowerQ.includes("who is your creator") ||
+    lowerQ.includes("creator of this bot")
+  ) {
+    const replies = [
+      "My creator is a handsome guy named Bogart Magalpok 😎",
+      "I was proudly created by the one and only Bogart Magalpok ✨",
+      "My developer is Bogart Magalpok, and yes… he’s super handsome! 😏",
+      "Bogart Magalpok is my creator, salute to him! 🙌"
+    ];
+    const reply = replies[Math.floor(Math.random() * replies.length)];
+    return api.sendMessage(reply, threadID, event.messageID);
+  }
+
   if (!checkGroupLimit(threadID)) return;
   if (!checkUserCooldown(senderID)) return;
 
