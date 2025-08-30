@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "ai",
-  version: "3.1.0",
+  version: "3.2.0",
   hasPermssion: 0,
   credits: "Homer Rebatis + Edited by Aligno + Modified by ChatGPT",
   description: "AI Chatbot (triggered when bot is mentioned or image reply)",
@@ -87,8 +87,9 @@ module.exports.handleEvent = async function ({ api, event }) {
       if (!checkGroupLimit(threadID)) return;
       if (!checkUserCooldown(senderID)) return;
 
+      const question = body?.trim() || ""; // allow optional text with image
       const imageUrl = encodeURIComponent(image.url);
-      const apiUrl = `https://daikyu-api.up.railway.app/api/gemini-vision?ask=&imageURL=${imageUrl}`;
+      const apiUrl = `https://daikyu-api.up.railway.app/api/gemini-vision?ask=${encodeURIComponent(question)}&imageURL=${imageUrl}`;
 
       try {
         api.setMessageReaction("🖼️", event.messageID, () => {}, true);
@@ -164,6 +165,61 @@ module.exports.handleEvent = async function ({ api, event }) {
             messageID: info.messageID,
             threadID,
             timeout: setTimeout(() => delete sessions[senderID], 15 * 60 * 1000),
+          };
+          api.setMessageReaction("🟢", event.messageID, () => {}, true);
+        }
+      },
+      event.messageID
+    );
+  } catch (error) {
+    console.error(error);
+    api.setMessageReaction("❌", event.messageID, () => {}, true);
+  }
+};
+
+// --- REPLIES ---
+module.exports.handleReply = async function ({ api, event }) {
+  const userId = event.senderID;
+  const threadID = event.threadID;
+
+  if (!sessions[userId]) return;
+  if (event.messageReply?.messageID !== sessions[userId].messageID) return;
+
+  const userMessage = event.body?.trim();
+  if (!userMessage) return;
+
+  if (userMessage.toLowerCase() === "reset") {
+    delete sessions[userId];
+    return api.sendMessage("✅ Session has been reset.", threadID, event.messageID);
+  }
+
+  if (!checkGroupLimit(threadID)) return;
+  if (!checkUserCooldown(userId)) return;
+
+  const apiUrl = `https://kaiz-apis.gleeze.com/api/llama3-turbo?ask=${encodeURIComponent(
+    userMessage
+  )}&uid=${userId}&apikey=25644cdb-f51e-43f1-894a-ec718918e649`;
+
+  try {
+    api.setMessageReaction("⌛", event.messageID, () => {}, true);
+
+    const response = await axios.get(apiUrl, getAxiosConfig());
+    const answer = response.data.response;
+
+    incrementUsage(threadID);
+    const remaining = getRemaining(threadID);
+
+    if (sessions[userId]?.timeout) clearTimeout(sessions[userId].timeout);
+
+    api.sendMessage(
+      `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5\n\n(Reply "reset" to reset session)`,
+      threadID,
+      (err, info) => {
+        if (!err) {
+          sessions[userId] = {
+            messageID: info.messageID,
+            threadID,
+            timeout: setTimeout(() => delete sessions[userId], 15 * 60 * 1000),
           };
           api.setMessageReaction("🟢", event.messageID, () => {}, true);
         }
