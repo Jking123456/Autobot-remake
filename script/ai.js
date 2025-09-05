@@ -1,19 +1,22 @@
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
   name: "ai",
-  version: "3.2.0",
+  version: "3.3.0",
   hasPermssion: 0,
   credits: "Homer Rebatis + Edited by Aligno + Modified by ChatGPT",
-  description: "AI Chatbot (triggered when bot is mentioned or image reply)",
+  description: "AI Chatbot (text + image vision support)",
   usePrefix: false,
   commandCategory: "AI",
-  usages: "Mention the bot with your question or reply with an image",
+  usages: "Mention the bot with your question or reply to an image with mention + prompt",
 };
 
 let sessions = {};       // per-user session tracking
 let groupUsage = {};     // { threadID: { count, resetTime } }
 let userCooldowns = {};  // per-user cooldown tracking
+let lastImages = {};     // { threadID: { url, messageID } }
 
 // --- USER-AGENTS + HEADERS RANDOMIZATION ---
 const userAgents = [
@@ -80,37 +83,16 @@ function checkUserCooldown(userId) {
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, senderID, body, mentions, attachments } = event;
 
-  // --- IMAGE RECOGNITION ---
+  // --- SAVE IMAGE FOR LATER USE ---
   if (attachments && attachments.length > 0) {
     const image = attachments.find(att => att.type === "photo");
     if (image) {
-      if (!checkGroupLimit(threadID)) return;
-      if (!checkUserCooldown(senderID)) return;
-
-      const question = body?.trim() || ""; // allow optional text with image
-      const imageUrl = encodeURIComponent(image.url);
-      const apiUrl = `https://daikyu-api.up.railway.app/api/gemini-vision?ask=${encodeURIComponent(question)}&imageURL=${imageUrl}`;
-
-      try {
-        api.setMessageReaction("🖼️", event.messageID, () => {}, true);
-
-        const response = await axios.get(apiUrl, getAxiosConfig());
-        const answer = response.data.reply || "❌ Couldn't analyze the image.";
-
-        incrementUsage(threadID);
-        const remaining = getRemaining(threadID);
-
-        api.sendMessage(
-          `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5`,
-          threadID,
-          event.messageID
-        );
-        api.setMessageReaction("🟢", event.messageID, () => {}, true);
-      } catch (error) {
-        console.error(error);
-        api.setMessageReaction("❌", event.messageID, () => {}, true);
-      }
-      return;
+      lastImages[threadID] = { url: image.url, messageID: event.messageID };
+      return api.sendMessage(
+        "🖼️ Got your image! Now reply to it with a prompt by mentioning me.",
+        threadID,
+        event.messageID
+      );
     }
   }
 
@@ -120,6 +102,40 @@ module.exports.handleEvent = async function ({ api, event }) {
   const question = body.replace(/@\S+/g, "").trim();
   if (!question) return;
 
+  // check if replying to saved image
+  const repliedTo = event.messageReply?.messageID;
+  if (lastImages[threadID] && repliedTo === lastImages[threadID].messageID) {
+    if (!checkGroupLimit(threadID)) return;
+    if (!checkUserCooldown(senderID)) return;
+
+    const imageUrl = encodeURIComponent(lastImages[threadID].url);
+    const apiUrl = `https://daikyu-api.up.railway.app/api/gemini-vision?ask=${encodeURIComponent(
+      question
+    )}&imageURL=${imageUrl}`;
+
+    try {
+      api.setMessageReaction("🖼️", event.messageID, () => {}, true);
+
+      const response = await axios.get(apiUrl, getAxiosConfig());
+      const answer = response.data.reply || "❌ Couldn't analyze the image.";
+
+      incrementUsage(threadID);
+      const remaining = getRemaining(threadID);
+
+      api.sendMessage(
+        `•| 𝚄𝙴𝙿 𝙼𝙰𝙸𝙽 𝙱𝙾𝚃 |•\n\n${answer}\n\n⚡ Tries left in this group: ${remaining}/5`,
+        threadID,
+        event.messageID
+      );
+      api.setMessageReaction("🟢", event.messageID, () => {}, true);
+    } catch (error) {
+      console.error(error);
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+    }
+    return;
+  }
+
+  // --- CREATOR EASTER EGG ---
   const lowerQ = question.toLowerCase();
   if (
     lowerQ.includes("who created you") ||
@@ -138,6 +154,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage(reply, threadID, event.messageID);
   }
 
+  // --- NORMAL CHATBOT ---
   if (!checkGroupLimit(threadID)) return;
   if (!checkUserCooldown(senderID)) return;
 
@@ -177,7 +194,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   }
 };
 
-// --- REPLIES ---
+// --- REPLIES (session mode) ---
 module.exports.handleReply = async function ({ api, event }) {
   const userId = event.senderID;
   const threadID = event.threadID;
