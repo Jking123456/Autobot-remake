@@ -62,7 +62,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     return api.sendMessage("❌ Please provide a prompt or reply to an image with a question.", threadID, messageID);
   }
 
-  api.sendMessage("🤖 AI is thinking... please wait ⏳", threadID, async (err, info) => {
+  api.sendMessage("🤖 𝗔𝗜 𝗜𝗦 𝗣𝗥𝗢𝗖𝗘𝗦𝗦𝗜𝗡𝗚 𝗬𝗢𝗨𝗥 𝗥𝗘𝗤𝗨𝗘𝗦𝗧...", threadID, async (err, info) => {
     if (err) return;
 
     try {
@@ -106,7 +106,7 @@ module.exports.handleEvent = async function ({ api, event }) {
         const userName = infoUser?.[senderID]?.name || "Unknown User";
         const timePH = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
         const replyMessage =
-          `🤖 𝗔𝗜 𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧\n━━━━━━━━━━━━━━━━━━\n${responseText}\n━━━━━━━━━━━━━━━━━━\n🗣 Asked By: ${userName}\n⏰ Time: ${timePH}`;
+          `🤖 𝗔𝗜 𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧\n━━━━━━━━━━━━━━━━━━\n${responseText}\n━━━━━━━━━━━━━━━━━━\n🗣 𝗔𝘀𝗸𝗲𝗱 𝗕𝘆: ${userName}\n⏰ 𝗧𝗶𝗺𝗲: ${timePH}`;
 
         api.editMessage(replyMessage, info.messageID);
       });
