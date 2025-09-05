@@ -14,7 +14,7 @@ module.exports.config = {
 };
 
 // ⚠️ Hardcoded API key (not safe for public use)
-const OPENAI_API_KEY = "sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+const OPENAI_API_KEY = "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";
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, attachments } = event;
