@@ -14,7 +14,7 @@ module.exports.config = {
 };
 
 // ⚠️ Hardcoded API key (not safe for public use)
-const OPENAI_API_KEY = "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";
+const OPENAI_API_KEY = "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";
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, attachments } = event;
