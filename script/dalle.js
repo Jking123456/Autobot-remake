@@ -4,9 +4,9 @@ const FormData = require("form-data");
 
 module.exports.config = {
   name: "dalle",
-  version: "1.1.0",
+  version: "1.2.0",
   hasPermssion: 0,
-  credits: "Aligno + ChatGPT",
+  credits: "Bogart Magalpok",
   description: "Generate or edit images using OpenAI DALL·E",
   usePrefix: true,
   commandCategory: "AI",
@@ -34,7 +34,7 @@ module.exports.run = async function ({ api, event, args }) {
       form.append("model", "gpt-image-1");
       form.append("image", fs.createReadStream("input.png"));
       form.append("prompt", prompt);
-      form.append("size", "512x512");
+      form.append("size", "1024x1024"); // ✅ fixed size
 
       const response = await axios.post(
         "https://api.openai.com/v1/images/edits",
@@ -58,7 +58,7 @@ module.exports.run = async function ({ api, event, args }) {
         {
           model: "gpt-image-1",
           prompt: prompt,
-          size: "512x512",
+          size: "1024x1024", // ✅ fixed size
         },
         {
           headers: {
