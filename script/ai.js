@@ -1,9 +1,8 @@
 const axios = require("axios");
-const FormData = require("form-data");
 
 module.exports.config = {
   name: "mention-ai",
-  version: "1.0.2",
+  version: "1.0.3",
   role: 0,
   hasPrefix: false,
   description: "AI Chatbot with Vision (triggered when bot is mentioned)",
@@ -43,23 +42,15 @@ module.exports.handleEvent = async function ({ api, event }) {
         let responseText = "";
 
         if (isImage) {
-          // --- Download image buffer
-          const imgBuffer = await axios.get(attachment.url, {
-            responseType: "arraybuffer",
-          });
-
-          // --- Send to Vision API
-          const form = new FormData();
-          form.append("ask", finalPrompt || "Analyze this image");
-          form.append("file", Buffer.from(imgBuffer.data), {
-            filename: "image.jpg",
-            contentType: "image/jpeg",
-          });
-
-          const { data } = await axios.post(
+          // --- Vision API via GET
+          const { data } = await axios.get(
             "https://daikyu-api.up.railway.app/api/gemini-vision",
-            form,
-            { headers: form.getHeaders() }
+            {
+              params: {
+                ask: finalPrompt || "Analyze this image",
+                imageURL: attachment.url,
+              },
+            }
           );
 
           responseText =
