@@ -13,8 +13,8 @@ module.exports.config = {
   usages: "[prompt] (attach photo to edit, or no photo = generate new)",
 };
 
-// ⚠️ Hardcoded API key (not safe for public use)
-const OPENAI_API_KEY = "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";
+// ✅ Load API key from environment (set in Render dashboard)
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, attachments } = event;
