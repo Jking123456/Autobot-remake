@@ -13,7 +13,8 @@ module.exports.config = {
   usages: "[prompt] (attach photo to edit, or no photo = generate new)",
 };
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // put your key in env
+// ⚠️ Hardcoded API key (not safe for public use)
+const OPENAI_API_KEY = "sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, attachments } = event;
@@ -26,8 +27,6 @@ module.exports.run = async function ({ api, event, args }) {
     if (attachments.length > 0 && attachments[0].type === "photo") {
       // --- EDIT MODE ---
       const imageUrl = attachments[0].url;
-
-      // download the user photo
       const img = await axios.get(imageUrl, { responseType: "arraybuffer" });
       fs.writeFileSync("input.png", Buffer.from(img.data));
 
@@ -75,7 +74,6 @@ module.exports.run = async function ({ api, event, args }) {
       fs.writeFileSync(filePath, buffer);
     }
 
-    // Send back to Messenger
     api.sendMessage(
       {
         body: `✨ DALL·E result for: "${prompt}"`,
@@ -84,7 +82,7 @@ module.exports.run = async function ({ api, event, args }) {
       threadID,
       () => {
         api.setMessageReaction("🟢", messageID, () => {}, true);
-        fs.unlinkSync(filePath); // cleanup temp file
+        fs.unlinkSync(filePath);
         if (fs.existsSync("input.png")) fs.unlinkSync("input.png");
       },
       messageID
